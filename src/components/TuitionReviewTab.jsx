@@ -29,7 +29,7 @@ function PresetPicker({ value, onChange, presets, width = '60px' }) {
   const baseStyle = {
     width, textAlign: 'center', padding: '2px 2px',
     border: 'none', borderBottom: '2px solid var(--primary)', borderRadius: 0,
-    background: 'transparent', fontSize: '1.05rem', fontWeight: '700',
+    background: 'transparent', fontSize: '0.92rem', fontWeight: '700',
     color: 'var(--primary)', outline: 'none', fontFamily: 'inherit',
   };
 
@@ -119,7 +119,7 @@ function QuickCalcCard() {
   const badgeBg     = !canJudge ? '#94a3b8'            : isCompliant ? '#16a34a' : '#dc2626';
 
   const sectionLabel = (text, color = 'var(--text-muted)', barColor = 'var(--text-muted)') => (
-    <div style={{ fontSize: '1rem', fontWeight: '700', color, letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <div style={{ fontSize: '0.95rem', fontWeight: '700', color, letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
       <span style={{ display: 'inline-block', width: '3px', height: '14px', borderRadius: '2px', backgroundColor: barColor, flexShrink: 0 }} />
       {text}
     </div>
@@ -131,7 +131,7 @@ function QuickCalcCard() {
       {/* 헤더 */}
       <div style={{ padding: '12px 14px', backgroundColor: bgColor, borderBottom: `1px solid ${borderColor}` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>분야별 교습비 검토</span>
+          <span style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>분야별 교습비 검토</span>
           <span style={{ fontWeight: '700', fontSize: '1rem', padding: '4px 12px', borderRadius: '20px', backgroundColor: badgeBg, color: '#fff', whiteSpace: 'nowrap', marginLeft: '8px' }}>
             {!canJudge ? '입력중' : isCompliant ? '✅ 적합' : '❌ 부적합'}
           </span>
@@ -154,7 +154,7 @@ function QuickCalcCard() {
         {/* 입력값 */}
         <div>
           {sectionLabel('입력값 (수정 가능)')}
-          <div style={{ fontSize: '1rem', lineHeight: '2.4', padding: '12px 14px', borderRadius: '8px', backgroundColor: '#f0f4ff', border: '1px solid #c7d2fe', color: 'var(--text-main)' }}>
+          <div style={{ fontSize: '0.97rem', lineHeight: '2.3', padding: '12px 14px', borderRadius: '8px', backgroundColor: '#f0f4ff', border: '1px solid #c7d2fe', color: 'var(--text-main)' }}>
 
             {/* A: 교습시간 */}
             <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '3px' }}>
