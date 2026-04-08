@@ -159,15 +159,16 @@ function QuickCalcCard() {
             {/* A: 교습시간 */}
             <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '3px' }}>
               <span style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                <strong style={{ color: 'var(--primary)' }}>A(교습분)</strong>
+                <strong style={{ color: 'var(--primary)' }}>A(분)</strong>
                 <span> : 일</span>
                 <PresetPicker key={`dm-${resetKey}`} value={dm} onChange={setDm} presets={[50, 60, 80, 90, 120]} width="46px" max={999} />
-                <span>분,</span>
+                <span>분</span>
               </span>
               <span style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                <span>×</span>
                 <span>주</span>
                 <PresetPicker key={`wc-${resetKey}`} value={wc} onChange={setWc} presets={[1, 2, 3, 4, 5]} width="34px" max={7} />
-                <span>회,</span>
+                <span>회</span>
               </span>
               <span style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                 <span>×</span>
