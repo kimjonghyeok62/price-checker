@@ -8,7 +8,7 @@ import { parseExcelTuition } from './utils/parseExcelTuition';
 import { fetchGoogleSheetData, transformAcademyData, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
 
 export default function App() {
-  const [tab, setTab] = useState('review'); // 'review' | 'search' | 'excel'
+  const [tab, setTab] = useState('review'); // 'review' | 'tutoring' | 'excel'
 
   // 학원 검색 탭
   const [academies, setAcademies] = useState([]);
@@ -89,12 +89,17 @@ export default function App() {
   }
 
   const tabStyle = (active) => ({
-    flex: 1, padding: '9px 0', border: 'none',
-    borderBottom: active ? '2px solid var(--primary)' : '2px solid transparent',
-    background: 'none', cursor: 'pointer',
-    fontSize: '0.88rem', fontWeight: active ? '700' : '500',
+    flex: 1,
+    padding: '10px 16px',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1.02rem',
+    fontWeight: '700',
+    transition: 'all 0.2s ease',
+    backgroundColor: active ? '#ffffff' : 'transparent',
     color: active ? 'var(--primary)' : 'var(--text-muted)',
-    transition: 'all 0.15s',
+    boxShadow: active ? 'var(--shadow-sm)' : 'none',
   });
 
   return (
@@ -112,14 +117,24 @@ export default function App() {
       </div>
 
       {/* 탭 */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '20px' }}>
-        <button style={tabStyle(tab === 'review')} onClick={() => handleTabChange('review')}>교습비 검토</button>
-        <button style={tabStyle(tab === 'search')} onClick={() => handleTabChange('search')}>학원 검색</button>
-        <button style={tabStyle(tab === 'excel')} onClick={() => handleTabChange('excel')}>업로드</button>
+      <div style={{
+        display: 'flex',
+        backgroundColor: '#f1f5f9',
+        padding: '4px',
+        borderRadius: '10px',
+        marginBottom: '24px',
+        gap: '4px'
+      }}>
+        <button style={tabStyle(tab === 'review')} onClick={() => setTab('review')}>교습비 변경(학원,교습소)</button>
+        <button style={tabStyle(tab === 'tutoring')} onClick={() => setTab('tutoring')}>교습비 변경(과외)</button>
+        <button style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>게시표 출력</button>
       </div>
 
-      {/* ── 탭: 교습비 검토 ── */}
-      {tab === 'review' && <TuitionReviewTab />}
+      {/* ── 탭: 교습비 변경(학원,교습소) ── */}
+      {tab === 'review' && <TuitionReviewTab mode="academy" />}
+
+      {/* ── 탭: 교습비 변경(과외) ── */}
+      {tab === 'tutoring' && <TuitionReviewTab mode="tutoring" />}
 
       {/* ── 탭: 학원 검색 ── */}
       {tab === 'search' && (
