@@ -376,7 +376,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             onClick={onAdd}
             disabled={!canJudge}
             style={{ marginTop: '12px', width: '100%', padding: '9px', backgroundColor: canJudge ? 'var(--primary)' : '#cbd5e1', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.95rem', fontWeight: '700', cursor: canJudge ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-            ➕ 다음 과목 계산
+            + 다음 과목
           </button>
         )}
       </div>
