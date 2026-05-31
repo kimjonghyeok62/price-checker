@@ -135,6 +135,8 @@ h1, h2, h3 {
   .record-chip.rate  { flex: 1; }
 }
 
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* 푸터 */
 .app-footer {
   margin-top: 24px;
