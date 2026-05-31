@@ -21,42 +21,39 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   const isTutoring = mode === 'tutoring';
 
   const [subjects, setSubjects] = useState([
-    { id: 1, rateIdx: 0, dm: '', wc: '', wk: '', fee: '', isEditingRate: !isTutoring }
+    { id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }
   ]);
 
   function addSubject() {
     setSubjects(prev => [
       ...prev,
-      { id: Date.now(), rateIdx: 0, dm: '', wc: '', wk: '', fee: '', isEditingRate: !isTutoring }
+      { id: Date.now(), rateIdx: '', dm: '', wc: '', wk: '', fee: '' }
     ]);
   }
 
   function updateSubject(id, key, val) {
-    setSubjects(prev => prev.map(sub => {
-      if (sub.id === id) {
-        return { ...sub, [key]: val };
-      }
-      return sub;
-    }));
+    setSubjects(prev => prev.map(sub =>
+      sub.id === id ? { ...sub, [key]: val } : sub
+    ));
   }
 
   function removeSubject(id) {
     if (subjects.length === 1) {
-      setSubjects([{ id: 1, rateIdx: 0, dm: '', wc: '', wk: '', fee: '', isEditingRate: !isTutoring }]);
+      setSubjects([{ id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
       return;
     }
     setSubjects(prev => prev.filter(sub => sub.id !== id));
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {subjects.map((sub, idx) => (
-        <SubjectCard 
-          key={sub.id} 
+        <SubjectCard
+          key={sub.id}
           index={idx}
-          sub={sub} 
+          sub={sub}
           mode={mode}
-          onUpdate={updateSubject} 
+          onUpdate={updateSubject}
           onRemove={removeSubject}
           isLast={idx === subjects.length - 1}
           onAdd={addSubject}
@@ -66,317 +63,276 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   );
 }
 
-// ─── 프리셋 선택 + 직접입력 전환 컴포넌트 ─────────────────────
-function PresetPicker({ value, onChange, presets, width = '55px' }) {
-  const [custom, setCustom] = useState(false);
-  const SENTINEL = '__custom__';
-
-  const baseStyle = {
-    width, textAlign: 'center', padding: '1px 2px',
-    border: 'none', borderBottom: '2px solid var(--primary)', borderRadius: 0,
-    background: 'transparent', fontSize: '0.9rem', fontWeight: '700',
-    color: 'var(--primary)', outline: 'none', fontFamily: 'inherit',
-    cursor: 'pointer', margin: '0 2px'
-  };
-
-  if (custom) {
-    return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '1px' }}>
-        <input 
-          type="number" 
-          value={value} 
-          onChange={e => onChange(e.target.value)}
-          autoFocus 
-          style={{
-            width,
-            textAlign: 'center',
-            padding: '1px',
-            border: 'none',
-            borderBottom: '2px solid var(--primary)',
-            background: 'transparent',
-            fontSize: '0.9rem',
-            fontWeight: '700',
-            color: 'var(--primary)',
-            outline: 'none'
-          }} 
-        />
-        <button 
-          onClick={() => { setCustom(false); onChange(''); }}
-          style={{ padding: '0 2px', fontSize: '0.85rem', color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', lineHeight: 1 }}
-        >
-          ↩
-        </button>
-      </span>
-    );
-  }
-
+// ─── 섹션 제목 ────────────────────────────────────────────────
+function SectionTitle({ children }) {
   return (
-    <select
-      value={value === '' || value == null ? '' : String(value)}
-      onChange={e => {
-        if (e.target.value === SENTINEL) { setCustom(true); onChange(''); }
-        else onChange(e.target.value);
-      }}
-      style={baseStyle}
-    >
-      <option value="" disabled>선택</option>
-      {presets.map(p => <option key={p} value={String(p)}>{p}</option>)}
-      <option value={SENTINEL} style={{ color: '#1d4ed8' }}>직접입력</option>
-    </select>
+    <div style={{
+      fontSize: '0.82rem',
+      fontWeight: '700',
+      color: '#374151',
+      letterSpacing: '0.03em',
+      marginBottom: '6px',
+      paddingBottom: '4px',
+      borderBottom: '1px solid #e5e7eb',
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ─── 폼 입력 행 ──────────────────────────────────────────────
+function FormRow({ label, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px' }}>
+      {label && (
+        <span style={{
+          fontSize: '0.88rem',
+          color: '#6b7280',
+          fontWeight: '500',
+          minWidth: '28px',
+          textAlign: 'right',
+        }}>
+          {label}
+        </span>
+      )}
+      {children}
+    </div>
+  );
+}
+
+// ─── 밑줄 숫자 입력 ──────────────────────────────────────────
+function UnderlineInput({ value, onChange, placeholder, width = '60px', unit, type = 'number' }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+      <input
+        type={type}
+        inputMode="numeric"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width,
+          textAlign: 'center',
+          padding: '3px 2px',
+          border: 'none',
+          borderBottom: '1.5px solid #9ca3af',
+          background: 'transparent',
+          fontSize: '1rem',
+          fontWeight: '600',
+          color: '#111827',
+          outline: 'none',
+          fontFamily: 'inherit',
+        }}
+      />
+      {unit && <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: '500' }}>{unit}</span>}
+    </span>
   );
 }
 
 // ─── 개별 과목 카드 컴포넌트 ─────────────────────────────────
 function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
-  const { id, rateIdx, dm, wc, wk, fee, isEditingRate } = sub;
+  const { id, rateIdx, dm, wc, wk, fee } = sub;
   const isTutoring = mode === 'tutoring';
 
   const wkVal = parseFloat(wk) || 0;
-  const totalMinutes = Math.round((parseFloat(dm)||0) * (parseFloat(wc)||0) * wkVal);
-  const calcRate = totalMinutes > 0 ? (parseFloat(fee)||0) / totalMinutes : 0;
+  const totalMinutes = Math.round((parseFloat(dm) || 0) * (parseFloat(wc) || 0) * wkVal);
+  const calcRate = totalMinutes > 0 ? (parseFloat(fee) || 0) / totalMinutes : 0;
   const calcRatePrecision5 = totalMinutes > 0 ? calcRate.toFixed(5) : '0';
   const calcRateCeil1 = totalMinutes > 0 ? (Math.ceil(calcRate * 10) / 10).toFixed(1) : '0';
-  
-  // 시간당 단가 계산 (과외용)
+
   const calcHourlyRate = calcRate * 60;
   const calcHourlyRatePrecision5 = totalMinutes > 0 ? calcHourlyRate.toFixed(5) : '0';
   const calcHourlyRateCeil1 = totalMinutes > 0 ? (Math.ceil(calcHourlyRate * 10) / 10).toFixed(1) : '0';
 
-  // 과외 모드일 때는 시간당 20,000원 기준(분당 333.333...)
-  const standardRate = isTutoring ? (20000 / 60) : STANDARD_RATE_OPTIONS[rateIdx].rate;
-  const canJudge = totalMinutes > 0 && (parseFloat(fee) || 0) > 0;
-  
-  // 과외는 실제 시간당 요금이 20,000원 이하여야 함
-  const isCompliant = isTutoring 
-    ? (calcRate * 60) <= 20000.01 
+  const hasRateSelected = isTutoring || rateIdx !== '';
+  const standardRate = isTutoring
+    ? (20000 / 60)
+    : (rateIdx !== '' ? STANDARD_RATE_OPTIONS[rateIdx].rate : 0);
+
+  const canJudge = hasRateSelected && totalMinutes > 0 && (parseFloat(fee) || 0) > 0;
+
+  const isCompliant = isTutoring
+    ? (calcRate * 60) <= 20000.01
     : parseFloat(calcRateCeil1) <= standardRate;
 
   const maxAllowedFee = isTutoring
     ? Math.floor((totalMinutes / 60) * 20000)
     : Math.floor(standardRate * totalMinutes);
 
-  const borderColor = !canJudge ? 'var(--border-color)' : isCompliant ? '#bbf7d0' : '#fca5a5';
-  const bgColor     = !canJudge ? 'var(--bg-card)'     : isCompliant ? '#f0fdf4' : '#fff1f2';
-  const badgeBg     = !canJudge ? '#94a3b8'            : isCompliant ? '#16a34a' : '#dc2626';
-
-  const sectionLabel = (text, color = 'var(--text-muted)', barColor = 'var(--text-muted)') => (
-    <div style={{ fontSize: '0.88rem', fontWeight: '700', color, letterSpacing: '0.02em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-      <span style={{ display: 'inline-block', width: '2.5px', height: '12px', borderRadius: '1.5px', backgroundColor: barColor, flexShrink: 0 }} />
-      {text}
-    </div>
-  );
-
-  // 단계 선택 여부 플래그
-  const isRateSelected = isTutoring || !isEditingRate;
-  const isDmSelected = dm !== '';
-  const isWcSelected = wc !== '';
-  const isWkSelected = wk !== '';
-  const showRightColumn = isDmSelected && isWcSelected && isWkSelected;
+  const statusColor = !canJudge ? '#6b7280' : isCompliant ? '#16a34a' : '#dc2626';
+  const headerBg = !canJudge ? '#f9fafb' : isCompliant ? '#f0fdf4' : '#fff1f2';
+  const borderColor = !canJudge ? '#d1d5db' : isCompliant ? '#86efac' : '#fca5a5';
 
   return (
-    <div className="tuition-card" style={{ borderRadius: '12px', overflow: 'hidden', border: `1.5px solid ${borderColor}`, boxShadow: 'var(--shadow-sm)' }}>
-      {/* 헤더 */}
-      <div style={{ padding: '8px 12px', backgroundColor: bgColor, borderBottom: `1px solid ${borderColor}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--text-main)' }}>과목 {index + 1}</span>
-          <span style={{ fontWeight: '700', fontSize: '0.8rem', padding: '2px 8px', borderRadius: '20px', backgroundColor: badgeBg, color: '#fff', whiteSpace: 'nowrap' }}>
-            {!canJudge ? '입력중' : isCompliant ? '✅ 적합' : '❌ 부적합'}
+    <div style={{
+      border: `1.5px solid ${borderColor}`,
+      borderRadius: '10px',
+      overflow: 'hidden',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+    }}>
+      {/* 카드 헤더 */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '8px 14px',
+        backgroundColor: headerBg,
+        borderBottom: `1px solid ${borderColor}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: '800', fontSize: '1rem', color: '#111827' }}>
+            과목 {index + 1}
+          </span>
+          <span style={{
+            fontSize: '0.78rem',
+            fontWeight: '700',
+            color: '#fff',
+            backgroundColor: statusColor,
+            padding: '2px 9px',
+            borderRadius: '20px',
+          }}>
+            {!canJudge ? '입력 중' : isCompliant ? '✓ 적합' : '✗ 부적합'}
           </span>
         </div>
-        <button onClick={() => onRemove(id)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1rem', cursor: 'pointer', padding: '0 2px' }}>✕</button>
+        <button
+          onClick={() => onRemove(id)}
+          style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '1rem', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+        >
+          ✕
+        </button>
       </div>
 
-      <div style={{ padding: '12px' }}>
-        {/* 강제 2열 구조 (그리드 설정: 1fr 1fr) */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: showRightColumn ? '1fr 1fr' : '1fr', 
-          gap: '12px' 
-        }}>
-          
-          {/* [왼쪽 열]: 교습분야 + 교습시간 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* 1. 교습 분야 선택 (학원/교습소만) */}
-            {!isTutoring && (
-              <div>
-                {sectionLabel('1. 교습 분야 선택', 'var(--primary)', 'var(--primary)')}
-                {!isEditingRate ? (
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between', 
-                    padding: '6px 10px', 
-                    border: '1.5px solid var(--border-color)', 
-                    borderRadius: '8px', 
-                    backgroundColor: '#f8fafc',
-                    fontWeight: '700',
-                    color: 'var(--text-main)',
-                    fontSize: '0.9rem'
-                  }}>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {STANDARD_RATE_OPTIONS[rateIdx].label} ({STANDARD_RATE_OPTIONS[rateIdx].rate}원/분)
-                    </span>
-                    <button 
-                      onClick={() => {
-                        onUpdate(id, 'isEditingRate', true);
-                        onUpdate(id, 'dm', '');
-                        onUpdate(id, 'wc', '');
-                        onUpdate(id, 'wk', '');
-                      }} 
-                      style={{ padding: '2px 6px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '700', cursor: 'pointer', marginLeft: '4px' }}
-                    >
-                      변경
-                    </button>
-                  </div>
-                ) : (
-                  <select 
-                    size={6}
-                    value={rateIdx} 
-                    onChange={e => {
-                      onUpdate(id, 'rateIdx', Number(e.target.value));
-                      onUpdate(id, 'isEditingRate', false);
-                    }}
-                    style={{ width: '100%', padding: '4px 6px', border: '2px solid var(--primary)', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700', background: '#eff6ff', color: 'var(--primary)', outline: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
-                    {STANDARD_RATE_OPTIONS.map((o, i) => (
-                      <option key={i} value={i} style={{ padding: '4px 6px', borderRadius: '4px', cursor: 'pointer' }}>{o.label} ({o.rate}원/분)</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            )}
+      {/* 카드 본문 */}
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#fff' }}>
 
-            {/* 2. 월 교습시간 구성 */}
-            {isRateSelected && (
-              <div>
-                {sectionLabel(isTutoring ? '1. 월 교습시간(분)' : '2. 월 교습시간(분)', 'var(--primary)', 'var(--primary)')}
-                
-                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '3px', padding: '6px 10px', borderRadius: '8px', backgroundColor: '#f0f4ff', border: '1.5px solid #c7d2fe', fontSize: '0.9rem', lineHeight: '1.8' }}>
-                  <span style={{ fontWeight: '700', color: '#475569' }}>일</span>
-                  
-                  {!isDmSelected ? (
-                    <PresetPicker value={dm} onChange={val => onUpdate(id, 'dm', val)} presets={[50, 60, 80, 90, 120]} width="52px" />
-                  ) : (
-                    <span 
-                      onClick={() => {
-                        onUpdate(id, 'dm', '');
-                        onUpdate(id, 'wc', '');
-                        onUpdate(id, 'wk', '');
-                      }}
-                      style={{ fontWeight: '800', color: 'var(--primary)', borderBottom: '1.5px dashed var(--primary)', cursor: 'pointer', padding: '0 1px' }}
-                    >
-                      {dm}분
-                    </span>
-                  )}
-
-                  {isDmSelected && (
-                    <>
-                      <span style={{ fontWeight: '700', color: '#475569' }}>×주</span>
-                      {!isWcSelected ? (
-                        <PresetPicker value={wc} onChange={val => onUpdate(id, 'wc', val)} presets={[1, 2, 3, 4, 5]} width="45px" />
-                      ) : (
-                        <span 
-                          onClick={() => {
-                            onUpdate(id, 'wc', '');
-                            onUpdate(id, 'wk', '');
-                          }}
-                          style={{ fontWeight: '800', color: 'var(--primary)', borderBottom: '1.5px dashed var(--primary)', cursor: 'pointer', padding: '0 1px' }}
-                        >
-                          {wc}회
-                        </span>
-                      )}
-                    </>
-                  )}
-
-                  {isDmSelected && isWcSelected && (
-                    <>
-                      <span style={{ fontWeight: '700', color: '#475569' }}>×</span>
-                      {!isWkSelected ? (
-                        <PresetPicker value={wk} onChange={val => onUpdate(id, 'wk', val)} presets={[4, 4.2, 4.3]} width="48px" />
-                      ) : (
-                        <span 
-                          onClick={() => onUpdate(id, 'wk', '')}
-                          style={{ fontWeight: '800', color: 'var(--primary)', borderBottom: '1.5px dashed var(--primary)', cursor: 'pointer', padding: '0 1px' }}
-                        >
-                          {wk}주
-                        </span>
-                      )}
-                    </>
-                  )}
-
-                  {isDmSelected && isWcSelected && isWkSelected && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', marginLeft: '3px' }}>
-                      <span style={{ fontWeight: '700', color: '#475569' }}>=</span>
-                      <strong style={{ color: '#1e40af', fontSize: '0.98rem' }}>{totalMinutes.toLocaleString()}분</strong>
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
+        {/* 1. 교습 분야 선택 (학원/교습소만) */}
+        {!isTutoring && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              1. 교습 분야 선택
+            </span>
+            <select
+              value={rateIdx}
+              onChange={e => onUpdate(id, 'rateIdx', e.target.value === '' ? '' : Number(e.target.value))}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                border: '1.5px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '0.95rem',
+                color: rateIdx === '' ? '#9ca3af' : '#111827',
+                fontWeight: rateIdx === '' ? '400' : '600',
+                background: '#fff',
+                outline: 'none',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                appearance: 'auto',
+              }}
+            >
+              <option value="">— 분야 선택 —</option>
+              {STANDARD_RATE_OPTIONS.map((o, i) => (
+                <option key={i} value={i}>{o.label} ({o.rate}원/분)</option>
+              ))}
+            </select>
           </div>
+        )}
 
-          {/* [오른쪽 열]: 교습비 + 단가출력 */}
-          {showRightColumn && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              
-              {/* 3. 교습비 */}
-              <div>
-                {sectionLabel(isTutoring ? '2. 교습비(원)' : '3. 교습비(원)', 'var(--primary)', 'var(--primary)')}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', padding: '6px 10px', border: '1.5px solid #bfdbfe', borderRadius: '8px', backgroundColor: '#eff6ff' }}>
-                  <input type="text" inputMode="numeric"
-                    value={fee === '' ? '' : Number(fee).toLocaleString()}
-                    onChange={e => {
-                      const raw = e.target.value.replace(/,/g, '');
-                      if (raw === '' || /^\d+$/.test(raw)) onUpdate(id, 'fee', raw);
-                    }}
-                    placeholder="교습비 입력"
-                    style={{ flex: 1, minWidth: '60px', textAlign: 'right', padding: '2px 4px', border: 'none', borderBottom: '2px solid var(--primary)', borderRadius: 0, background: 'transparent', fontSize: '0.98rem', fontWeight: '700', color: 'var(--primary)', outline: 'none', fontFamily: 'inherit' }}
-                  />
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>원</strong>
-                  {totalMinutes > 0 && (
-                    <span style={{ fontSize: '0.78rem', color: '#1e40af', backgroundColor: '#dbeafe', padding: '1.5px 5px', borderRadius: '4px', fontWeight: '750', marginLeft: 'auto' }}>
-                      (상한: {maxAllowedFee.toLocaleString()}원)
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* 4. 단가 출력 */}
-              <div>
-                {sectionLabel(isTutoring ? '3. 시간당단가' : '4. 분당단가', 'var(--primary)', 'var(--primary)')}
-                <div style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', fontSize: '0.9rem', lineHeight: '1.4' }}>
-                    {canJudge ? (
-                      <>
-                        <strong style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>
-                          {isTutoring ? `${Number(calcHourlyRatePrecision5).toLocaleString(undefined, {minimumFractionDigits: 5, maximumFractionDigits: 5})}원/시간` : `${calcRatePrecision5}원/분`}
-                        </strong>
-                        <span style={{ color: 'var(--text-muted)' }}>➔</span>
-                        <strong style={{ color: isCompliant ? '#16a34a' : '#dc2626', fontSize: '0.95rem' }}>
-                          {isTutoring ? `${Number(calcHourlyRateCeil1).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}원/시간` : `${calcRateCeil1}원/분`} 
-                        </strong>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>(올림)</span>
-                      </>
-                    ) : (
-                      <strong style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                        {isTutoring ? '0원/시간' : '0원/분'} (금액 입력대기)
-                      </strong>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          )}
-
+        {/* 2. 월 교습시간 */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px', fontSize: '0.95rem' }}>
+          <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0, marginRight: '4px' }}>
+            {isTutoring ? '1. 월 교습시간(분)' : '2. 월 교습시간(분)'}
+          </span>
+          <span style={{ color: '#374151', fontWeight: '500' }}>일</span>
+          <UnderlineInput value={dm} onChange={val => onUpdate(id, 'dm', val)} placeholder="0" width="52px" unit="분" />
+          <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
+          <span style={{ color: '#374151', fontWeight: '500' }}>주</span>
+          <UnderlineInput value={wc} onChange={val => onUpdate(id, 'wc', val)} placeholder="0" width="40px" unit="회" />
+          <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
+          <UnderlineInput value={wk} onChange={val => onUpdate(id, 'wk', val)} placeholder="4.3" width="46px" unit="주" />
+          <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>=</span>
+          <span style={{ fontWeight: '800', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af' }}>
+            {totalMinutes > 0 ? totalMinutes.toLocaleString() : '___'}
+          </span>
+          <span style={{ color: '#374151', fontWeight: '500' }}>분</span>
         </div>
 
-        {/* 다음 과목 계산 버튼 (마지막 카드에만 표시) */}
+        {/* 3. 교습비 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem' }}>
+          <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {isTutoring ? '2. 교습비(원)' : '3. 교습비(원)'}
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={fee === '' ? '' : Number(fee).toLocaleString()}
+            onChange={e => {
+              const raw = e.target.value.replace(/,/g, '');
+              if (raw === '' || /^\d+$/.test(raw)) onUpdate(id, 'fee', raw);
+            }}
+            placeholder="금액 입력"
+            style={{
+              width: '120px',
+              textAlign: 'right',
+              padding: '4px 2px',
+              border: 'none',
+              borderBottom: '1.5px solid #9ca3af',
+              background: 'transparent',
+              fontSize: '1.05rem',
+              fontWeight: '700',
+              color: '#111827',
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
+          <span style={{ fontSize: '0.95rem', color: '#374151', fontWeight: '600', flexShrink: 0 }}>원</span>
+          <span style={{ fontSize: '0.76rem', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', backgroundColor: totalMinutes > 0 ? '#eff6ff' : '#f1f5f9', padding: '2px 7px', borderRadius: '4px', fontWeight: '700', flexShrink: 0, border: `1px solid ${totalMinutes > 0 ? '#bfdbfe' : '#e2e8f0'}` }}>
+            상한 {totalMinutes > 0 ? maxAllowedFee.toLocaleString() : '—'}원
+          </span>
+        </div>
+
+        {/* 4. 분당단가 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem', flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {isTutoring ? '3. 시간당단가' : '4. 분당단가'}
+          </span>
+          {canJudge ? (
+            <>
+              <span style={{ color: '#374151', fontWeight: '500' }}>
+                {isTutoring ? calcHourlyRatePrecision5 : calcRatePrecision5}원
+              </span>
+              <span style={{ color: '#9ca3af', fontWeight: '600' }}>→</span>
+              <span style={{ fontWeight: '800', color: statusColor }}>
+                {isTutoring
+                  ? `${Number(calcHourlyRateCeil1).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}원/시간`
+                  : `${calcRateCeil1}원/분`}
+              </span>
+              <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>(올림)</span>
+            </>
+          ) : (
+            <span style={{ color: '#9ca3af' }}>—</span>
+          )}
+        </div>
+
+
+        {/* 다음 과목 버튼 */}
         {isLast && (
           <button
             onClick={onAdd}
-            disabled={!canJudge}
-            style={{ marginTop: '12px', width: '100%', padding: '9px', backgroundColor: canJudge ? 'var(--primary)' : '#cbd5e1', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.95rem', fontWeight: '700', cursor: canJudge ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-            + 다음 과목
+            style={{
+              marginTop: '2px',
+              width: '100%',
+              padding: '10px',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: '1.5px dashed #d1d5db',
+              borderRadius: '8px',
+              fontSize: '0.9rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              letterSpacing: '0.02em',
+            }}
+          >
+            + 과목 추가
           </button>
         )}
       </div>
