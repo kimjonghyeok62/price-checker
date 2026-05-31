@@ -3,12 +3,11 @@ import './App.css';
 import TuitionReviewTab from './components/TuitionReviewTab';
 import { printTuitionForm, printTuitionFormExternal } from './utils/generateTuitionPDF';
 import { downloadTuitionInternalDOCX, downloadTuitionExternalDOCX } from './utils/generateTuitionDOCX';
-import { downloadTuitionInternalHWPX, downloadTuitionExternalHWPX } from './utils/generateTuitionHWPX';
 import { parseExcelTuition } from './utils/parseExcelTuition';
 import { fetchGoogleSheetData, transformAcademyData, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
 
 export default function App() {
-  const [tab, setTab] = useState('review'); // 'review' | 'search' | 'excel'
+  const [tab, setTab] = useState('review'); // 'review' | 'tutoring' | 'excel'
 
   // 학원 검색 탭
   const [academies, setAcademies] = useState([]);
@@ -89,12 +88,17 @@ export default function App() {
   }
 
   const tabStyle = (active) => ({
-    flex: 1, padding: '9px 0', border: 'none',
-    borderBottom: active ? '2px solid var(--primary)' : '2px solid transparent',
-    background: 'none', cursor: 'pointer',
-    fontSize: '0.88rem', fontWeight: active ? '700' : '500',
+    flex: 1,
+    padding: '10px 16px',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1.02rem',
+    fontWeight: '700',
+    transition: 'all 0.2s ease',
+    backgroundColor: active ? '#ffffff' : 'transparent',
     color: active ? 'var(--primary)' : 'var(--text-muted)',
-    transition: 'all 0.15s',
+    boxShadow: active ? 'var(--shadow-sm)' : 'none',
   });
 
   return (
@@ -108,18 +112,29 @@ export default function App() {
             <line x1="12" y1="17" x2="12" y2="21"/>
           </svg>
         </div>
-        <h1 className="app-title">교습비 검토</h1>
+        <h1 className="app-title">교습비 변경 및 출력</h1>
       </div>
 
       {/* 탭 */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '20px' }}>
-        <button style={tabStyle(tab === 'review')} onClick={() => handleTabChange('review')}>교습비 검토</button>
-        <button style={tabStyle(tab === 'search')} onClick={() => handleTabChange('search')}>학원 검색</button>
-        <button style={tabStyle(tab === 'excel')} onClick={() => handleTabChange('excel')}>업로드</button>
+      <div style={{
+        display: 'flex',
+        backgroundColor: '#f1f5f9',
+        padding: '4px',
+        borderRadius: '10px',
+        marginBottom: '24px',
+        gap: '4px',
+        alignItems: 'stretch'
+      }}>
+        <button style={tabStyle(tab === 'review')} onClick={() => setTab('review')}>교습비 변경<br />(학원,교습소)</button>
+        <button style={tabStyle(tab === 'tutoring')} onClick={() => setTab('tutoring')}>교습비 변경<br />(과외)</button>
+        <button style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>게시표 출력</button>
       </div>
 
-      {/* ── 탭: 교습비 검토 ── */}
-      {tab === 'review' && <TuitionReviewTab />}
+      {/* ── 탭: 교습비 변경(학원,교습소) ── */}
+      {tab === 'review' && <TuitionReviewTab mode="academy" />}
+
+      {/* ── 탭: 교습비 변경(과외) ── */}
+      {tab === 'tutoring' && <TuitionReviewTab mode="tutoring" />}
 
       {/* ── 탭: 학원 검색 ── */}
       {tab === 'search' && (
@@ -205,6 +220,38 @@ export default function App() {
       {/* ── 탭: 업로드 ── */}
       {tab === 'excel' && (
         <>
+          <div style={{
+            backgroundColor: '#f8fafc',
+            border: '1.5px solid var(--border-color)',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            marginBottom: '20px',
+            fontSize: '0.88rem',
+            lineHeight: '1.6',
+            color: 'var(--text-main)'
+          }}>
+            <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              나이스 엑셀 파일 다운로드 방법 안내
+            </div>
+            <div style={{ color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '650' }}>
+              방법: 나이스 학원 방문 ➔ 경기도교육청 선택 ➔ 학원 교습소 정보 조회
+            </div>
+            <ol style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+              <li>
+                <a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>
+                  나이스 대국민 학원 서비스
+                </a>에 접속합니다.
+              </li>
+              <li>본인 지역 교육청(예: 경기도교육청)을 선택합니다.</li>
+              <li>[학원 교습소 정보 조회] 메뉴에서 학원 검색 후 교습비 정보를 엑셀 파일로 다운로드합니다.</li>
+            </ol>
+          </div>
+
           <div
             onClick={() => fileInputRef.current?.click()}
             style={{
@@ -299,7 +346,7 @@ function PrintButtons({ academy }) {
     finally { setDownloading(''); }
   }
 
-  const rowStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '8px' };
+  const rowStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' };
   const labelStyle = { fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px', letterSpacing: '0.04em' };
 
   function BtnPDF({ onClick, label }) {
@@ -313,13 +360,6 @@ function PrintButtons({ academy }) {
     return (
       <button onClick={onClick} disabled={!!downloading} style={{ padding: '10px 6px', backgroundColor: busy ? '#e0e7ff' : '#eff6ff', color: '#1d4ed8', border: '1.5px solid #93c5fd', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '600', cursor: downloading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: downloading && !busy ? 0.6 : 1 }}>
         <DocxIcon busy={busy} /> {busy ? '생성중...' : label}
-      </button>
-    );
-  }
-  function BtnHWPX({ onClick, label, busy }) {
-    return (
-      <button onClick={onClick} disabled={!!downloading} style={{ padding: '10px 6px', backgroundColor: busy ? '#fce7f3' : '#fdf2f8', color: '#be185d', border: '1.5px solid #f9a8d4', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '600', cursor: downloading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: downloading && !busy ? 0.6 : 1 }}>
-        <HwpxIcon busy={busy} /> {busy ? '생성중...' : label}
       </button>
     );
   }
@@ -338,7 +378,6 @@ function PrintButtons({ academy }) {
         <div style={rowStyle}>
           <BtnPDF onClick={() => printTuitionForm(academy)} label="PDF" />
           <BtnDOCX onClick={() => withLoading('int-docx', () => downloadTuitionInternalDOCX(academy))} label="DOCX" busy={downloading === 'int-docx'} />
-          <BtnHWPX onClick={() => withLoading('int-hwpx', () => downloadTuitionInternalHWPX(academy))} label="HWPX" busy={downloading === 'int-hwpx'} />
         </div>
       </div>
 
@@ -348,7 +387,6 @@ function PrintButtons({ academy }) {
         <div style={rowStyle}>
           <BtnPDF onClick={() => printTuitionFormExternal(academy)} label="PDF" />
           <BtnDOCX onClick={() => withLoading('ext-docx', () => downloadTuitionExternalDOCX(academy))} label="DOCX" busy={downloading === 'ext-docx'} />
-          <BtnHWPX onClick={() => withLoading('ext-hwpx', () => downloadTuitionExternalHWPX(academy))} label="HWPX" busy={downloading === 'ext-hwpx'} />
         </div>
       </div>
     </div>
@@ -368,9 +406,4 @@ function DocxIcon({ busy }) {
   return busy
     ? <span style={{ fontSize: '0.9rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
     : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>;
-}
-function HwpxIcon({ busy }) {
-  return busy
-    ? <span style={{ fontSize: '0.9rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
-    : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
 }
