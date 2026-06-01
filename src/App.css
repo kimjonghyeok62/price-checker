@@ -55,25 +55,25 @@ body {
   }
   /* 모바일 탭 버튼 스타일 조정 */
   .tab-btn {
-    padding: 8px 1px !important;
+    padding: 14px 4px !important;
     border-radius: 8px !important;
   }
-  /* 모바일 탭 아이콘 축소 */
+  /* 모바일 탭 아이콘 */
   .tab-icon {
-    width: 13px !important;
-    height: 13px !important;
-    margin-bottom: 1px !important;
+    width: 18px !important;
+    height: 18px !important;
+    margin-bottom: 3px !important;
   }
   /* 모바일에서 제목 폰트 크기 최적화 */
   .app-title {
-    font-size: 1.48rem !important;
+    font-size: 2rem !important;
   }
   /* 모바일 탭 텍스트 최적화 */
   .tab-maintext {
-    font-size: 0.88rem !important;
+    font-size: 1rem !important;
   }
   .tab-subtext {
-    font-size: 0.7rem !important;
+    font-size: 0.82rem !important;
   }
 }
 

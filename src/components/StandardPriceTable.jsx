@@ -60,7 +60,7 @@ export default function StandardPriceTable({ onBack }) {
               ['경기', '광주하남', '예능', '예능', '무용', '유,초,중,고', '212', '2024-12-26'],
               ['경기', '광주하남', '예능', '예능', '무용', '입시', '255', '2024-12-26'],
               ['경기', '광주하남', '정보', '정보', '정보', '일반', '230', '2024-12-26'],
-              ['경기', '광주하남', '기타', '기타', '기타', '일반(직업기술, 인문사회, 기예, 공에 등)', '230', '2024-12-26'],
+              ['경기', '광주하남', '기타', '기타', '기타', '일반', '230', '2024-12-26'],
             ].map((row, idx) => (
               <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: idx % 2 === 0 ? '#fff' : '#f8fafc' }}>
                 {row.map((cell, cIdx) => (
@@ -136,7 +136,7 @@ export default function StandardPriceTable({ onBack }) {
             <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
               <td style={{ padding: '12px', borderRight: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '500' }}>기타</td>
               <td style={{ padding: '12px', borderRight: '1px solid #e2e8f0', textAlign: 'center' }}>기타</td>
-              <td style={{ padding: '12px', color: '#475569', lineHeight: '1.5' }}>그 밖의 교습과정</td>
+              <td style={{ padding: '12px', color: '#475569', lineHeight: '1.5' }}>직업기술, 인문사회, 기예, 공예 등 그 밖의 교습과정</td>
             </tr>
           </tbody>
         </table>
