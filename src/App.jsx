@@ -89,30 +89,41 @@ export default function App() {
 
   const tabStyle = (active) => ({
     flex: 1,
-    padding: '10px 16px',
+    padding: '10px 4px',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
-    fontSize: '1.02rem',
-    fontWeight: '700',
     transition: 'all 0.2s ease',
     backgroundColor: active ? '#ffffff' : 'transparent',
     color: active ? 'var(--primary)' : 'var(--text-muted)',
     boxShadow: active ? 'var(--shadow-sm)' : 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '3px',
+    lineHeight: '1.25',
   });
 
   return (
     <div className="container">
       {/* 헤더 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-        <div className="app-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-          </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '22px', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="app-icon" style={{ width: '32px', height: '32px', borderRadius: '9px' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 11 2 2 4-4"/>
+            </svg>
+          </div>
+          <h1 className="app-title">교습비 변경 및 출력</h1>
         </div>
-        <h1 className="app-title">교습비 변경 및 출력</h1>
+        <div className="app-subtitle" style={{ marginTop: '5px' }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          경기도광주하남교육지원청 교습비 기준
+        </div>
       </div>
 
       {/* 탭 */}
@@ -125,9 +136,18 @@ export default function App() {
         gap: '4px',
         alignItems: 'stretch'
       }}>
-        <button style={tabStyle(tab === 'review')} onClick={() => setTab('review')}>교습비 변경<br />(학원,교습소)</button>
-        <button style={tabStyle(tab === 'tutoring')} onClick={() => setTab('tutoring')}>교습비 변경<br />(과외)</button>
-        <button style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>게시표 출력<br /><span style={{ fontSize: '0.72rem', fontWeight: '500', opacity: 0.75 }}>(PC용)</span></button>
+        <button className="tab-btn" style={tabStyle(tab === 'review')} onClick={() => setTab('review')}>
+          <span className="tab-maintext">교습비 변경</span>
+          <span className="tab-subtext">(학원,교습소)</span>
+        </button>
+        <button className="tab-btn" style={tabStyle(tab === 'tutoring')} onClick={() => setTab('tutoring')}>
+          <span className="tab-maintext">교습비 변경</span>
+          <span className="tab-subtext">(과외)</span>
+        </button>
+        <button className="tab-btn" style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>
+          <span className="tab-maintext">게시표 출력</span>
+          <span className="tab-subtext">(PC용)</span>
+        </button>
       </div>
 
       {/* ── 탭: 교습비 변경(학원,교습소) ── */}

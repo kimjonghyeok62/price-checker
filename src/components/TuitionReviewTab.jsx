@@ -285,6 +285,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             <select
               value={rateIdx}
               onChange={e => onUpdate(id, 'rateIdx', e.target.value === '' ? '' : Number(e.target.value))}
+              className="tuition-select"
               style={{
                 flex: 1,
                 padding: '6px 10px',
@@ -309,44 +310,54 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
         )}
 
         {/* 2. 월 교습시간 */}
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px', fontSize: '0.95rem' }}>
-          <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0, marginRight: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: '4px 6px', fontSize: '0.95rem' }}>
+          <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0, marginRight: '4px', minWidth: '115px' }}>
             {isTutoring ? '1. 월 교습시간(분)' : '2. 월 교습시간(분)'}
           </span>
-          <span style={{ color: '#374151', fontWeight: '500' }}>일</span>
-          <DropdownSelect
-            options={['50', '60', '80', '90', '120']}
-            value={dm}
-            onChange={val => onUpdate(id, 'dm', val)}
-            unit="분"
-            placeholder="0"
-            inputWidth="52px"
-          />
-          <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
-          <span style={{ color: '#374151', fontWeight: '500' }}>주</span>
-          <DropdownSelect
-            options={['1', '2', '3', '4', '5']}
-            value={wc}
-            onChange={val => onUpdate(id, 'wc', val)}
-            unit="회"
-            placeholder="0"
-            inputWidth="40px"
-          />
-          <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
-          <span style={{ color: '#374151', fontWeight: '500' }}>월</span>
-          <DropdownSelect
-            options={['4', '4.1', '4.2', '4.3']}
-            value={wk}
-            onChange={val => onUpdate(id, 'wk', val)}
-            unit="주"
-            placeholder="4.3"
-            inputWidth="46px"
-          />
-          <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>=</span>
-          <strong style={{ fontWeight: '900', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', WebkitTextStroke: totalMinutes > 0 ? '0.4px #1d4ed8' : 'none' }}>
-            {totalMinutes > 0 ? totalMinutes.toLocaleString() : '___'}
-          </strong>
-          <span style={{ color: '#374151', fontWeight: '500' }}>분</span>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px', flex: 1, minWidth: '200px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+              <span style={{ color: '#374151', fontWeight: '500' }}>일</span>
+              <DropdownSelect
+                options={['50', '60', '80', '90', '120']}
+                value={dm}
+                onChange={val => onUpdate(id, 'dm', val)}
+                unit="분"
+                placeholder="0"
+                inputWidth="52px"
+              />
+              <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+              <span style={{ color: '#374151', fontWeight: '500' }}>주</span>
+              <DropdownSelect
+                options={['1', '2', '3', '4', '5']}
+                value={wc}
+                onChange={val => onUpdate(id, 'wc', val)}
+                unit="회"
+                placeholder="0"
+                inputWidth="40px"
+              />
+              <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+              <span style={{ color: '#374151', fontWeight: '500' }}>월</span>
+              <DropdownSelect
+                options={['4', '4.1', '4.2', '4.3']}
+                value={wk}
+                onChange={val => onUpdate(id, 'wk', val)}
+                unit="주"
+                placeholder="4.3"
+                inputWidth="46px"
+              />
+              <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>=</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+              <strong style={{ fontWeight: '900', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', WebkitTextStroke: totalMinutes > 0 ? '0.4px #1d4ed8' : 'none' }}>
+                {totalMinutes > 0 ? totalMinutes.toLocaleString() : '________'}
+              </strong>
+              <span style={{ color: '#374151', fontWeight: '500', marginLeft: '2px' }}>분</span>
+            </span>
+          </div>
         </div>
 
         {/* 3. 교습비 */}

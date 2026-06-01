@@ -49,6 +49,41 @@ body {
     border-left: none !important;
     border-right: none !important;
   }
+  /* 모바일에서 교습 분야 선택 드롭다운 너비 축소 */
+  .tuition-select {
+    max-width: 242px !important;
+  }
+  /* 모바일 탭 버튼 스타일 조정 */
+  .tab-btn {
+    padding: 10px 2px !important;
+  }
+  /* 모바일에서 제목 폰트 크기 최적화 */
+  .app-title {
+    font-size: 1.48rem !important;
+  }
+}
+
+/* 탭 텍스트 스타일 정의 */
+.tab-maintext {
+  font-size: 1.02rem;
+  font-weight: 850;
+  display: block;
+}
+.tab-subtext {
+  font-size: 0.8rem;
+  font-weight: 650;
+  display: block;
+  opacity: 0.9;
+  margin-top: 1px;
+}
+
+@media (max-width: 480px) {
+  .tab-maintext {
+    font-size: 0.92rem; /* 모바일에서도 크고 굵은 글씨 유지 */
+  }
+  .tab-subtext {
+    font-size: 0.74rem; /* 기존보다 서브텍스트 크기를 키워 가독성 향상 */
+  }
 }
 
 h1, h2, h3 {
@@ -102,9 +137,27 @@ h1, h2, h3 {
   flex-shrink: 0;
 }
 .app-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--text-main);
+  font-size: 1.85rem;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+.app-subtitle {
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 2px 9px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: -0.02em;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
 /* 기록 행 */
