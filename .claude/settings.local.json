@@ -15,7 +15,9 @@
       "Bash(vercel whoami:*)",
       "Bash(vercel --yes --prod)",
       "Bash(vercel ls:*)",
-      "Bash(vercel alias:*)"
+      "Bash(vercel alias:*)",
+      "Bash(git push:*)",
+      "Bash(npm audit:*)"
     ]
   }
 }
