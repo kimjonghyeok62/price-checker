@@ -129,6 +129,77 @@ function UnderlineInput({ value, onChange, placeholder, width = '60px', unit, ty
   );
 }
 
+// ─── 드롭다운 + 직접 입력 ────────────────────────────────────
+function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidth = '60px' }) {
+  const CUSTOM = '__custom__';
+  const isCustom = value !== '' && !options.includes(String(value));
+  const selectVal = isCustom ? CUSTOM : (value === '' ? '' : String(value));
+
+  function handleChange(e) {
+    if (e.target.value === CUSTOM) {
+      onChange('');
+    } else {
+      onChange(e.target.value);
+    }
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+      <select
+        value={isCustom ? CUSTOM : selectVal}
+        onChange={handleChange}
+        style={{
+          padding: '3px 2px',
+          border: 'none',
+          borderBottom: '1.5px solid #9ca3af',
+          borderRadius: '0',
+          fontSize: '1rem',
+          color: value === '' ? '#9ca3af' : '#111827',
+          fontWeight: value === '' ? '400' : '600',
+          background: 'transparent',
+          outline: 'none',
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          appearance: 'auto',
+          maxWidth: '62px',
+        }}
+      >
+        <option value="">선택</option>
+        {options.map(opt => (
+          <option key={opt} value={opt}>{opt}{unit}</option>
+        ))}
+        <option value={CUSTOM}>입력</option>
+      </select>
+      {isCustom && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder={placeholder}
+            autoFocus
+            style={{
+              width: inputWidth,
+              textAlign: 'center',
+              padding: '3px 2px',
+              border: 'none',
+              borderBottom: '1.5px solid #9ca3af',
+              background: 'transparent',
+              fontSize: '1rem',
+              fontWeight: '600',
+              color: '#111827',
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
+          {unit && <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: '500' }}>{unit}</span>}
+        </span>
+      )}
+    </span>
+  );
+}
+
 // ─── 개별 과목 카드 컴포넌트 ─────────────────────────────────
 function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
   const { id, rateIdx, dm, wc, wk, fee } = sub;
@@ -243,16 +314,38 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             {isTutoring ? '1. 월 교습시간(분)' : '2. 월 교습시간(분)'}
           </span>
           <span style={{ color: '#374151', fontWeight: '500' }}>일</span>
-          <UnderlineInput value={dm} onChange={val => onUpdate(id, 'dm', val)} placeholder="0" width="52px" unit="분" />
+          <DropdownSelect
+            options={['50', '60', '80', '90', '120']}
+            value={dm}
+            onChange={val => onUpdate(id, 'dm', val)}
+            unit="분"
+            placeholder="0"
+            inputWidth="52px"
+          />
           <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
           <span style={{ color: '#374151', fontWeight: '500' }}>주</span>
-          <UnderlineInput value={wc} onChange={val => onUpdate(id, 'wc', val)} placeholder="0" width="40px" unit="회" />
+          <DropdownSelect
+            options={['1', '2', '3', '4', '5']}
+            value={wc}
+            onChange={val => onUpdate(id, 'wc', val)}
+            unit="회"
+            placeholder="0"
+            inputWidth="40px"
+          />
           <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
-          <UnderlineInput value={wk} onChange={val => onUpdate(id, 'wk', val)} placeholder="4.3" width="46px" unit="주" />
+          <span style={{ color: '#374151', fontWeight: '500' }}>월</span>
+          <DropdownSelect
+            options={['4', '4.1', '4.2', '4.3']}
+            value={wk}
+            onChange={val => onUpdate(id, 'wk', val)}
+            unit="주"
+            placeholder="4.3"
+            inputWidth="46px"
+          />
           <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>=</span>
-          <span style={{ fontWeight: '800', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af' }}>
+          <strong style={{ fontWeight: '900', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', WebkitTextStroke: totalMinutes > 0 ? '0.4px #1d4ed8' : 'none' }}>
             {totalMinutes > 0 ? totalMinutes.toLocaleString() : '___'}
-          </span>
+          </strong>
           <span style={{ color: '#374151', fontWeight: '500' }}>분</span>
         </div>
 
@@ -279,7 +372,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
               background: 'transparent',
               fontSize: '1.05rem',
               fontWeight: '700',
-              color: '#111827',
+              color: '#1d4ed8',
               outline: 'none',
               fontFamily: 'inherit',
             }}
@@ -301,15 +394,15 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 {isTutoring ? calcHourlyRatePrecision5 : calcRatePrecision5}원
               </span>
               <span style={{ color: '#9ca3af', fontWeight: '600' }}>→</span>
-              <span style={{ fontWeight: '800', color: statusColor }}>
+              <strong style={{ fontWeight: '900', color: '#1d4ed8', fontSize: '1rem', WebkitTextStroke: '0.4px #1d4ed8' }}>
                 {isTutoring
                   ? `${Number(calcHourlyRateCeil1).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}원/시간`
                   : `${calcRateCeil1}원/분`}
-              </span>
+              </strong>
               <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>(올림)</span>
             </>
           ) : (
-            <span style={{ color: '#9ca3af' }}>—</span>
+            <span style={{ color: '#9ca3af' }}>_____ 원/분 (자동계산)</span>
           )}
         </div>
 
