@@ -223,9 +223,19 @@ export function printTuitionForm(academy) {
 </body>
 </html>`;
 
-    const printWindow = window.open('', '_blank', 'width=1000,height=800');
-    printWindow.document.write(html);
-    printWindow.document.close();
+    _openPrintWindow(html);
+}
+
+function _openPrintWindow(html) {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if (!w) {
+        // 팝업 차단된 경우 현재 탭에서 열기
+        window.location.href = url;
+    }
+    // 메모리 정리는 새 창이 열린 후 약간 지연
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 // ─── 외부용 헬퍼 ───────────────────────────────────────────────
@@ -433,7 +443,5 @@ export function printTuitionFormExternal(academy) {
 </body>
 </html>`;
 
-    const printWindow = window.open('', '_blank', 'width=1000,height=800');
-    printWindow.document.write(html);
-    printWindow.document.close();
+    _openPrintWindow(html);
 }
