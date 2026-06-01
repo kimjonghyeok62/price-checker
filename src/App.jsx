@@ -5,9 +5,11 @@ import { printTuitionForm, printTuitionFormExternal } from './utils/generateTuit
 import { downloadTuitionInternalDOCX, downloadTuitionExternalDOCX } from './utils/generateTuitionDOCX';
 import { parseExcelTuition } from './utils/parseExcelTuition';
 import { fetchGoogleSheetData, transformAcademyData, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
+import StandardPriceTable from './components/StandardPriceTable';
 
 export default function App() {
   const [tab, setTab] = useState('review'); // 'review' | 'tutoring' | 'excel'
+  const [showStandardPrices, setShowStandardPrices] = useState(false);
 
   // 학원 검색 탭
   const [academies, setAcademies] = useState([]);
@@ -106,6 +108,10 @@ export default function App() {
     transform: active ? 'scale(1.02)' : 'scale(1)',
   });
 
+  if (showStandardPrices) {
+    return <StandardPriceTable onBack={() => setShowStandardPrices(false)} />;
+  }
+
   return (
     <div className="container">
       {/* 헤더 */}
@@ -117,13 +123,43 @@ export default function App() {
               <path d="m9 11 2 2 4-4"/>
             </svg>
           </div>
-          <h1 className="app-title">교습비 변경 및 출력</h1>
+          <h1 className="app-title">교습비 관리</h1>
         </div>
-        <div className="app-subtitle" style={{ marginTop: '5px' }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 6L9 17l-5-5"/>
-          </svg>
-          경기도광주하남교육지원청 교습비 기준
+        <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+          <div className="app-subtitle">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            경기도광주하남교육지원청 교습비 기준
+          </div>
+          <button
+            onClick={() => setShowStandardPrices(true)}
+            style={{
+              padding: '3px 10px',
+              backgroundColor: '#0f172a',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #1e293b',
+              borderRadius: '20px',
+              color: '#f8fafc',
+              fontSize: '0.76rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            onMouseOver={e => { e.currentTarget.style.backgroundColor = '#1e293b'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseOut={e => { e.currentTarget.style.backgroundColor = '#0f172a'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="11" y1="8" x2="11" y2="14"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+            기준단가 보기
+          </button>
         </div>
       </div>
 
