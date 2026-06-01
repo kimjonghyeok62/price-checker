@@ -89,20 +89,21 @@ export default function App() {
 
   const tabStyle = (active) => ({
     flex: 1,
-    padding: '10px 4px',
-    border: 'none',
-    borderRadius: '8px',
+    padding: '12px 4px',
+    border: '1px solid ' + (active ? 'rgba(79, 70, 229, 0.08)' : 'transparent'),
+    borderRadius: '10px',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
+    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
     backgroundColor: active ? '#ffffff' : 'transparent',
     color: active ? 'var(--primary)' : 'var(--text-muted)',
-    boxShadow: active ? 'var(--shadow-sm)' : 'none',
+    boxShadow: active ? '0 4px 10px rgba(79, 70, 229, 0.12), 0 2px 4px rgba(0, 0, 0, 0.02)' : 'none',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '3px',
     lineHeight: '1.25',
+    transform: active ? 'scale(1.02)' : 'scale(1)',
   });
 
   return (
@@ -129,22 +130,37 @@ export default function App() {
       {/* 탭 */}
       <div style={{
         display: 'flex',
-        backgroundColor: '#f1f5f9',
-        padding: '4px',
-        borderRadius: '10px',
-        marginBottom: '24px',
-        gap: '4px',
-        alignItems: 'stretch'
+        backgroundColor: '#f8fafc',
+        padding: '5px',
+        borderRadius: '12px',
+        marginBottom: '26px',
+        gap: '6px',
+        alignItems: 'stretch',
+        border: '1px solid #e2e8f0',
+        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.03)'
       }}>
         <button className="tab-btn" style={tabStyle(tab === 'review')} onClick={() => setTab('review')}>
+          <svg className="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
           <span className="tab-maintext">교습비 변경</span>
           <span className="tab-subtext">(학원,교습소)</span>
         </button>
         <button className="tab-btn" style={tabStyle(tab === 'tutoring')} onClick={() => setTab('tutoring')}>
+          <svg className="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/>
+            <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
+          </svg>
           <span className="tab-maintext">교습비 변경</span>
           <span className="tab-subtext">(과외)</span>
         </button>
         <button className="tab-btn" style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>
+          <svg className="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
           <span className="tab-maintext">게시표 출력</span>
           <span className="tab-subtext">(PC용)</span>
         </button>

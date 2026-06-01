@@ -132,46 +132,58 @@ function UnderlineInput({ value, onChange, placeholder, width = '60px', unit, ty
 // ─── 드롭다운 + 직접 입력 ────────────────────────────────────
 function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidth = '60px' }) {
   const CUSTOM = '__custom__';
-  const isCustom = value !== '' && !options.includes(String(value));
-  const selectVal = isCustom ? CUSTOM : (value === '' ? '' : String(value));
+  const initialIsCustom = value !== '' && !options.includes(String(value));
+  const [isCustomMode, setIsCustomMode] = useState(initialIsCustom);
+
+  React.useEffect(() => {
+    if (value !== '') {
+      const isValInOptions = options.includes(String(value));
+      setIsCustomMode(!isValInOptions);
+    }
+  }, [value, options]);
 
   function handleChange(e) {
     if (e.target.value === CUSTOM) {
+      setIsCustomMode(true);
       onChange('');
     } else {
+      setIsCustomMode(false);
       onChange(e.target.value);
     }
   }
 
+  const selectVal = isCustomMode ? CUSTOM : (value === '' ? '' : String(value));
+
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-      <select
-        value={isCustom ? CUSTOM : selectVal}
-        onChange={handleChange}
-        style={{
-          padding: '3px 2px',
-          border: 'none',
-          borderBottom: '1.5px solid #9ca3af',
-          borderRadius: '0',
-          fontSize: '1rem',
-          color: value === '' ? '#9ca3af' : '#111827',
-          fontWeight: value === '' ? '400' : '600',
-          background: 'transparent',
-          outline: 'none',
-          fontFamily: 'inherit',
-          cursor: 'pointer',
-          appearance: 'auto',
-          maxWidth: '62px',
-        }}
-      >
-        <option value="">선택</option>
-        {options.map(opt => (
-          <option key={opt} value={opt}>{opt}{unit}</option>
-        ))}
-        <option value={CUSTOM}>입력</option>
-      </select>
-      {isCustom && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+      {!isCustomMode ? (
+        <select
+          value={selectVal}
+          onChange={handleChange}
+          style={{
+            padding: '3px 2px',
+            border: 'none',
+            borderBottom: '1.5px solid #9ca3af',
+            borderRadius: '0',
+            fontSize: '1rem',
+            color: value === '' ? '#9ca3af' : '#111827',
+            fontWeight: value === '' ? '400' : '600',
+            background: 'transparent',
+            outline: 'none',
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+            appearance: 'auto',
+            maxWidth: '62px',
+          }}
+        >
+          <option value="">선택</option>
+          {options.map(opt => (
+            <option key={opt} value={opt}>{opt}{unit}</option>
+          ))}
+          <option value={CUSTOM}>입력</option>
+        </select>
+      ) : (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '1px' }}>
           <input
             type="number"
             inputMode="numeric"
@@ -179,10 +191,13 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
             autoFocus
+            onBlur={() => {
+              if (value === '') setIsCustomMode(false);
+            }}
             style={{
-              width: inputWidth,
+              width: (parseFloat(inputWidth) - 8) + 'px',
               textAlign: 'center',
-              padding: '3px 2px',
+              padding: '3px 0px',
               border: 'none',
               borderBottom: '1.5px solid #9ca3af',
               background: 'transparent',
@@ -193,7 +208,7 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
               fontFamily: 'inherit',
             }}
           />
-          {unit && <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: '500' }}>{unit}</span>}
+          {unit && <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: '500', marginLeft: '1px' }}>{unit}</span>}
         </span>
       )}
     </span>
@@ -318,14 +333,14 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#374151', fontWeight: '500' }}>일</span>
               <DropdownSelect
-                options={['50', '60', '80', '90', '120']}
+                options={['50', '60', '70', '80', '90', '120', '180']}
                 value={dm}
                 onChange={val => onUpdate(id, 'dm', val)}
                 unit="분"
                 placeholder="0"
                 inputWidth="52px"
               />
-              <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
+              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.15rem' }}>×</span>
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#374151', fontWeight: '500' }}>주</span>
@@ -337,7 +352,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 placeholder="0"
                 inputWidth="40px"
               />
-              <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>×</span>
+              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.15rem' }}>×</span>
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#374151', fontWeight: '500' }}>월</span>
@@ -349,7 +364,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 placeholder="4.3"
                 inputWidth="46px"
               />
-              <span style={{ color: '#6b7280', fontWeight: '600', margin: '0 2px' }}>=</span>
+              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.15rem' }}>=</span>
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <strong style={{ fontWeight: '900', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', WebkitTextStroke: totalMinutes > 0 ? '0.4px #1d4ed8' : 'none' }}>
@@ -389,7 +404,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             }}
           />
           <span style={{ fontSize: '0.95rem', color: '#374151', fontWeight: '600', flexShrink: 0 }}>원</span>
-          <span style={{ fontSize: '0.76rem', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', backgroundColor: totalMinutes > 0 ? '#eff6ff' : '#f1f5f9', padding: '2px 7px', borderRadius: '4px', fontWeight: '700', flexShrink: 0, border: `1px solid ${totalMinutes > 0 ? '#bfdbfe' : '#e2e8f0'}` }}>
+          <span style={{ fontSize: '0.85rem', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', backgroundColor: totalMinutes > 0 ? '#eff6ff' : '#f1f5f9', padding: '2px 7px', borderRadius: '4px', fontWeight: '700', flexShrink: 0, border: `1px solid ${totalMinutes > 0 ? '#bfdbfe' : '#e2e8f0'}` }}>
             상한 {totalMinutes > 0 ? maxAllowedFee.toLocaleString() : '—'}원
           </span>
         </div>
