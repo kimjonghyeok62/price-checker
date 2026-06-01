@@ -198,7 +198,7 @@ export default function App() {
             <rect x="6" y="14" width="12" height="8"/>
           </svg>
           <span className="tab-maintext">게시표 출력</span>
-          <span className="tab-subtext">(PC용)</span>
+          <span className="tab-subtext">(나이스자료 이용)</span>
         </button>
       </div>
 
@@ -302,10 +302,12 @@ export default function App() {
         />
       )}
 
-      <footer className="app-footer">
-        <div>본 계산기는 교습비 신고·변경신청 전 자체 검토 목적으로만 활용하세요.</div>
-        <div>실제 신청은 관할 교육지원청에 문의하시기 바랍니다.</div>
-      </footer>
+      {tab !== 'excel' && (
+        <footer className="app-footer">
+          <div>본 계산기는 교습비 신고·변경신청 전 자체 검토 목적으로만 활용하세요.</div>
+          <div>실제 신청은 관할 교육지원청에 문의하시기 바랍니다.</div>
+        </footer>
+      )}
     </div>
   );
 }
@@ -325,8 +327,8 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
       {/* 안내 박스 */}
       <div style={{
         backgroundColor: '#f8fafc', border: '1.5px solid var(--border-color)',
-        borderRadius: '12px', padding: '16px 20px', marginBottom: '16px',
-        fontSize: '0.88rem', lineHeight: '1.6', color: 'var(--text-main)'
+        borderRadius: '12px', padding: '14px 18px', marginBottom: '16px',
+        fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-main)'
       }}>
         <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -334,31 +336,24 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
           </svg>
           나이스 엑셀 파일 다운로드 방법 안내
         </div>
-        <div style={{ color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '650' }}>
-          방법: 나이스 학원 방문 ➔ 경기도교육청 선택 ➔ 학원 교습소 정보 조회
-        </div>
-        <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+        <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontWeight: '600' }}>
           <li>
             <a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>
-              나이스 대국민 학원 서비스
-            </a>에 접속합니다.
+              나이스 학원
+            </a>{' '}방문
           </li>
-          <li>본인 지역 교육청(예: 경기도교육청)을 선택합니다.</li>
-          <li>[학원 교습소 정보 조회] 메뉴에서 학원 검색 후 교습비 정보를 엑셀 파일로 다운로드합니다.</li>
-          <li>아래 업로드 영역에 다운로드한 엑셀 파일을 선택하거나 끌어다 놓으세요.</li>
+          <li>경기도교육청 선택</li>
+          <li>학원 교습소 정보 조회 (엑셀내려받기)</li>
+          <li>아래 영역에 엑셀 업로드</li>
         </ol>
-        {/* 모바일 경고 */}
         <div style={{
           backgroundColor: '#fff7ed', border: '1px solid #fed7aa',
-          borderRadius: '8px', padding: '10px 12px',
-          display: 'flex', gap: '8px', alignItems: 'flex-start',
+          borderRadius: '8px', padding: '8px 12px',
+          display: 'flex', gap: '6px', alignItems: 'center',
+          fontSize: '0.85rem', color: '#92400e', fontWeight: '600',
         }}>
-          <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
-          <div style={{ fontSize: '0.82rem', color: '#92400e', lineHeight: '1.6' }}>
-            <strong>PC 전용 기능입니다.</strong><br />
-            나이스 모바일 앱·모바일 웹에서 받은 엑셀 파일은 열 구조가 달라 <strong>교습과정·교습비가 올바르게 출력되지 않습니다.</strong><br />
-            반드시 <strong>PC에서 나이스 접속 후 파일을 다운로드</strong>하여 사용하세요.
-          </div>
+          <span style={{ flexShrink: 0 }}>⚠️</span>
+          PC 전용 기능 (모바일은 불완전)
         </div>
       </div>
 
@@ -388,7 +383,7 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
           {excelLoading ? '파일 분석 중...' : dragOver ? '여기에 놓으세요!' : '엑셀 파일 선택 또는 여기에 끌어다 놓기'}
         </div>
         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          교육청 표준 학원교습비 목록 파일 (.xlsx) · PC 버전 나이스 파일만 지원
+          나이스 학원에서 엑셀내려받기 한 파일(.xlsx) 업로드
         </div>
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display: 'none' }} />
       </div>
@@ -436,12 +431,51 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
         </div>
       )}
 
-      {!excelAcademies.length && !excelLoading && !excelError && (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '8px', lineHeight: '1.6' }}>
-          교육청에서 제공하는<br />학원 교습비 목록 엑셀 파일을 업로드하세요.<br />
-          <span style={{ fontSize: '0.78rem' }}>(성명·비고 등 누락된 항목은 빈칸으로 출력됩니다)</span>
-        </div>
-      )}
+
+      {/* 교습비등 반환기준 게시표 */}
+      <div style={{ marginTop: '32px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+        <a
+          href="/refund-standard.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 18px',
+            backgroundColor: '#f8fafc',
+            border: '1.5px solid #e2e8f0',
+            borderRadius: '10px',
+            textDecoration: 'none',
+            color: 'var(--text-main)',
+            transition: 'border-color 0.15s, background-color 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.backgroundColor = '#eef2ff'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="9" y1="12" x2="15" y2="12"/>
+              <line x1="9" y1="16" x2="13" y2="16"/>
+            </svg>
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e293b' }}>
+                ※ 참고 — 교습비등 반환기준 게시표
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                경기도 학원의 설립·운영 및 과외교습에 관한 조례 시행규칙 [별지 제5호서식]
+              </div>
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      </div>
     </>
   );
 }
