@@ -127,7 +127,7 @@ export default function App() {
       }}>
         <button style={tabStyle(tab === 'review')} onClick={() => setTab('review')}>교습비 변경<br />(학원,교습소)</button>
         <button style={tabStyle(tab === 'tutoring')} onClick={() => setTab('tutoring')}>교습비 변경<br />(과외)</button>
-        <button style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>게시표 출력</button>
+        <button style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>게시표 출력<br /><span style={{ fontSize: '0.72rem', fontWeight: '500', opacity: 0.75 }}>(PC용)</span></button>
       </div>
 
       {/* ── 탭: 교습비 변경(학원,교습소) ── */}
@@ -219,114 +219,15 @@ export default function App() {
 
       {/* ── 탭: 업로드 ── */}
       {tab === 'excel' && (
-        <>
-          <div style={{
-            backgroundColor: '#f8fafc',
-            border: '1.5px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '16px 20px',
-            marginBottom: '20px',
-            fontSize: '0.88rem',
-            lineHeight: '1.6',
-            color: 'var(--text-main)'
-          }}>
-            <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
-              나이스 엑셀 파일 다운로드 방법 안내
-            </div>
-            <div style={{ color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '650' }}>
-              방법: 나이스 학원 방문 ➔ 경기도교육청 선택 ➔ 학원 교습소 정보 조회
-            </div>
-            <ol style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-              <li>
-                <a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>
-                  나이스 대국민 학원 서비스
-                </a>에 접속합니다.
-              </li>
-              <li>본인 지역 교육청(예: 경기도교육청)을 선택합니다.</li>
-              <li>[학원 교습소 정보 조회] 메뉴에서 학원 검색 후 교습비 정보를 엑셀 파일로 다운로드합니다.</li>
-            </ol>
-          </div>
-
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: '2px dashed var(--border-color)', borderRadius: '12px',
-              padding: '32px 20px', textAlign: 'center', cursor: 'pointer',
-              backgroundColor: 'var(--bg-card)', marginBottom: '20px', transition: 'border-color 0.2s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
-          >
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)', marginBottom: '10px' }}>
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="12" y1="18" x2="12" y2="12"></line>
-              <line x1="9" y1="15" x2="15" y2="15"></line>
-            </svg>
-            <div style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '4px' }}>
-              {excelLoading ? '파일 분석 중...' : '엑셀 파일 선택'}
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              교육청 표준 학원교습비 목록 파일 (.xlsx)
-            </div>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display: 'none' }} />
-          </div>
-
-          {excelError && (
-            <div style={{ color: '#dc2626', fontSize: '0.85rem', marginBottom: '16px', padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
-              {excelError}
-            </div>
-          )}
-
-          {excelAcademies.length > 1 && !excelSelected && (
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '10px' }}>
-                파일에서 {excelAcademies.length}개 학원을 찾았습니다. 출력할 학원을 선택하세요.
-              </div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {excelAcademies.map((a, i) => (
-                  <li key={i}
-                    onClick={() => setExcelSelected(a)}
-                    style={{ padding: '12px 16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '10px', cursor: 'pointer', transition: 'border-color 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
-                  >
-                    <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{a.name}</div>
-                    {a.address && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{a.address}</div>}
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>교습과정 {a.courses.length}개</div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {excelSelected && (
-            <div className="animate-enter">
-              {excelAcademies.length > 1 && (
-                <button
-                  onClick={() => setExcelSelected(null)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.83rem', marginBottom: '12px', padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                  목록으로 돌아가기
-                </button>
-              )}
-              <PrintButtons academy={excelSelected} />
-            </div>
-          )}
-
-          {!excelAcademies.length && !excelLoading && !excelError && (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '8px', lineHeight: '1.6' }}>
-              교육청에서 제공하는<br />학원 교습비 목록 엑셀 파일을 업로드하세요.<br />
-              <span style={{ fontSize: '0.78rem' }}>(성명·비고 등 누락된 항목은 빈칸으로 출력됩니다)</span>
-            </div>
-          )}
-        </>
+        <ExcelUploadTab
+          excelLoading={excelLoading}
+          excelError={excelError}
+          excelAcademies={excelAcademies}
+          excelSelected={excelSelected}
+          setExcelSelected={setExcelSelected}
+          fileInputRef={fileInputRef}
+          handleFile={handleFile}
+        />
       )}
 
       <footer className="app-footer">
@@ -334,6 +235,142 @@ export default function App() {
         <div>실제 신청은 관할 교육지원청에 문의하시기 바랍니다.</div>
       </footer>
     </div>
+  );
+}
+
+function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelected, setExcelSelected, fileInputRef, handleFile }) {
+  const [dragOver, setDragOver] = React.useState(false);
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile({ target: { files: [file], value: '' } });
+  }
+
+  return (
+    <>
+      {/* 안내 박스 */}
+      <div style={{
+        backgroundColor: '#f8fafc', border: '1.5px solid var(--border-color)',
+        borderRadius: '12px', padding: '16px 20px', marginBottom: '16px',
+        fontSize: '0.88rem', lineHeight: '1.6', color: 'var(--text-main)'
+      }}>
+        <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          나이스 엑셀 파일 다운로드 방법 안내
+        </div>
+        <div style={{ color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '650' }}>
+          방법: 나이스 학원 방문 ➔ 경기도교육청 선택 ➔ 학원 교습소 정보 조회
+        </div>
+        <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+          <li>
+            <a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>
+              나이스 대국민 학원 서비스
+            </a>에 접속합니다.
+          </li>
+          <li>본인 지역 교육청(예: 경기도교육청)을 선택합니다.</li>
+          <li>[학원 교습소 정보 조회] 메뉴에서 학원 검색 후 교습비 정보를 엑셀 파일로 다운로드합니다.</li>
+          <li>아래 업로드 영역에 다운로드한 엑셀 파일을 선택하거나 끌어다 놓으세요.</li>
+        </ol>
+        {/* 모바일 경고 */}
+        <div style={{
+          backgroundColor: '#fff7ed', border: '1px solid #fed7aa',
+          borderRadius: '8px', padding: '10px 12px',
+          display: 'flex', gap: '8px', alignItems: 'flex-start',
+        }}>
+          <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
+          <div style={{ fontSize: '0.82rem', color: '#92400e', lineHeight: '1.6' }}>
+            <strong>PC 전용 기능입니다.</strong><br />
+            나이스 모바일 앱·모바일 웹에서 받은 엑셀 파일은 열 구조가 달라 <strong>교습과정·교습비가 올바르게 출력되지 않습니다.</strong><br />
+            반드시 <strong>PC에서 나이스 접속 후 파일을 다운로드</strong>하여 사용하세요.
+          </div>
+        </div>
+      </div>
+
+      {/* 드래그앤드롭 + 파일 선택 */}
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragEnter={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={e => { e.preventDefault(); setDragOver(false); }}
+        onDrop={handleDrop}
+        style={{
+          border: `2px dashed ${dragOver ? 'var(--primary)' : 'var(--border-color)'}`,
+          borderRadius: '12px', padding: '32px 20px', textAlign: 'center', cursor: 'pointer',
+          backgroundColor: dragOver ? '#eef2ff' : 'var(--bg-card)',
+          marginBottom: '20px', transition: 'border-color 0.15s, background-color 0.15s',
+        }}
+        onMouseEnter={e => { if (!dragOver) e.currentTarget.style.borderColor = 'var(--primary)'; }}
+        onMouseLeave={e => { if (!dragOver) e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+      >
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)', marginBottom: '10px' }}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+        <div style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '4px' }}>
+          {excelLoading ? '파일 분석 중...' : dragOver ? '여기에 놓으세요!' : '엑셀 파일 선택 또는 여기에 끌어다 놓기'}
+        </div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          교육청 표준 학원교습비 목록 파일 (.xlsx) · PC 버전 나이스 파일만 지원
+        </div>
+        <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display: 'none' }} />
+      </div>
+
+      {excelError && (
+        <div style={{ color: '#dc2626', fontSize: '0.85rem', marginBottom: '16px', padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
+          {excelError}
+        </div>
+      )}
+
+      {excelAcademies.length > 1 && !excelSelected && (
+        <div>
+          <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '10px' }}>
+            파일에서 {excelAcademies.length}개 학원을 찾았습니다. 출력할 학원을 선택하세요.
+          </div>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {excelAcademies.map((a, i) => (
+              <li key={i}
+                onClick={() => setExcelSelected(a)}
+                style={{ padding: '12px 16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '10px', cursor: 'pointer', transition: 'border-color 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+              >
+                <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{a.name}</div>
+                {a.address && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{a.address}</div>}
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>교습과정 {a.courses.length}개</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {excelSelected && (
+        <div className="animate-enter">
+          {excelAcademies.length > 1 && (
+            <button
+              onClick={() => setExcelSelected(null)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.83rem', marginBottom: '12px', padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              목록으로 돌아가기
+            </button>
+          )}
+          <PrintButtons academy={excelSelected} />
+        </div>
+      )}
+
+      {!excelAcademies.length && !excelLoading && !excelError && (
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '8px', lineHeight: '1.6' }}>
+          교육청에서 제공하는<br />학원 교습비 목록 엑셀 파일을 업로드하세요.<br />
+          <span style={{ fontSize: '0.78rem' }}>(성명·비고 등 누락된 항목은 빈칸으로 출력됩니다)</span>
+        </div>
+      )}
+    </>
   );
 }
 
