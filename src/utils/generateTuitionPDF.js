@@ -55,7 +55,7 @@ export function printTuitionForm(academy) {
     const { prefix: signPrefix, signerName } = getSignLabel(academy);
     const signerNameHtml = signerName
         ? `<span class="sign-person">${signerName}</span>`
-        : `<span style="display:inline-block;width:60mm;border-bottom:1.5px solid #000;vertical-align:bottom;margin:0 4px;"></span>`;
+        : `<span style="display:inline-block;width:60mm;vertical-align:bottom;margin:0 4px;"></span>`;
 
     const courseRows = courses.map(c => {
         const label = [c.process, c.subject].filter(Boolean).join(' / ');
@@ -206,6 +206,7 @@ export function printTuitionForm(academy) {
       <span><span class="date-val">${baseDate.month}</span> 월</span>
       <span><span class="date-val">${baseDate.day}</span> 일</span>
     </div>
+    <div style="height: 5mm;"></div>
     <div class="sign-name-row">
       <span class="sign-prefix">${signPrefix}</span>
       ${signerNameHtml}
@@ -286,7 +287,7 @@ export function printTuitionFormExternal(academy) {
     const { label: signLabel, signerName } = getSignLabelExternal(academy);
     const signerNameHtml = signerName
         ? `<span class="sign-person">${signerName}</span>`
-        : `<span style="display:inline-block;width:60mm;border-bottom:1.5px solid #000;vertical-align:bottom;margin:0 4px;"></span>`;
+        : `<span style="display:inline-block;width:60mm;vertical-align:bottom;margin:0 4px;"></span>`;
 
     const otherFeeItems = [
         { label: '모의고사비', key: 'mockExamFee' },

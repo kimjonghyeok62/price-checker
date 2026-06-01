@@ -346,64 +346,134 @@ function PrintButtons({ academy }) {
     finally { setDownloading(''); }
   }
 
-  const rowStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' };
-  const labelStyle = { fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px', letterSpacing: '0.04em' };
+  function BtnPDF({ onClick, label, size = 'normal' }) {
+    const isLarge = size === 'large';
+    return (
+      <button
+        onClick={onClick}
+        style={{
+          padding: isLarge ? '14px 10px' : '12px 8px',
+          backgroundColor: 'var(--primary)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '10px',
+          fontSize: isLarge ? '1rem' : '0.92rem',
+          fontWeight: '700',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          boxShadow: '0 2px 6px rgba(99,102,241,0.25)',
+          transition: 'filter 0.15s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
+        onMouseLeave={e => e.currentTarget.style.filter = ''}
+      >
+        <PrintIcon size={isLarge ? 16 : 14} /> {label}
+      </button>
+    );
+  }
 
-  function BtnPDF({ onClick, label }) {
+  function BtnDOCX({ onClick, label, busy, size = 'normal' }) {
+    const isLarge = size === 'large';
     return (
-      <button onClick={onClick} style={{ padding: '10px 6px', backgroundColor: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-        <PrintIcon /> {label}
+      <button
+        onClick={onClick}
+        disabled={!!downloading}
+        style={{
+          padding: isLarge ? '14px 10px' : '12px 8px',
+          backgroundColor: busy ? '#dbeafe' : '#eff6ff',
+          color: '#1d4ed8',
+          border: '2px solid #93c5fd',
+          borderRadius: '10px',
+          fontSize: isLarge ? '1rem' : '0.92rem',
+          fontWeight: '700',
+          cursor: downloading ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          opacity: downloading && !busy ? 0.55 : 1,
+          transition: 'filter 0.15s',
+        }}
+        onMouseEnter={e => { if (!downloading) e.currentTarget.style.filter = 'brightness(0.95)'; }}
+        onMouseLeave={e => e.currentTarget.style.filter = ''}
+      >
+        <DocxIcon busy={busy} size={isLarge ? 16 : 14} /> {busy ? '생성중...' : label}
       </button>
     );
   }
-  function BtnDOCX({ onClick, label, busy }) {
-    return (
-      <button onClick={onClick} disabled={!!downloading} style={{ padding: '10px 6px', backgroundColor: busy ? '#e0e7ff' : '#eff6ff', color: '#1d4ed8', border: '1.5px solid #93c5fd', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '600', cursor: downloading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: downloading && !busy ? 0.6 : 1 }}>
-        <DocxIcon busy={busy} /> {busy ? '생성중...' : label}
-      </button>
-    );
-  }
+
+  const sectionCard = (color, bgColor, borderColor, iconColor) => ({
+    backgroundColor: bgColor,
+    border: `2px solid ${borderColor}`,
+    borderRadius: '12px',
+    padding: '18px 18px 16px',
+    marginBottom: '12px',
+  });
 
   return (
-    <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)' }}>
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>{academy.name}</div>
-        {academy.address && <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{academy.address}</div>}
-        {academy.courses?.length > 0 && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>교습과정 {academy.courses.length}개</div>}
+    <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
+      {/* 학원 정보 */}
+      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1.5px solid var(--border-color)' }}>
+        <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '4px' }}>{academy.name}</div>
+        {academy.address && <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>{academy.address}</div>}
+        {academy.courses?.length > 0 && (
+          <div style={{ display: 'inline-block', marginTop: '6px', fontSize: '0.78rem', color: '#6366f1', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', padding: '2px 8px', fontWeight: '600' }}>
+            교습과정 {academy.courses.length}개
+          </div>
+        )}
       </div>
 
       {/* 내부용 */}
-      <div style={{ marginBottom: '14px' }}>
-        <div style={labelStyle}>■ 교습비등 게시표 (내부용)</div>
-        <div style={rowStyle}>
-          <BtnPDF onClick={() => printTuitionForm(academy)} label="PDF" />
-          <BtnDOCX onClick={() => withLoading('int-docx', () => downloadTuitionInternalDOCX(academy))} label="DOCX" busy={downloading === 'int-docx'} />
+      <div style={sectionCard('#6366f1', '#f5f3ff', '#c4b5fd', '#7c3aed')}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ width: '4px', height: '22px', backgroundColor: '#7c3aed', borderRadius: '2px', flexShrink: 0 }} />
+          <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#4c1d95', letterSpacing: '-0.01em' }}>
+            교습비등 게시표
+          </div>
+          <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#7c3aed', backgroundColor: '#ede9fe', border: '1.5px solid #c4b5fd', borderRadius: '20px', padding: '2px 10px' }}>
+            내부용
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <BtnPDF onClick={() => printTuitionForm(academy)} label="PDF 출력" size="large" />
+          <BtnDOCX onClick={() => withLoading('int-docx', () => downloadTuitionInternalDOCX(academy))} label="DOCX 저장" busy={downloading === 'int-docx'} size="large" />
         </div>
       </div>
 
       {/* 외부용 */}
-      <div>
-        <div style={labelStyle}>■ 교습비등 게시표 (외부용)</div>
-        <div style={rowStyle}>
-          <BtnPDF onClick={() => printTuitionFormExternal(academy)} label="PDF" />
-          <BtnDOCX onClick={() => withLoading('ext-docx', () => downloadTuitionExternalDOCX(academy))} label="DOCX" busy={downloading === 'ext-docx'} />
+      <div style={{ ...sectionCard('#0ea5e9', '#f0f9ff', '#7dd3fc', '#0369a1'), marginBottom: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <div style={{ width: '4px', height: '22px', backgroundColor: '#0369a1', borderRadius: '2px', flexShrink: 0 }} />
+          <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0c4a6e', letterSpacing: '-0.01em' }}>
+            교습비등 게시표
+          </div>
+          <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#0369a1', backgroundColor: '#e0f2fe', border: '1.5px solid #7dd3fc', borderRadius: '20px', padding: '2px 10px' }}>
+            외부용
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <BtnPDF onClick={() => printTuitionFormExternal(academy)} label="PDF 출력" size="large" />
+          <BtnDOCX onClick={() => withLoading('ext-docx', () => downloadTuitionExternalDOCX(academy))} label="DOCX 저장" busy={downloading === 'ext-docx'} size="large" />
         </div>
       </div>
     </div>
   );
 }
 
-function PrintIcon() {
+function PrintIcon({ size = 13 }) {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="6 9 6 2 18 2 18 9"></polyline>
       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
       <rect x="6" y="14" width="12" height="8"></rect>
     </svg>
   );
 }
-function DocxIcon({ busy }) {
+function DocxIcon({ busy, size = 13 }) {
   return busy
     ? <span style={{ fontSize: '0.9rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
-    : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>;
+    : <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>;
 }
