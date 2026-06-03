@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import FieldStatistics from './FieldStatistics';
+import TuitionCheckTab from './TuitionCheckTab';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm } from '../utils/generateRegistrationPDF';
 
@@ -51,7 +52,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   const isTutoring = mode === 'tutoring';
 
   // ── 신설/변경 서브탭 ──
-  const [subTab, setSubTab] = useState('신설');
+  const [subTab, setSubTab] = useState('검토');
 
   // ── 신설 탭 상태 ──
   const [subjects, setSubjects] = useState([
@@ -203,14 +204,17 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-      {/* 신설 / 변경 서브탭 (학원·교습소만) */}
+      {/* 검토 / 신설 / 변경 서브탭 (학원·교습소만) */}
       {!isTutoring && (
         <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '4px' }}>
-          {['신설', '변경'].map(t => (
+          {['검토', '신설', '변경'].map(t => (
             <button key={t} style={subTabStyle(subTab === t)} onClick={() => setSubTab(t)}>{t}</button>
           ))}
         </div>
       )}
+
+      {/* ── 검토 탭 ── */}
+      {!isTutoring && subTab === '검토' && <TuitionCheckTab />}
 
       {/* ── 신설 탭 / 과외 모드 ── */}
       {(isTutoring || subTab === '신설') && (
