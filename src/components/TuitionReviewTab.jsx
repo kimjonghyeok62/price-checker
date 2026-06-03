@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import FieldStatistics from './FieldStatistics';
 
 // ─── 기준단가 옵션 ───────────────────────────────────────────
 const STANDARD_RATE_OPTIONS = [
@@ -37,6 +38,10 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     ));
   }
 
+  function patchSubject(id, patch) {
+    setSubjects(prev => prev.map(sub => sub.id === id ? { ...sub, ...patch } : sub));
+  }
+
   function removeSubject(id) {
     if (subjects.length === 1) {
       setSubjects([{ id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
@@ -59,6 +64,21 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           onAdd={addSubject}
         />
       ))}
+      {!isTutoring && (
+        <FieldStatistics
+          selectedRateIdx={subjects[0]?.rateIdx ?? ''}
+          onSelect={({ rateIdx, dm, wc, wk, fee }) => {
+            const lastId = subjects[subjects.length - 1].id;
+            patchSubject(lastId, {
+              rateIdx: String(rateIdx),
+              dm: String(dm),
+              wc: String(wc),
+              wk: wk,
+              fee: String(fee),
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

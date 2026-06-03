@@ -49,6 +49,44 @@ export async function fetchGoogleSheetData(gid) {
     return parseCSV(txt);
 }
 
+// ─── 교습분야별 통계용 키워드 매핑 ──────────────────────────────
+const MUSIC_KW = ['음악', '피아노', '바이올린', '첼로', '플루트', '비올라', '오보에', '클라리넷', '트럼펫', '타악', '성악', '합창', '관악', '현악', '기악', '드럼'];
+const ART_KW   = ['미술', '그림', '회화', '소묘', '드로잉', '디자인', '조소', '공예', '만화', '애니메이션'];
+const DANCE_KW = ['무용', '발레', '댄스', '한국무용', '현대무용'];
+
+function classifySubject(subject, process) {
+  const s = (subject + ' ' + process).toLowerCase();
+  const hasInput = s.includes('입시');
+  if (s.includes('초등')) return 0;
+  if (s.includes('중등')) return 1;
+  if (s.includes('고등') || s.includes('수능')) return 2;
+  if (s.includes('진학') || s.includes('상담')) return 3;
+  if (MUSIC_KW.some(k => s.includes(k))) return hasInput ? 6 : 5;
+  if (ART_KW.some(k => s.includes(k)))   return hasInput ? 8 : 7;
+  if (DANCE_KW.some(k => s.includes(k))) return hasInput ? 10 : 9;
+  if (s.includes('영어') || s.includes('어학') || s.includes('외국어') || s.includes('일본어') || s.includes('중국어') || s.includes('french') || s.includes('german')) return 4;
+  if (s.includes('컴퓨터') || s.includes('코딩') || s.includes('정보') || s.includes('sw') || s.includes('it')) return 11;
+  return 12;
+}
+
+export async function fetchFieldStats() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${DATA_GID}`;
+  const response = await fetchWithTimeout(url, 30000);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const txt = await response.text();
+  const rows = parseCSV(txt);
+  const result = Array.from({ length: 13 }, () => []);
+  rows.forEach(row => {
+    if ((row['등록상태'] || '').trim() !== '개원') return;
+    const totalMin = parseFloat((row['총교습시간(분)'] || '').replace(/,/g, ''));
+    const fee = parseFloat((row['교습비'] || '').replace(/,/g, ''));
+    if (!totalMin || totalMin <= 0 || !fee || fee <= 0) return;
+    const fieldIdx = classifySubject(row['교습과목(반)'] || '', row['교습과정'] || '');
+    result[fieldIdx].push({ totalMin, fee });
+  });
+  return result;
+}
+
 export function transformAcademyData(rawRows) {
     const academyMap = new Map();
     rawRows.forEach(row => {
