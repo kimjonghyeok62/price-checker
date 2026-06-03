@@ -155,7 +155,7 @@ function fmtNum(n) {
   return Math.round(n).toLocaleString('ko-KR');
 }
 
-export default function FieldStatistics({ selectedRateIdx, onSelect }) {
+export default function FieldStatistics({ selectedRateIdx, onFieldChange, onSelect }) {
   const [selectedField, setSelectedField] = useState(0);
   const tabsRef = useRef(null);
   const prevRateIdx = useRef('');
@@ -172,6 +172,11 @@ export default function FieldStatistics({ selectedRateIdx, onSelect }) {
       }, 50);
     }
   }, [selectedRateIdx]);
+
+  function handleTabClick(i) {
+    setSelectedField(i);
+    if (onFieldChange) onFieldChange(i);
+  }
 
   const rows = STATIC_STATS[selectedField];
 
@@ -192,7 +197,7 @@ export default function FieldStatistics({ selectedRateIdx, onSelect }) {
           borderBottom: '2px solid #c7d2fe',
           paddingBottom: '3px',
         }}>
-          교습비 조합 참고<span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#818cf8', letterSpacing: '0.02em' }}>(클릭시 반영)</span>
+          교습비 빠른 선택<span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#818cf8', letterSpacing: '0.02em' }}>(클릭시 아래 과목에 반영)</span>
         </span>
       </div>
 
@@ -212,7 +217,7 @@ export default function FieldStatistics({ selectedRateIdx, onSelect }) {
         {FIELD_LABELS.map((label, i) => (
           <button
             key={i}
-            onClick={() => setSelectedField(i)}
+            onClick={() => handleTabClick(i)}
             style={{
               flexShrink: 0,
               padding: '5px 11px',
@@ -251,20 +256,35 @@ export default function FieldStatistics({ selectedRateIdx, onSelect }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '9px 6px',
+                  padding: '9px 9px',
                   borderBottom: rowIdx < rows.length - 1 ? '1px solid #f3f4f6' : 'none',
-                  borderRadius: '8px',
+                  borderLeft: '3px solid transparent',
+                  borderRadius: '6px',
                   cursor: canFill ? 'pointer' : 'default',
-                  transition: 'background 0.12s',
+                  transition: 'background 0.12s, border-left-color 0.12s',
                 }}
-                onMouseEnter={e => { if (canFill) e.currentTarget.style.background = '#f5f3ff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                onMouseEnter={e => {
+                  if (!canFill) return;
+                  e.currentTarget.style.background = '#f0edff';
+                  e.currentTarget.style.borderLeft = '3px solid #6366f1';
+                  e.currentTarget.style.paddingLeft = '9px';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderLeft = '3px solid transparent';
+                  e.currentTarget.style.paddingLeft = '9px';
+                }}
               >
                 {/* 시간 조합 */}
                 <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600, color: '#1f2937', lineHeight: 1.3, minWidth: 0 }}>
                   {combo ? (
                     <>
-                      <span style={{ color: '#4338ca' }}>일 {combo.dm}분×주 {combo.wc}회</span>
+                      <span style={{
+                        color: '#4338ca',
+                        textDecoration: canFill ? 'underline' : 'none',
+                        textDecorationColor: '#a5b4fc',
+                        textUnderlineOffset: '2px',
+                      }}>일 {combo.dm}분×주 {combo.wc}회</span>
                       <span style={{ color: '#6b7280', fontWeight: 400 }}>×4.3주</span>
                       <span style={{ color: '#374151' }}> = </span>
                       <span>{fmtNum(totalMin)}분</span>
@@ -279,7 +299,7 @@ export default function FieldStatistics({ selectedRateIdx, onSelect }) {
                   {fmtNum(fee)}원
                 </div>
 
-                {/* 분당단가 */}
+                {/* 분당단가 + 화살표 */}
                 <div style={{
                   flexShrink: 0,
                   fontSize: '0.85rem',
@@ -287,8 +307,13 @@ export default function FieldStatistics({ selectedRateIdx, onSelect }) {
                   color: rate === null ? '#9ca3af' : '#4338ca',
                   minWidth: '68px',
                   textAlign: 'right',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: '4px',
                 }}>
                   {rate !== null ? `${rate.toFixed(1)}원/분` : '—'}
+                  {canFill && <span style={{ color: '#a5b4fc', fontSize: '0.75rem' }}>↓</span>}
                 </div>
               </div>
             );

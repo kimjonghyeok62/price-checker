@@ -50,9 +50,28 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     setSubjects(prev => prev.filter(sub => sub.id !== id));
   }
 
+  const lastSub = subjects[subjects.length - 1];
+  const fieldStats = !isTutoring && (
+    <FieldStatistics
+      selectedRateIdx={lastSub?.rateIdx ?? ''}
+      onFieldChange={(fieldIdx) => {
+        patchSubject(lastSub.id, { rateIdx: String(fieldIdx) });
+      }}
+      onSelect={({ rateIdx, dm, wc, wk, fee }) => {
+        patchSubject(lastSub.id, {
+          rateIdx: String(rateIdx),
+          dm: String(dm),
+          wc: String(wc),
+          wk: wk,
+          fee: String(fee),
+        });
+      }}
+    />
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {subjects.map((sub, idx) => (
+      {subjects.slice(0, -1).map((sub, idx) => (
         <SubjectCard
           key={sub.id}
           index={idx}
@@ -60,25 +79,21 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           mode={mode}
           onUpdate={updateSubject}
           onRemove={removeSubject}
-          isLast={idx === subjects.length - 1}
+          isLast={false}
           onAdd={addSubject}
         />
       ))}
-      {!isTutoring && (
-        <FieldStatistics
-          selectedRateIdx={subjects[0]?.rateIdx ?? ''}
-          onSelect={({ rateIdx, dm, wc, wk, fee }) => {
-            const lastId = subjects[subjects.length - 1].id;
-            patchSubject(lastId, {
-              rateIdx: String(rateIdx),
-              dm: String(dm),
-              wc: String(wc),
-              wk: wk,
-              fee: String(fee),
-            });
-          }}
-        />
-      )}
+      {fieldStats}
+      <SubjectCard
+        key={lastSub.id}
+        index={subjects.length - 1}
+        sub={lastSub}
+        mode={mode}
+        onUpdate={updateSubject}
+        onRemove={removeSubject}
+        isLast={true}
+        onAdd={addSubject}
+      />
     </div>
   );
 }
