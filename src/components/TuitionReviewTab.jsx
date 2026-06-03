@@ -84,6 +84,16 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
         />
       ))}
       {fieldStats}
+      {fieldStats && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          margin: '-8px 0 -4px', fontSize: '0.8rem', color: '#9ca3af',
+        }}>
+          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+          <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>↓ 상세 입력 · 조정</span>
+          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+        </div>
+      )}
       <SubjectCard
         key={lastSub.id}
         index={subjects.length - 1}

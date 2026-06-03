@@ -197,8 +197,11 @@ export default function FieldStatistics({ selectedRateIdx, onFieldChange, onSele
           borderBottom: '2px solid #c7d2fe',
           paddingBottom: '3px',
         }}>
-          교습비 빠른 선택<span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#818cf8', letterSpacing: '0.02em' }}>(클릭시 아래 과목에 반영)</span>
+          교습비 참고값 불러오기
         </span>
+        <div style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: '5px' }}>
+          분야·조합 클릭 → 아래 과목 입력란에 초기값 자동 입력 (직접 입력도 가능)
+        </div>
       </div>
 
       {/* 분야 탭 */}
@@ -299,22 +302,7 @@ export default function FieldStatistics({ selectedRateIdx, onFieldChange, onSele
                   {fmtNum(fee)}원
                 </div>
 
-                {/* 분당단가 + 화살표 */}
-                <div style={{
-                  flexShrink: 0,
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  color: rate === null ? '#9ca3af' : '#4338ca',
-                  minWidth: '68px',
-                  textAlign: 'right',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  gap: '4px',
-                }}>
-                  {rate !== null ? `${rate.toFixed(1)}원/분` : '—'}
-                  {canFill && <span style={{ color: '#a5b4fc', fontSize: '0.75rem' }}>↓</span>}
-                </div>
+                {canFill && <span style={{ flexShrink: 0, color: '#a5b4fc', fontSize: '0.75rem' }}>↓</span>}
               </div>
             );
           })}
