@@ -43,10 +43,10 @@ export function printRegistrationForm(data) {
         subjects = [],
     } = data;
 
-    // 8행 고정 (부족하면 빈 행 추가)
-    const MAX_ROWS = 8;
-    const rows = subjects.slice(0, MAX_ROWS);
-    while (rows.length < MAX_ROWS) rows.push(null);
+    // 최소 8행 보장, 초과 시 다음 페이지로 자동 넘김
+    const MIN_ROWS = 8;
+    const rows = [...subjects];
+    while (rows.length < MIN_ROWS) rows.push(null);
 
     const courseRows = rows.map(sub => {
         if (!sub) {
@@ -188,6 +188,7 @@ export function printRegistrationForm(data) {
     vertical-align: middle;
     word-break: keep-all;
   }
+  table.subject-table thead { display: table-header-group; }
   .course-head th {
     background: #f0f0f0;
     font-weight: bold;

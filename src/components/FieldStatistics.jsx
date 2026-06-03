@@ -127,24 +127,36 @@ const STATIC_STATS = [
   ],
 ];
 
-const DM_CANDIDATES = [30, 40, 50, 60, 70, 80, 90, 100, 120, 150, 180];
+const DM_CANDIDATES = [30, 40, 50, 60, 70, 80, 90, 100, 120, 130, 140, 150, 180, 240];
 const WC_CANDIDATES = [1, 2, 3, 4, 5, 6, 7];
+const WK_CANDIDATES = [
+  { val: 4.3, str: '4.3' },
+  { val: 4.2, str: '4.2' },
+  { val: 4.1, str: '4.1' },
+  { val: 4.0, str: '4'   },
+];
 
 function factorizeMinutes(totalMin) {
-  const weeklyMin = totalMin / 4.3;
   const matches = [];
-  for (const dm of DM_CANDIDATES) {
-    for (const wc of WC_CANDIDATES) {
-      if (Math.abs(dm * wc - weeklyMin) < 0.6) matches.push({ dm, wc });
+  for (const { val: wkVal, str: wkStr } of WK_CANDIDATES) {
+    const weeklyMin = totalMin / wkVal;
+    for (const dm of DM_CANDIDATES) {
+      for (const wc of WC_CANDIDATES) {
+        if (Math.abs(dm * wc - weeklyMin) < 0.6) {
+          matches.push({ dm, wc, wk: wkStr, wkVal });
+        }
+      }
     }
   }
   if (matches.length === 0) return null;
   matches.sort((a, b) => {
+    // wk=4.3 우선 (가장 일반적)
+    if (a.wkVal !== b.wkVal) return b.wkVal - a.wkVal;
     const aMulti = a.wc >= 2 && a.wc <= 5 ? 0 : 1;
     const bMulti = b.wc >= 2 && b.wc <= 5 ? 0 : 1;
     if (aMulti !== bMulti) return aMulti - bMulti;
-    const aDmOk = a.dm >= 40 && a.dm <= 90 ? 0 : 1;
-    const bDmOk = b.dm >= 40 && b.dm <= 90 ? 0 : 1;
+    const aDmOk = a.dm >= 40 && a.dm <= 180 ? 0 : 1;
+    const bDmOk = b.dm >= 40 && b.dm <= 180 ? 0 : 1;
     if (aDmOk !== bDmOk) return aDmOk - bDmOk;
     return b.wc - a.wc;
   });
@@ -253,7 +265,7 @@ export default function FieldStatistics({ selectedRateIdx, onFieldChange, onSele
                 key={totalMin}
                 onClick={() => {
                   if (!canFill || !onSelect) return;
-                  onSelect({ rateIdx: selectedField, dm: combo.dm, wc: combo.wc, wk: '4.3', fee });
+                  onSelect({ rateIdx: selectedField, dm: combo.dm, wc: combo.wc, wk: combo.wk, fee });
                 }}
                 style={{
                   display: 'flex',
@@ -288,7 +300,7 @@ export default function FieldStatistics({ selectedRateIdx, onFieldChange, onSele
                         textDecorationColor: '#a5b4fc',
                         textUnderlineOffset: '2px',
                       }}>일 {combo.dm}분×주 {combo.wc}회</span>
-                      <span style={{ color: '#6b7280', fontWeight: 400 }}>×4.3주</span>
+                      <span style={{ color: '#6b7280', fontWeight: 400 }}>×{combo.wk}주</span>
                       <span style={{ color: '#374151' }}> = </span>
                       <span>{fmtNum(totalMin)}분</span>
                     </>
