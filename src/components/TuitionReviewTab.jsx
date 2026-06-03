@@ -370,6 +370,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
                 showRegTypeSelector
                 onPrint={() => printRegistrationForm({
                   academyName: changeSelected.name,
+                  operator: changeSelected.founder?.name || '',
                   address: changeSelected.address || '',
                   regType: changeRegType,
                   subjects: changeSubjects,

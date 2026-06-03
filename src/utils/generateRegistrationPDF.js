@@ -107,7 +107,7 @@ export function printRegistrationForm(data) {
     background: white;
     color: #000;
   }
-  @page { size: A4 portrait; margin: 15mm 12mm 15mm 12mm; }
+  @page { size: A4 portrait; margin: 12mm 12mm 12mm 12mm; }
   @media print { body { margin: 0; } .no-print { display: none !important; } }
 
   .page { width: 182mm; margin: 0 auto; background: white; }
@@ -126,16 +126,17 @@ export function printRegistrationForm(data) {
 
   h1.form-title {
     font-size: 18pt; font-weight: bold; text-align: center;
-    letter-spacing: 4px; margin-bottom: 5mm;
+    letter-spacing: 4px; margin-top: 2mm; margin-bottom: 5mm;
   }
 
-  /* 외곽 테이블 */
-  table.outer {
+  /* 상단 정보 테이블 */
+  table.info-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 9.5pt;
+    border: 1px solid #000;
   }
-  table.outer th, table.outer td {
+  table.info-table td {
     border: 1px solid #000;
     padding: 2mm 2.5mm;
     vertical-align: middle;
@@ -150,22 +151,43 @@ export function printRegistrationForm(data) {
     font-size: 9pt;
   }
 
-  /* 체크박스 행 */
-  .check-row td { padding: 2.5mm 3mm; }
-  .check-label { font-weight: bold; font-size: 11pt; letter-spacing: 2px; margin-right: 8mm; }
-  .check-item { margin-right: 8mm; font-size: 10.5pt; }
-
-  /* 섹션 헤더 */
-  .section-header td {
+  /* 섹션 타이틀 */
+  .section-title {
+    width: 100%;
+    border: 1px solid #000;
+    border-top: none;
+    background: #f8f8f8;
     text-align: center;
     font-weight: bold;
     font-size: 11pt;
     letter-spacing: 4px;
-    padding: 2.5mm;
-    background: #f8f8f8;
+    padding: 2.2mm;
   }
 
-  /* 과목 테이블 헤더 */
+  /* 체크박스 컨테이너 */
+  .check-container {
+    width: 100%;
+    border: 1px solid #000;
+    border-top: none;
+    padding: 2.5mm 3mm;
+    font-size: 10pt;
+  }
+  .check-label { font-weight: bold; font-size: 11pt; letter-spacing: 2px; margin-right: 8mm; }
+  .check-item { margin-right: 8mm; font-size: 10.5pt; }
+
+  /* 교습비 과목 테이블 */
+  table.subject-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    border-top: none;
+    font-size: 9.5pt;
+  }
+  table.subject-table th, table.subject-table td {
+    border: 1px solid #000;
+    vertical-align: middle;
+    word-break: keep-all;
+  }
   .course-head th {
     background: #f0f0f0;
     font-weight: bold;
@@ -173,75 +195,114 @@ export function printRegistrationForm(data) {
     font-size: 9pt;
     padding: 2mm 1.5mm;
   }
-
-  /* 과목 행 */
-  table.outer tbody tr.course-row { height: 10mm; }
-  table.outer tbody tr.course-row td {
+  table.subject-table tbody tr.course-row { height: 9.5mm; }
+  table.subject-table tbody tr.course-row td {
     font-size: 9pt;
     padding: 1.5mm 2mm;
     text-align: center;
-    vertical-align: middle;
   }
-
-  .time-cell { text-align: left !important; font-size: 8.5pt; white-space: nowrap; }
-  .num-cell  { text-align: right !important; }
+  .time-cell { text-align: left !important; font-size: 8.5pt; white-space: nowrap; padding-left: 2mm !important; }
+  .num-cell  { text-align: right !important; padding-right: 2mm !important; }
 
   /* 빈 칸 밑줄 */
   .fill    { display: inline-block; width: 20px; border-bottom: 1px solid #555; }
   .fill-sm { display: inline-block; min-width: 14px; }
 
-  /* 기타경비 */
+  /* 기타 할인사항 */
+  .discount-container {
+    width: 100%;
+    border: 1px solid #000;
+    border-top: none;
+    padding: 2mm 3mm;
+    font-size: 9.5pt;
+  }
+
+  /* 기타경비 테이블 */
+  table.other-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    border-top: none;
+  }
+  table.other-table th, table.other-table td {
+    border: 1px solid #000;
+    vertical-align: middle;
+    text-align: center;
+  }
   .other-head th {
     background: #f0f0f0; font-weight: bold;
-    text-align: center; font-size: 8.5pt;
+    font-size: 8.5pt;
     padding: 1.5mm 1mm;
   }
-  table.outer tbody tr.other-row { height: 9mm; }
-  table.outer tbody tr.other-row td { font-size: 9pt; }
+  table.other-table tbody tr.other-row { height: 8.5mm; }
+  table.other-table tbody tr.other-row td { font-size: 9pt; }
 
   /* 유의사항 */
-  .notice-cell {
-    font-size: 8.5pt; line-height: 1.6;
-    padding: 3mm 3.5mm !important;
-    text-align: left !important;
+  .notice-box {
+    width: 100%;
+    border: 1px solid #000;
+    border-top: none;
+    font-size: 8.5pt; line-height: 1.5;
+    padding: 3mm 3.5mm;
+    text-align: left;
   }
-  .notice-cell strong { font-weight: bold; }
+  .notice-box strong { font-weight: bold; }
 
   /* 확인서 */
-  .confirm-cell {
-    font-size: 9pt; line-height: 1.8;
-    padding: 3mm 4mm !important;
-    text-align: left !important;
+  .confirm-box {
+    width: 100%;
+    border: 1px solid #000;
+    border-top: none;
+    font-size: 9pt; line-height: 1.7;
+    padding: 3mm 4mm;
+    text-align: left;
   }
   .confirm-title {
     text-align: center; font-size: 11pt; font-weight: bold;
-    letter-spacing: 4px; margin-bottom: 3mm;
+    letter-spacing: 4px; margin-bottom: 2mm;
   }
-
-  /* 서명란 */
-  .sign-date { text-align: center; margin: 4mm 0 3mm; font-size: 10pt; }
-  .sign-line { text-align: center; font-size: 10pt; margin-bottom: 2mm; }
+  .sign-date { text-align: center; margin: 3.5mm 0 2.5mm; font-size: 10pt; }
+  .sign-line { text-align: center; font-size: 10pt; margin-bottom: 1.5mm; }
   .sign-underline {
     display: inline-block; width: 50mm;
     border-bottom: 1px solid #000;
     margin: 0 4px; vertical-align: bottom;
   }
 
-  /* 수신 */
-  .recipient { font-size: 12pt; font-weight: bold; padding: 2.5mm 3mm !important; }
-
-  /* 결재란 */
-  table.approval {
-    border-collapse: collapse; float: right; margin-top: 3mm;
+  /* 하단 컨테이너 (수신 & 결재) */
+  .bottom-container {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 0;
+  }
+  .recipient-box {
+    flex: 1;
+    border: 1px solid #000;
+    border-top: none;
+    border-right: none;
+    font-size: 12pt;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    padding-left: 4mm;
+  }
+  table.approval-table {
+    width: 320px;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    border-top: none;
     font-size: 9pt;
   }
-  table.approval td {
-    border: 1px solid #000; padding: 2mm 5mm;
-    text-align: center; vertical-align: middle;
-    min-width: 20mm; height: 10mm;
+  table.approval-table td {
+    border: 1px solid #000;
+    text-align: center;
+    vertical-align: middle;
   }
-  table.approval .ap-label {
-    background: #f0f0f0; font-weight: bold;
+  table.approval-table .ap-label {
+    background: #f0f0f0;
+    font-weight: bold;
+    padding: 1.5mm 2mm;
   }
 </style>
 </head>
@@ -254,141 +315,137 @@ export function printRegistrationForm(data) {
 <div class="page">
   <h1 class="form-title">학원(교습소) 교습비등 등록신청서</h1>
 
-  <table class="outer">
-    <!-- 접수번호/접수일자/학원명 행 -->
+  <!-- 1. 상단 정보 테이블 -->
+  <table class="info-table">
     <tr>
-      <td class="th-label" style="width:13%">접수번호</td>
-      <td style="width:18%"></td>
-      <td class="th-label" style="width:10%">접수일자</td>
-      <td style="width:28%"></td>
-      <td class="th-label" style="width:10%">등록번호</td>
-      <td style="width:21%">${val(regNumber)}</td>
+      <td class="th-label" style="width:15%">접수번호</td>
+      <td style="width:20%"></td>
+      <td class="th-label" style="width:15%">접수일자</td>
+      <td style="width:25%"></td>
+      <td colspan="2" style="width:25%"></td>
     </tr>
     <tr>
-      <td class="th-label" rowspan="2" style="line-height:1.6">학원(교습소)명<br>/운영자</td>
+      <td class="th-label" style="line-height:1.4">학원(교습소)명<br>/운영자</td>
       <td colspan="3" style="letter-spacing:1px">
         ${val(academyName)}&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;${val(operator)}
       </td>
-      <td class="th-label">등록번호</td>
-      <td>${val(regNumber)}</td>
+      <td class="th-label" style="width:10%">등록번호</td>
+      <td style="width:15%">${val(regNumber)}</td>
     </tr>
-    <!-- 위치 행 -->
     <tr>
       <td class="th-label">위&nbsp;&nbsp;&nbsp;치</td>
-      <td colspan="4">
-        ${val(address)}&nbsp;&nbsp;&nbsp;&nbsp;
-        (전화번호:&nbsp;&nbsp;${val(phone)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)
-      </td>
-    </tr>
-
-    <!-- 섹션 제목 -->
-    <tr class="section-header">
-      <td colspan="6">교 습 비 등 &nbsp;(변경) &nbsp;등 록 내 용</td>
-    </tr>
-
-    <!-- 신규/일부/전체 체크 -->
-    <tr class="check-row">
-      <td colspan="6">
-        <span class="check-label">교 습 비</span>
-        <span class="check-item">${checked(regType === '신규등록')} 신규등록</span>
-        <span class="check-item">${checked(regType === '일부변경')} 일부변경</span>
-        <span class="check-item">${checked(regType === '전체변경')} 전체변경</span>
-      </td>
-    </tr>
-
-    <!-- 과목 테이블 헤더 -->
-    <tr class="course-head">
-      <th rowspan="2" style="width:10%">교습<br>과정</th>
-      <th rowspan="2" style="width:13%">교습과목(반)</th>
-      <th rowspan="2" style="width:8%">교습<br>기간</th>
-      <th style="width:36%">총 교습시간(A)</th>
-      <th rowspan="2" style="width:8%">정원<br>(반별)</th>
-      <th rowspan="2" style="width:12%">교습비(B)</th>
-      <th rowspan="2" style="width:13%">분당단가<br>(B÷A)</th>
-    </tr>
-    <tr class="course-head">
-      <th style="font-size:8pt; font-weight:normal; color:#444;">
-        일 분 × 주 회 × 주 = 분
-      </th>
-    </tr>
-
-    <!-- 과목 행 8개 -->
-    ${courseRows.replace(/<tr>/g, '<tr class="course-row">')}
-
-    <!-- 기타 할인사항 -->
-    <tr>
-      <td colspan="6" style="padding: 2mm 3mm; font-size:9pt;">
-        <strong>기타 할인사항</strong>
-      </td>
-    </tr>
-
-    <!-- 기타경비 섹션 -->
-    <tr class="section-header">
-      <td colspan="6">기 타 경 비</td>
-    </tr>
-    <tr class="other-head">
-      <th style="width:16%">교습과목(반)</th>
-      <th style="width:14%">모의고사비</th>
-      <th style="width:14%">재료비</th>
-      <th style="width:14%">피복비</th>
-      <th style="width:14%">급식비</th>
-      <th style="width:14%">기숙사비</th>
-      <th style="width:14%">차량비</th>
-    </tr>
-    <tr class="other-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-    <tr class="other-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-
-    <!-- 유의사항 -->
-    <tr>
-      <td colspan="6" class="notice-cell">
-        <strong>❏ 작성 시 유의사항</strong> : 기타경비는 「학원의 설립·운영 및 과외교습에 관한 법률 시행령」제3조의2에 따라 6개 항목만 인정되며, 세금계산서, 거래명세서, 원가계산서 등 실비임을 증명할 수 있는 경우에 한하여 징수 가능하고 교습비등을 거짓으로 표시·게시·고지하거나 초과한 금액을 징수한 경우 <strong>과태료(100~300만원) 부과 및 행정처분 대상</strong>이 됩니다.
-      </td>
-    </tr>
-
-    <!-- 확인서 -->
-    <tr>
-      <td colspan="6" class="confirm-cell">
-        <div class="confirm-title">확 인 서</div>
-        학원의 설립 운영 및 과외교습에 관한 법률 제6조 제1항, 제14조 제1항에 의거 본 학원(교습소)에서
-        (변경)등록·신고한 교습비등이 과다하다고 인정되어 차후 교습비등조정위원회의 심의 대상이
-        될 수 있으며, 조정심의 대상 통보시 같은법 시행령 제17조의2 제1항 각호의 서류를 제출하고
-        기한 내에 서류를 미제출한 경우 교습비등이 과다하다고 인정되어 같은법 제15조 제6항에 따라
-        경기도광주하남교육지원청에서 명하는 교습비등 조정에 이의없이 따를 것을 확인합니다.
-
-        <div class="sign-date">년 &nbsp;&nbsp;&nbsp;&nbsp; 월 &nbsp;&nbsp;&nbsp;&nbsp; 일</div>
-        <div class="sign-line">
-          신청인(설립운영자) :
-          <span class="sign-underline"></span>
-          (인)
+      <td colspan="5">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <span>${val(address)}</span>
+          <span>(전화번호:&nbsp;&nbsp;${val(phone)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</span>
         </div>
       </td>
     </tr>
-
-    <!-- 수신 -->
-    <tr>
-      <td colspan="6" class="recipient">경기도광주하남교육지원청교육장 귀하</td>
-    </tr>
-
-    <!-- 결재란 -->
-    <tr>
-      <td colspan="6" style="border:none; padding: 3mm 0 0; text-align:right;">
-        <table class="approval">
-          <tr>
-            <td class="ap-label">결재</td>
-            <td class="ap-label">담당</td>
-            <td class="ap-label">담당주무</td>
-            <td class="ap-label">평생교육건강과장</td>
-          </tr>
-          <tr>
-            <td></td>
-            <td style="height:14mm;"></td>
-            <td></td>
-            <td>전결</td>
-          </tr>
-        </table>
-      </td>
-    </tr>
   </table>
+
+  <!-- 2. 교습비등 등록 내용 섹션 타이틀 -->
+  <div class="section-title">교 습 비 등 &nbsp;(변경) &nbsp;등 록 내 용</div>
+
+  <!-- 3. 교습비 신규/일부/전체변경 체크박스 -->
+  <div class="check-container">
+    <span class="check-label">교 습 비</span>
+    <span class="check-item">${checked(regType === '신규등록')} 신규등록</span>
+    <span class="check-item">${checked(regType === '일부변경')} 일부변경</span>
+    <span class="check-item">${checked(regType === '전체변경')} 전체변경</span>
+  </div>
+
+  <!-- 4. 교습비 테이블 (과목 테이블) -->
+  <table class="subject-table">
+    <thead>
+      <tr class="course-head">
+        <th rowspan="2" style="width:10%">교습<br>과정</th>
+        <th rowspan="2" style="width:13%">교습과목<br>(반)</th>
+        <th rowspan="2" style="width:8%">교습<br>기간</th>
+        <th style="width:36%">총 교습시간(A)</th>
+        <th rowspan="2" style="width:8%">정원<br>(반별)</th>
+        <th rowspan="2" style="width:12%">교습비(B)</th>
+        <th rowspan="2" style="width:13%">분당단가<br>(B÷A)</th>
+      </tr>
+      <tr class="course-head">
+        <th style="font-size:8.2pt; font-weight:normal; color:#444; padding: 1mm 0.5mm;">
+          일 분 × 주 회 × 4.3주 = 분
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      ${courseRows.replace(/<tr>/g, '<tr class="course-row">')}
+    </tbody>
+  </table>
+
+  <!-- 5. 기타 할인사항 -->
+  <div class="discount-container">
+    <strong>기타 할인사항</strong>
+  </div>
+
+  <!-- 6. 기타경비 섹션 타이틀 -->
+  <div class="section-title">기 타 경 비</div>
+
+  <!-- 7. 기타경비 테이블 (계 칸 포함 총 8열) -->
+  <table class="other-table">
+    <thead>
+      <tr class="other-head">
+        <th style="width:16%">교습과목(반)</th>
+        <th style="width:12%">모의고사비</th>
+        <th style="width:12%">재료비</th>
+        <th style="width:12%">피복비</th>
+        <th style="width:12%">급식비</th>
+        <th style="width:12%">기숙사비</th>
+        <th style="width:12%">차량비</th>
+        <th style="width:12%">계</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="other-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr class="other-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <!-- 8. 유의사항 -->
+  <div class="notice-box">
+    <strong>❏ 작성 시 유의사항</strong> : 기타경비는 「학원의 설립·운영 및 과외교습에 관한 법률 시행령」제3조의2에 따라 6개 항목만 인정되며, 세금계산서, 거래명세서, 원가계산서 등 실비임을 증명할 수 있는 경우에 한하여 징수 가능하고 교습비등을 거짓으로 표시·게시·고지하거나 초과한 금액을 징수한 경우 <strong>과태료(100~300만원) 부과 및 행정처분 대상</strong>이 됩니다.
+  </div>
+
+  <!-- 9. 확인서 -->
+  <div class="confirm-box">
+    <div class="confirm-title">확 인 서</div>
+    학원의 설립 운영 및 과외교습에 관한 법률 제6조 제1항, 제14조 제1항에 의거 본 학원(교습소)에서
+    (변경)등록·신고한 교습비등이 과다하다고 인정되어 차후 교습비등조정위원회의 심의 대상이
+    될 수 있으며, 조정심의 대상 통보시 같은법 시행령 제17조의2 제1항 각호의 서류를 제출하고
+    기한 내에 서류를 미제출한 경우 교습비등이 과다하다고 인정되어 같은법 제15조 제6항에 따라
+    경기도광주하남교육지원청에서 명하는 교습비등 조정에 이의없이 따를 것을 확인합니다.
+
+    <div class="sign-date">년 &nbsp;&nbsp;&nbsp;&nbsp; 월 &nbsp;&nbsp;&nbsp;&nbsp; 일</div>
+    <div class="sign-line">
+      신청인(설립운영자) :
+      <span class="sign-underline"></span>
+      (인)
+    </div>
+  </div>
+
+  <!-- 10. 하단 수신처 & 결재란 병렬 배치 -->
+  <div class="bottom-container">
+    <div class="recipient-box">
+      경기도광주하남교육지원청교육장 귀하
+    </div>
+    <table class="approval-table">
+      <tr>
+        <td rowspan="2" class="ap-label" style="width: 50px;">결<br>재</td>
+        <td class="ap-label" style="width: 80px;">담당</td>
+        <td class="ap-label" style="width: 80px;">담당주무</td>
+        <td class="ap-label" style="width: 120px;">평생교육건강과장</td>
+      </tr>
+      <tr>
+        <td style="height: 12mm;"></td>
+        <td></td>
+        <td style="font-size: 9.5pt; font-weight: 500;">전결</td>
+      </tr>
+    </table>
+  </div>
 </div>
 </body>
 </html>`;
