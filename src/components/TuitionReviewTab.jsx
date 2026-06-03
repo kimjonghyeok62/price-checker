@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import FieldStatistics from './FieldStatistics';
+import { parseExcelTuition } from '../utils/parseExcelTuition';
 
 // ─── 기준단가 옵션 ───────────────────────────────────────────
 const STANDARD_RATE_OPTIONS = [
@@ -21,27 +22,23 @@ const STANDARD_RATE_OPTIONS = [
 export default function TuitionReviewTab({ mode = 'academy' }) {
   const isTutoring = mode === 'tutoring';
 
+  // ── 신설/변경 서브탭 ──
+  const [subTab, setSubTab] = useState('신설');
+
+  // ── 신설 탭 상태 ──
   const [subjects, setSubjects] = useState([
     { id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }
   ]);
 
   function addSubject() {
-    setSubjects(prev => [
-      ...prev,
-      { id: Date.now(), rateIdx: '', dm: '', wc: '', wk: '', fee: '' }
-    ]);
+    setSubjects(prev => [...prev, { id: Date.now(), rateIdx: '', dm: '', wc: '', wk: '', fee: '' }]);
   }
-
   function updateSubject(id, key, val) {
-    setSubjects(prev => prev.map(sub =>
-      sub.id === id ? { ...sub, [key]: val } : sub
-    ));
+    setSubjects(prev => prev.map(sub => sub.id === id ? { ...sub, [key]: val } : sub));
   }
-
   function patchSubject(id, patch) {
     setSubjects(prev => prev.map(sub => sub.id === id ? { ...sub, ...patch } : sub));
   }
-
   function removeSubject(id) {
     if (subjects.length === 1) {
       setSubjects([{ id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
@@ -50,60 +47,320 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     setSubjects(prev => prev.filter(sub => sub.id !== id));
   }
 
+  // ── 변경 탭 상태 ──
+  const changeFileInputRef = useRef(null);
+  const [changeLoading, setChangeLoading] = useState(false);
+  const [changeError, setChangeError] = useState('');
+  const [changeDragOver, setChangeDragOver] = useState(false);
+  const [changeAcademies, setChangeAcademies] = useState([]);
+  const [changeSelected, setChangeSelected] = useState(null);
+  const [changeSubjects, setChangeSubjects] = useState([]);
+
+  function parseFeeStr(str) {
+    if (!str) return '';
+    const n = parseInt(String(str).replace(/[^0-9]/g, ''), 10);
+    return isNaN(n) ? '' : String(n);
+  }
+
+  // 교습과정 문자열에서 분야 인덱스 추정
+  function guessRateIdx(process) {
+    if (!process) return '';
+    const p = process.toLowerCase();
+    if (p.includes('어학') || p.includes('외국어')) return 4;
+    if (p.includes('음악')) return p.includes('입시') ? 6 : 5;
+    if (p.includes('미술')) return p.includes('입시') ? 8 : 7;
+    if (p.includes('무용') || p.includes('댄스') || p.includes('체육')) return p.includes('입시') ? 10 : 9;
+    if (p.includes('정보') || p.includes('컴퓨터') || p.includes('코딩')) return 11;
+    if (p.includes('진학') || p.includes('상담')) return 3;
+    if (p.includes('보습') || p.includes('단과')) {
+      if (p.includes('고등') || p.includes('고교') || p.includes('수능')) return 2;
+      if (p.includes('중등') || p.includes('중학')) return 1;
+      return 0;
+    }
+    return '';
+  }
+
+  // 총교습시간(분)에서 dm × wc × wk 역산
+  // wk = 4.3 → 4.2 → 4.1 → 4 순으로 시도하여 dm×wc가 정수가 되는 첫 조합 반환
+  function reverseCalcTime(totalTimeStr) {
+    const total = parseFloat(String(totalTimeStr).replace(/[^0-9.]/g, ''));
+    if (isNaN(total) || total <= 0) return { dm: '', wc: '', wk: '4.3' };
+
+    const wkCandidates = [
+      { val: 4.3, str: '4.3' },
+      { val: 4.2, str: '4.2' },
+      { val: 4.1, str: '4.1' },
+      { val: 4.0, str: '4' },
+    ];
+    // wc 시도 순서: 일반적인 횟수(5,4,3,6) 우선
+    const wcTryOrder = [5, 4, 3, 6, 2, 7, 1, 8, 10];
+
+    // 패스 0: dm이 5의 배수인 조합 우선 / 패스 1: 임의 정수도 허용
+    for (let pass = 0; pass < 2; pass++) {
+      for (const { val: wkVal, str: wkStr } of wkCandidates) {
+        const weekly = total / wkVal;
+        for (const wc of wcTryOrder) {
+          const dmFloat = weekly / wc;
+          const dmInt = Math.round(dmFloat);
+          if (dmInt < 30 || dmInt > 480) continue;
+          if (Math.abs(dmFloat - dmInt) > 0.02) continue;
+          if (pass === 0 && dmInt % 5 !== 0) continue; // 패스0: 5의 배수만
+          // 실제 곱이 total과 0.3% 이내인지 검증
+          if (Math.abs(dmInt * wc * wkVal - total) / total < 0.003) {
+            return { dm: String(dmInt), wc: String(wc), wk: wkStr };
+          }
+        }
+      }
+    }
+    return { dm: '', wc: '', wk: '4.3' };
+  }
+
+  function selectChangeAcademy(academy) {
+    setChangeSelected(academy);
+    const subs = academy.courses.map((c, i) => {
+      const label = c.subject ? `${c.process}(${c.subject})` : c.process;
+      const rateIdx = guessRateIdx(c.process);
+      const { dm, wc, wk } = reverseCalcTime(c.totalTime);
+      return { id: i + 1, processLabel: label || `과목 ${i + 1}`, rateIdx, dm, wc, wk, fee: parseFeeStr(c.tuitionFee) };
+    });
+    setChangeSubjects(subs.length ? subs : [{ id: 1, processLabel: '', rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
+  }
+
+  async function handleChangeFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setChangeError('');
+    setChangeLoading(true);
+    setChangeAcademies([]);
+    setChangeSelected(null);
+    setChangeSubjects([]);
+    try {
+      const result = await parseExcelTuition(file);
+      if (!result.length) {
+        setChangeError('파싱된 학원 데이터가 없습니다. 파일 형식을 확인하세요.');
+      } else {
+        setChangeAcademies(result);
+        if (result.length === 1) selectChangeAcademy(result[0]);
+      }
+    } catch (err) {
+      setChangeError('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+      setChangeLoading(false);
+      e.target.value = '';
+    }
+  }
+
+  function handleChangeDrop(e) {
+    e.preventDefault();
+    setChangeDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleChangeFile({ target: { files: [file], value: '' } });
+  }
+
+  function removeChangeSubject(id) {
+    if (changeSubjects.length === 1) return;
+    setChangeSubjects(prev => prev.filter(sub => sub.id !== id));
+  }
+
+  // ── 신설 탭 참고값 ──
   const lastSub = subjects[subjects.length - 1];
-  const fieldStats = !isTutoring && (
+  const fieldStats = !isTutoring && subTab === '신설' && (
     <FieldStatistics
       selectedRateIdx={lastSub?.rateIdx ?? ''}
-      onFieldChange={(fieldIdx) => {
-        patchSubject(lastSub.id, { rateIdx: String(fieldIdx) });
-      }}
+      onFieldChange={(fieldIdx) => { patchSubject(lastSub.id, { rateIdx: String(fieldIdx) }); }}
       onSelect={({ rateIdx, dm, wc, wk, fee }) => {
-        patchSubject(lastSub.id, {
-          rateIdx: String(rateIdx),
-          dm: String(dm),
-          wc: String(wc),
-          wk: wk,
-          fee: String(fee),
-        });
+        patchSubject(lastSub.id, { rateIdx: String(rateIdx), dm: String(dm), wc: String(wc), wk, fee: String(fee) });
       }}
     />
   );
 
+  const subTabStyle = (active) => ({
+    flex: 1,
+    padding: '9px 4px',
+    border: 'none',
+    borderBottom: active ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+    color: active ? 'var(--primary)' : 'var(--text-muted)',
+    fontWeight: active ? '700' : '500',
+    fontSize: '0.97rem',
+    transition: 'all 0.15s',
+    fontFamily: 'inherit',
+  });
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {subjects.slice(0, -1).map((sub, idx) => (
-        <SubjectCard
-          key={sub.id}
-          index={idx}
-          sub={sub}
-          mode={mode}
-          onUpdate={updateSubject}
-          onRemove={removeSubject}
-          isLast={false}
-          onAdd={addSubject}
-        />
-      ))}
-      {fieldStats}
-      {fieldStats && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '10px',
-          margin: '-8px 0 -4px', fontSize: '0.8rem', color: '#9ca3af',
-        }}>
-          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
-          <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>↓ 상세 입력 · 조정</span>
-          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {/* 신설 / 변경 서브탭 (학원·교습소만) */}
+      {!isTutoring && (
+        <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '4px' }}>
+          {['신설', '변경'].map(t => (
+            <button key={t} style={subTabStyle(subTab === t)} onClick={() => setSubTab(t)}>{t}</button>
+          ))}
         </div>
       )}
-      <SubjectCard
-        key={lastSub.id}
-        index={subjects.length - 1}
-        sub={lastSub}
-        mode={mode}
-        onUpdate={updateSubject}
-        onRemove={removeSubject}
-        isLast={true}
-        onAdd={addSubject}
-      />
+
+      {/* ── 신설 탭 / 과외 모드 ── */}
+      {(isTutoring || subTab === '신설') && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {subjects.slice(0, -1).map((sub, idx) => (
+            <SubjectCard
+              key={sub.id}
+              index={idx}
+              sub={sub}
+              mode={mode}
+              onUpdate={updateSubject}
+              onRemove={removeSubject}
+              isLast={false}
+              onAdd={addSubject}
+            />
+          ))}
+          {fieldStats}
+          {fieldStats && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '-8px 0 -4px', fontSize: '0.8rem', color: '#9ca3af' }}>
+              <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+              <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>↓ 상세 입력 · 조정</span>
+              <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+            </div>
+          )}
+          <SubjectCard
+            key={lastSub.id}
+            index={subjects.length - 1}
+            sub={lastSub}
+            mode={mode}
+            onUpdate={updateSubject}
+            onRemove={removeSubject}
+            isLast={true}
+            onAdd={addSubject}
+          />
+        </div>
+      )}
+
+      {/* ── 변경 탭 ── */}
+      {!isTutoring && subTab === '변경' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* 안내 박스 */}
+          <div style={{ backgroundColor: '#f8fafc', border: '1.5px solid var(--border-color)', borderRadius: '12px', padding: '14px 18px', fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-main)' }}>
+            <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              나이스 엑셀 파일 다운로드 방법 안내
+            </div>
+            <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontWeight: '600' }}>
+              <li><a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>나이스 학원</a>{' '}방문</li>
+              <li>경기도교육청 선택</li>
+              <li>학원 교습소 정보 조회 (엑셀내려받기)</li>
+              <li>아래 영역에 엑셀 업로드</li>
+            </ol>
+            <div style={{ backgroundColor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '8px 12px', display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.85rem', color: '#92400e', fontWeight: '600' }}>
+              <span style={{ flexShrink: 0 }}>⚠️</span>
+              PC 전용 기능 (모바일은 불완전)
+            </div>
+          </div>
+
+          {/* 드래그앤드롭 업로드 */}
+          {!changeSelected && (
+            <div
+              onClick={() => changeFileInputRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setChangeDragOver(true); }}
+              onDragEnter={e => { e.preventDefault(); setChangeDragOver(true); }}
+              onDragLeave={e => { e.preventDefault(); setChangeDragOver(false); }}
+              onDrop={handleChangeDrop}
+              style={{
+                border: `2px dashed ${changeDragOver ? 'var(--primary)' : 'var(--border-color)'}`,
+                borderRadius: '12px', padding: '32px 20px', textAlign: 'center', cursor: 'pointer',
+                backgroundColor: changeDragOver ? '#eef2ff' : 'var(--bg-card)',
+                transition: 'border-color 0.15s, background-color 0.15s',
+              }}
+              onMouseEnter={e => { if (!changeDragOver) e.currentTarget.style.borderColor = 'var(--primary)'; }}
+              onMouseLeave={e => { if (!changeDragOver) e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+            >
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)', marginBottom: '10px' }}>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+              </svg>
+              <div style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '4px' }}>
+                {changeLoading ? '파일 분석 중...' : changeDragOver ? '여기에 놓으세요!' : '엑셀 파일 선택 또는 여기에 끌어다 놓기'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                나이스 학원에서 엑셀내려받기 한 파일(.xlsx) 업로드
+              </div>
+              <input ref={changeFileInputRef} type="file" accept=".xlsx,.xls" onChange={handleChangeFile} style={{ display: 'none' }} />
+            </div>
+          )}
+
+          {changeError && (
+            <div style={{ color: '#dc2626', fontSize: '0.85rem', padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
+              {changeError}
+            </div>
+          )}
+
+          {/* 복수 학원 선택 */}
+          {changeAcademies.length > 1 && !changeSelected && (
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                파일에서 {changeAcademies.length}개 학원을 찾았습니다. 선택하세요.
+              </div>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {changeAcademies.map((a, i) => (
+                  <li key={i} onClick={() => selectChangeAcademy(a)}
+                    style={{ padding: '12px 16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '10px', cursor: 'pointer', transition: 'border-color 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                  >
+                    <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{a.name}</div>
+                    {a.address && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{a.address}</div>}
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>교습과정 {a.courses.length}개</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* 선택된 학원 — 편집 가능한 과목 카드 */}
+          {changeSelected && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#1e293b' }}>
+                  {changeSelected.name}
+                  {changeSelected.address && (
+                    <span style={{ fontSize: '0.8rem', fontWeight: '400', color: 'var(--text-muted)', marginLeft: '8px' }}>
+                      {changeSelected.address}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => { setChangeSelected(null); setChangeSubjects([]); setChangeAcademies([]); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.83rem', padding: 0, display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'inherit' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  다시 선택
+                </button>
+              </div>
+              {changeSubjects.map((sub, idx) => (
+                <SubjectCard
+                  key={sub.id}
+                  index={idx}
+                  sub={sub}
+                  mode={mode}
+                  onUpdate={(id, k, v) => setChangeSubjects(prev => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], [k]: v };
+                    return next;
+                  })}
+                  onRemove={removeChangeSubject}
+                  isLast={false}
+                  onAdd={() => {}}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -262,7 +519,7 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
 
 // ─── 개별 과목 카드 컴포넌트 ─────────────────────────────────
 function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
-  const { id, rateIdx, dm, wc, wk, fee } = sub;
+  const { id, rateIdx, dm, wc, wk, fee, processLabel } = sub;
   const isTutoring = mode === 'tutoring';
 
   const [feeEditMode, setFeeEditMode] = useState(false);
@@ -326,7 +583,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: '800', fontSize: '1rem', color: '#111827' }}>
-            과목 {index + 1}
+            {processLabel ? `${index + 1}. ${processLabel}` : `과목 ${index + 1}`}
           </span>
           <span style={{
             fontSize: '0.78rem',
