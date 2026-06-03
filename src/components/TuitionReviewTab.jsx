@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import FieldStatistics from './FieldStatistics';
 
 // ─── 기준단가 옵션 ───────────────────────────────────────────
@@ -50,9 +50,28 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     setSubjects(prev => prev.filter(sub => sub.id !== id));
   }
 
+  const lastSub = subjects[subjects.length - 1];
+  const fieldStats = !isTutoring && (
+    <FieldStatistics
+      selectedRateIdx={lastSub?.rateIdx ?? ''}
+      onFieldChange={(fieldIdx) => {
+        patchSubject(lastSub.id, { rateIdx: String(fieldIdx) });
+      }}
+      onSelect={({ rateIdx, dm, wc, wk, fee }) => {
+        patchSubject(lastSub.id, {
+          rateIdx: String(rateIdx),
+          dm: String(dm),
+          wc: String(wc),
+          wk: wk,
+          fee: String(fee),
+        });
+      }}
+    />
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {subjects.map((sub, idx) => (
+      {subjects.slice(0, -1).map((sub, idx) => (
         <SubjectCard
           key={sub.id}
           index={idx}
@@ -60,25 +79,21 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           mode={mode}
           onUpdate={updateSubject}
           onRemove={removeSubject}
-          isLast={idx === subjects.length - 1}
+          isLast={false}
           onAdd={addSubject}
         />
       ))}
-      {!isTutoring && (
-        <FieldStatistics
-          selectedRateIdx={subjects[0]?.rateIdx ?? ''}
-          onSelect={({ rateIdx, dm, wc, wk, fee }) => {
-            const lastId = subjects[subjects.length - 1].id;
-            patchSubject(lastId, {
-              rateIdx: String(rateIdx),
-              dm: String(dm),
-              wc: String(wc),
-              wk: wk,
-              fee: String(fee),
-            });
-          }}
-        />
-      )}
+      {fieldStats}
+      <SubjectCard
+        key={lastSub.id}
+        index={subjects.length - 1}
+        sub={lastSub}
+        mode={mode}
+        onUpdate={updateSubject}
+        onRemove={removeSubject}
+        isLast={true}
+        onAdd={addSubject}
+      />
     </div>
   );
 }
@@ -240,6 +255,20 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
   const { id, rateIdx, dm, wc, wk, fee } = sub;
   const isTutoring = mode === 'tutoring';
 
+  const [feeEditMode, setFeeEditMode] = useState(false);
+  const longPressTimer = useRef(null);
+
+  function handleFeePointerDown() {
+    longPressTimer.current = setTimeout(() => setFeeEditMode(true), 500);
+  }
+  function handleFeePointerUp() {
+    clearTimeout(longPressTimer.current);
+  }
+  function handleFeeStep(delta) {
+    const next = Math.max(0, (parseFloat(fee) || 0) + delta);
+    onUpdate(id, 'fee', String(next));
+  }
+
   const wkVal = parseFloat(wk) || 0;
   const totalMinutes = Math.round((parseFloat(dm) || 0) * (parseFloat(wc) || 0) * wkVal);
   const calcRate = totalMinutes > 0 ? (parseFloat(fee) || 0) / totalMinutes : 0;
@@ -400,30 +429,85 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
           <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {isTutoring ? '2. 교습비(원)' : '3. 교습비(원)'}
           </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={fee === '' ? '' : Number(fee).toLocaleString()}
-            onChange={e => {
-              const raw = e.target.value.replace(/,/g, '');
-              if (raw === '' || /^\d+$/.test(raw)) onUpdate(id, 'fee', raw);
-            }}
-            placeholder="금액 입력"
-            style={{
-              width: '120px',
-              textAlign: 'right',
-              padding: '4px 2px',
-              border: 'none',
-              borderBottom: '1.5px solid #9ca3af',
-              background: 'transparent',
-              fontSize: '1.05rem',
-              fontWeight: '700',
-              color: '#1d4ed8',
-              outline: 'none',
-              fontFamily: 'inherit',
-            }}
-          />
+          {feeEditMode ? (
+            <input
+              type="text"
+              inputMode="numeric"
+              autoFocus
+              value={fee === '' ? '' : Number(fee).toLocaleString()}
+              onChange={e => {
+                const raw = e.target.value.replace(/,/g, '');
+                if (raw === '' || /^\d+$/.test(raw)) onUpdate(id, 'fee', raw);
+              }}
+              onBlur={() => {
+                if (fee === '') onUpdate(id, 'fee', '0');
+                setFeeEditMode(false);
+              }}
+              style={{
+                width: '120px',
+                textAlign: 'right',
+                padding: '4px 2px',
+                border: 'none',
+                borderBottom: '1.5px solid #6366f1',
+                background: 'transparent',
+                fontSize: '1.05rem',
+                fontWeight: '700',
+                color: '#1d4ed8',
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
+            />
+          ) : (
+            <span
+              onPointerDown={handleFeePointerDown}
+              onPointerUp={handleFeePointerUp}
+              onPointerLeave={handleFeePointerUp}
+              title="길게 누르면 직접 입력"
+              style={{
+                width: '120px',
+                textAlign: 'right',
+                padding: '4px 2px',
+                borderBottom: '1.5px solid #9ca3af',
+                fontSize: '1.05rem',
+                fontWeight: '700',
+                color: fee ? '#1d4ed8' : '#9ca3af',
+                cursor: 'text',
+                userSelect: 'none',
+                display: 'inline-block',
+              }}
+            >
+              {fee ? Number(fee).toLocaleString() : '금액 입력'}
+            </span>
+          )}
           <span style={{ fontSize: '0.95rem', color: '#374151', fontWeight: '600', flexShrink: 0 }}>원</span>
+          {/* ▲▼ 스피너 버튼 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
+            {['▲', '▼'].map((arrow, i) => (
+              <button
+                key={arrow}
+                onClick={() => handleFeeStep(i === 0 ? 10000 : -10000)}
+                style={{
+                  width: '26px',
+                  height: '18px',
+                  padding: 0,
+                  fontSize: '0.6rem',
+                  lineHeight: 1,
+                  border: '1px solid #d1d5db',
+                  borderRadius: i === 0 ? '4px 4px 0 0' : '0 0 4px 4px',
+                  background: '#f9fafb',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#eef2ff'; e.currentTarget.style.color = '#4338ca'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.color = '#374151'; }}
+              >
+                {arrow}
+              </button>
+            ))}
+          </div>
           <span style={{ fontSize: '0.85rem', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', backgroundColor: totalMinutes > 0 ? '#eff6ff' : '#f1f5f9', padding: '2px 7px', borderRadius: '4px', fontWeight: '700', flexShrink: 0, border: `1px solid ${totalMinutes > 0 ? '#bfdbfe' : '#e2e8f0'}` }}>
             상한 {totalMinutes > 0 ? maxAllowedFee.toLocaleString() : '—'}원
           </span>
