@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import FieldStatistics from './FieldStatistics';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
+import { printRegistrationForm } from '../utils/generateRegistrationPDF';
 
 // ─── 기준단가 옵션 ───────────────────────────────────────────
 const STANDARD_RATE_OPTIONS = [
@@ -27,11 +28,11 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
 
   // ── 신설 탭 상태 ──
   const [subjects, setSubjects] = useState([
-    { id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }
+    { id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '', subjectName: '' }
   ]);
 
   function addSubject() {
-    setSubjects(prev => [...prev, { id: Date.now(), rateIdx: '', dm: '', wc: '', wk: '', fee: '' }]);
+    setSubjects(prev => [...prev, { id: Date.now(), rateIdx: '', dm: '', wc: '', wk: '', fee: '', subjectName: '' }]);
   }
   function updateSubject(id, key, val) {
     setSubjects(prev => prev.map(sub => sub.id === id ? { ...sub, [key]: val } : sub));
@@ -41,13 +42,14 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   }
   function removeSubject(id) {
     if (subjects.length === 1) {
-      setSubjects([{ id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
+      setSubjects([{ id: 1, rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '', subjectName: '' }]);
       return;
     }
     setSubjects(prev => prev.filter(sub => sub.id !== id));
   }
 
   // ── 변경 탭 상태 ──
+  const [changeRegType, setChangeRegType] = useState('일부변경');
   const changeFileInputRef = useRef(null);
   const [changeLoading, setChangeLoading] = useState(false);
   const [changeError, setChangeError] = useState('');
@@ -121,9 +123,9 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
       const label = c.subject ? `${c.process}(${c.subject})` : c.process;
       const rateIdx = guessRateIdx(c.process);
       const { dm, wc, wk } = reverseCalcTime(c.totalTime);
-      return { id: i + 1, processLabel: label || `과목 ${i + 1}`, rateIdx, dm, wc, wk, fee: parseFeeStr(c.tuitionFee) };
+      return { id: i + 1, subjectName: label || '', rateIdx, dm, wc, wk, fee: parseFeeStr(c.tuitionFee) };
     });
-    setChangeSubjects(subs.length ? subs : [{ id: 1, processLabel: '', rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
+    setChangeSubjects(subs.length ? subs : [{ id: 1, subjectName: '', rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
   }
 
   async function handleChangeFile(e) {
@@ -233,6 +235,11 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
             isLast={true}
             onAdd={addSubject}
           />
+          {!isTutoring && (
+            <PrintBar
+              onPrint={() => printRegistrationForm({ regType: '신규등록', subjects })}
+            />
+          )}
         </div>
       )}
 
@@ -357,6 +364,17 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
                   onAdd={() => {}}
                 />
               ))}
+              <PrintBar
+                regType={changeRegType}
+                onRegTypeChange={setChangeRegType}
+                showRegTypeSelector
+                onPrint={() => printRegistrationForm({
+                  academyName: changeSelected.name,
+                  address: changeSelected.address || '',
+                  regType: changeRegType,
+                  subjects: changeSubjects,
+                })}
+              />
             </div>
           )}
         </div>
@@ -519,11 +537,13 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
 
 // ─── 개별 과목 카드 컴포넌트 ─────────────────────────────────
 function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
-  const { id, rateIdx, dm, wc, wk, fee, processLabel } = sub;
+  const { id, rateIdx, dm, wc, wk, fee, subjectName } = sub;
   const isTutoring = mode === 'tutoring';
 
   const [feeEditMode, setFeeEditMode] = useState(false);
+  const [nameEditMode, setNameEditMode] = useState(false);
   const longPressTimer = useRef(null);
+  const displayName = subjectName || `과목${index + 1}`;
 
   function handleFeePointerDown() {
     longPressTimer.current = setTimeout(() => setFeeEditMode(true), 500);
@@ -582,8 +602,32 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
         borderBottom: `1px solid ${borderColor}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: '800', fontSize: '1rem', color: '#111827' }}>
-            {processLabel ? `${index + 1}. ${processLabel}` : `과목 ${index + 1}`}
+          <span style={{ fontWeight: '800', fontSize: '1rem', color: '#111827', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            {index + 1}.{' '}
+            {nameEditMode ? (
+              <input
+                type="text"
+                autoFocus
+                value={subjectName}
+                onChange={e => onUpdate(id, 'subjectName', e.target.value)}
+                onBlur={() => setNameEditMode(false)}
+                onKeyDown={e => { if (e.key === 'Enter') setNameEditMode(false); }}
+                placeholder={`과목${index + 1}`}
+                style={{
+                  fontSize: '1rem', fontWeight: '800', color: '#111827',
+                  border: 'none', borderBottom: '1.5px solid #6366f1', background: 'transparent',
+                  outline: 'none', fontFamily: 'inherit', width: '100px', padding: '0 2px',
+                }}
+              />
+            ) : (
+              <span
+                onClick={() => setNameEditMode(true)}
+                title="클릭하여 과목명 편집"
+                style={{ cursor: 'text', borderBottom: '1px dashed #9ca3af', paddingBottom: '1px' }}
+              >
+                {displayName}
+              </span>
+            )}
           </span>
           <span style={{
             fontSize: '0.78rem',
@@ -826,6 +870,70 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── 등록신청서 출력 바 ─────────────────────────────────────────
+function PrintBar({ onPrint, showRegTypeSelector = false, regType, onRegTypeChange }) {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px',
+      padding: '14px 16px',
+      backgroundColor: '#f8fafc',
+      border: '1.5px solid #e2e8f0',
+      borderRadius: '10px',
+      marginTop: '4px',
+    }}>
+      <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px' }}>
+        학원(교습소) 교습비등 등록신청서
+      </div>
+      {showRegTypeSelector && (
+        <div style={{ display: 'flex', gap: '12px', fontSize: '0.9rem' }}>
+          {['일부변경', '전체변경'].map(t => (
+            <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontWeight: regType === t ? '700' : '500', color: regType === t ? '#1d4ed8' : '#6b7280' }}>
+              <input
+                type="radio"
+                name="regType"
+                value={t}
+                checked={regType === t}
+                onChange={() => onRegTypeChange(t)}
+                style={{ accentColor: '#2563eb' }}
+              />
+              {t}
+            </label>
+          ))}
+        </div>
+      )}
+      <button
+        onClick={onPrint}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '7px',
+          padding: '10px 16px',
+          backgroundColor: '#1d4ed8',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '8px',
+          fontSize: '0.92rem',
+          fontWeight: '700',
+          cursor: 'pointer',
+          letterSpacing: '0.02em',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#1e40af'; }}
+        onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"/>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <rect x="6" y="14" width="12" height="8"/>
+        </svg>
+        등록신청서 출력 (PDF)
+      </button>
     </div>
   );
 }
