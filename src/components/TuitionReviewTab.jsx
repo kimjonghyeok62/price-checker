@@ -3,6 +3,33 @@ import FieldStatistics from './FieldStatistics';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm } from '../utils/generateRegistrationPDF';
 
+// ─── 교습과정/과목명에서 분야 인덱스 추정 ────────────────────
+function guessRateIdx(text) {
+  if (!text) return '';
+  const p = text.toLowerCase();
+  if (p.includes('어학') || p.includes('외국어')) return 4;
+  if (p.includes('음악')) return p.includes('입시') ? 6 : 5;
+  if (p.includes('미술')) return p.includes('입시') ? 8 : 7;
+  if (p.includes('무용') || p.includes('댄스') || p.includes('체육')) return p.includes('입시') ? 10 : 9;
+  if (p.includes('정보') || p.includes('컴퓨터') || p.includes('코딩')) return 11;
+  if (p.includes('진학') || p.includes('상담')) return 3;
+  const isHabeop = p.includes('보습') || p.includes('단과') || p.includes('보통교과');
+  if (isHabeop || p.includes('고등') || p.includes('고교') || p.includes('수능') ||
+      p.includes('중등') || p.includes('중학') || p.includes('초등')) {
+    if (p.includes('고등') || p.includes('고교') || p.includes('수능')) return 2;
+    if (p.includes('중등') || p.includes('중학')) return 1;
+    if (isHabeop) return 0;
+  }
+  return '';
+}
+
+// 같은 분야의 입시/비입시 쌍인지 확인 (자동 전환 허용 범위)
+function isSameCategoryPair(a, b) {
+  const pairs = [[5, 6], [7, 8], [9, 10]];
+  const na = Number(a); const nb = Number(b);
+  return pairs.some(p => p.includes(na) && p.includes(nb));
+}
+
 // ─── 기준단가 옵션 ───────────────────────────────────────────
 const STANDARD_RATE_OPTIONS = [
   { label: '보습 — 단과(초등)', rate: 210 },
@@ -64,23 +91,6 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     return isNaN(n) ? '' : String(n);
   }
 
-  // 교습과정 문자열에서 분야 인덱스 추정
-  function guessRateIdx(process) {
-    if (!process) return '';
-    const p = process.toLowerCase();
-    if (p.includes('어학') || p.includes('외국어')) return 4;
-    if (p.includes('음악')) return p.includes('입시') ? 6 : 5;
-    if (p.includes('미술')) return p.includes('입시') ? 8 : 7;
-    if (p.includes('무용') || p.includes('댄스') || p.includes('체육')) return p.includes('입시') ? 10 : 9;
-    if (p.includes('정보') || p.includes('컴퓨터') || p.includes('코딩')) return 11;
-    if (p.includes('진학') || p.includes('상담')) return 3;
-    if (p.includes('보습') || p.includes('단과')) {
-      if (p.includes('고등') || p.includes('고교') || p.includes('수능')) return 2;
-      if (p.includes('중등') || p.includes('중학')) return 1;
-      return 0;
-    }
-    return '';
-  }
 
   // 총교습시간(분)에서 dm × wc × wk 역산
   // wk = 4.3 → 4.2 → 4.1 → 4 순으로 시도하여 dm×wc가 정수가 되는 첫 조합 반환
@@ -121,7 +131,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     setChangeSelected(academy);
     const subs = academy.courses.map((c, i) => {
       const label = c.subject ? `${c.process}(${c.subject})` : c.process;
-      const rateIdx = guessRateIdx(c.process);
+      const rateIdx = guessRateIdx(`${c.process} ${c.subject || ''}`);
       const { dm, wc, wk } = reverseCalcTime(c.totalTime);
       return { id: i + 1, subjectName: label || '', rateIdx, dm, wc, wk, fee: parseFeeStr(c.tuitionFee) };
     });
@@ -610,7 +620,12 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 type="text"
                 autoFocus
                 value={subjectName}
-                onChange={e => onUpdate(id, 'subjectName', e.target.value)}
+                onChange={e => {
+                  const newName = e.target.value;
+                  onUpdate(id, 'subjectName', newName);
+                  const guessed = guessRateIdx(newName);
+                  if (guessed !== '') onUpdate(id, 'rateIdx', guessed);
+                }}
                 onBlur={() => setNameEditMode(false)}
                 onKeyDown={e => { if (e.key === 'Enter') setNameEditMode(false); }}
                 placeholder={`과목${index + 1}`}
