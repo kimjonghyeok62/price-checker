@@ -359,7 +359,7 @@ export default function TuitionCheckTab() {
             >✕</button>
           </div>
         )}
-        <div style={{ overflowX: 'clip' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <table style={{ ...TABLE_STYLE, tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: '44px' }} />
@@ -513,7 +513,7 @@ export default function TuitionCheckTab() {
       {/* ── 섹션 2: 기준단가 참고표 ── */}
       <div>
         <SectionTitle>기준단가 참고표</SectionTitle>
-        <div style={{ overflowX: 'clip' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <table style={{ ...TABLE_STYLE, tableLayout: 'fixed' }}>
             <colgroup>
               <col style={{ width: '110px' }} />
