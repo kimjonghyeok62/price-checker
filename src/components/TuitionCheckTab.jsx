@@ -362,24 +362,24 @@ export default function TuitionCheckTab() {
         <div style={{ overflowX: 'clip' }}>
           <table style={{ ...TABLE_STYLE, tableLayout: 'fixed' }}>
             <colgroup>
-              <col style={{ width: '52px' }} />
-              <col style={{ width: '48px' }} />
-              <col style={{ width: '48px' }} />
+              <col style={{ width: '44px' }} />
+              <col style={{ width: '36px' }} />
+              <col style={{ width: '36px' }} />
+              <col style={{ width: '74px' }} />
               <col style={{ width: '88px' }} />
-              <col style={{ width: '95px' }} />
-              <col style={{ width: '68px' }} />
+              <col style={{ width: '66px' }} />
             </colgroup>
             <thead>
               {(() => {
                 const thTop = selectedField ? 32 : 0;
                 return (
                   <tr>
-                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>일(분)</th>
-                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>주(회)</th>
-                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>월(주)</th>
-                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>총교습<br />시간(분)</th>
-                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px', background: '#fef9ee' }}>교습비(원)</th>
-                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>분당단가</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '6px 3px' }}>일(분)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '6px 3px' }}>주(회)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '6px 3px' }}>월(주)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '6px 3px' }}>총교습<br />시간(분)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '6px 3px', background: '#fef9ee' }}>교습비(원)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '6px 3px' }}>분당단가</th>
                   </tr>
                 );
               })()}
@@ -417,7 +417,7 @@ export default function TuitionCheckTab() {
                         <option value="4.0">4.0</option>
                       </select>
                     </td>
-                    <td style={{ ...TD_CU, fontWeight: 700, color: customTotal ? '#4c1d95' : '#9ca3af', textAlign: 'right', paddingRight: '20px' }}>
+                    <td style={{ ...TD_CU, fontWeight: 700, color: customTotal ? '#4c1d95' : '#9ca3af', textAlign: 'right', paddingRight: '6px' }}>
                       {customTotal ? fmtNum(customTotal) : '—'}
                     </td>
                     <td style={{ ...TD_CU, padding: '4px 3px' }}>
@@ -439,7 +439,7 @@ export default function TuitionCheckTab() {
                       return (
                         <td style={{ ...TD_CU, fontWeight: 700, color: rateColor }}>
                           {showHint && cMaxFee
-                            ? <span style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 600 }}>상한 {fmtNum(cMaxFee)}원</span>
+                            ? <span style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>≤{fmtNum(cMaxFee)}원</span>
                             : showRate ? `${fmtNum(customRate)}원` : '—'}
                         </td>
                       );
@@ -460,7 +460,7 @@ export default function TuitionCheckTab() {
                 const groupBorder = isGroupStart && groupIdx > 0 ? { borderTop: '1px solid #94a3b8' } : {};
                 const highlighted = HIGHLIGHT_TOTALS.has(total);
                 const bg = highlighted ? '#fffbeb' : '#fff';
-                const TD_SM = { ...TD_LG, fontSize: '0.88rem', padding: '7px 4px', borderBottom: 'none' };
+                const TD_SM = { ...TD_LG, fontSize: '0.88rem', padding: '5px 3px', borderBottom: 'none' };
 
                 const maxFee = selectedField ? Math.floor(selectedField.rate * total) : null;
                 const showHint = selectedField && total > 0 && (!feeNum || feeNum <= 10000);
@@ -478,7 +478,7 @@ export default function TuitionCheckTab() {
                     </td>
                     <td style={{ ...TD_SM, fontWeight: 600, color: '#1d4ed8', ...groupBorder }}>{wc}</td>
                     <td style={{ ...TD_SM, color: '#4b5563', ...groupBorder }}>4.3</td>
-                    <td style={{ ...TD_SM, fontWeight: 700, color: '#1e3a8a', textAlign: 'right', paddingRight: '20px', ...groupBorder }}>{fmtNum(total)}</td>
+                    <td style={{ ...TD_SM, fontWeight: 700, color: '#1e3a8a', textAlign: 'right', paddingRight: '6px', ...groupBorder }}>{fmtNum(total)}</td>
                     <td style={{ ...TD_SM, padding: '4px 4px', background: highlighted ? '#fef9e7' : '#fefce8', ...groupBorder }}>
                       <input
                         type="text"
@@ -499,7 +499,7 @@ export default function TuitionCheckTab() {
                     </td>
                     <td style={{ ...TD_SM, fontWeight: 700, color: rateColor, ...groupBorder }}>
                       {showHint && maxFee
-                        ? <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600 }}>상한 {fmtNum(maxFee)}원</span>
+                        ? <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>≤{fmtNum(maxFee)}원</span>
                         : showRate ? `${fmtNum(rate)}원` : (rate && !selectedField ? `${fmtNum(rate)}원` : '—')}
                     </td>
                   </tr>
