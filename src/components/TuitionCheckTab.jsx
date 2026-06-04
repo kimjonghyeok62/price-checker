@@ -263,9 +263,26 @@ const TD_LG = {
   textAlign: 'center',
 };
 
+const FIELD_BUTTONS = [
+  { label: '단과(초등)', rate: 210 },
+  { label: '단과(중등)', rate: 222 },
+  { label: '단과(고등)', rate: 234 },
+  { label: '진학상담', rate: 234 },
+  { label: '어학', rate: 259 },
+  { label: '음악(일반)', rate: 224 },
+  { label: '음악(입시)', rate: 336 },
+  { label: '미술(일반)', rate: 212 },
+  { label: '미술(입시)', rate: 255 },
+  { label: '무용(일반)', rate: 212 },
+  { label: '무용(입시)', rate: 255 },
+  { label: '정보', rate: 230 },
+  { label: '기타', rate: 230 },
+];
+
 export default function TuitionCheckTab() {
   const [fees, setFees] = useState({});
   const [custom, setCustom] = useState({ dm: '', wc: '', wk: '4.3', fee: '' });
+  const [selectedField, setSelectedField] = useState(null);
 
   function setFee(key, val) {
     const raw = val.replace(/[^0-9]/g, '');
@@ -281,9 +298,67 @@ export default function TuitionCheckTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', paddingBottom: '40px' }}>
 
-      {/* ── 섹션 1: 총교습시간별 참고표 ── */}
+      {/* ── 섹션 1: 분야 선택 버튼 + 총교습시간별 참고표 ── */}
       <div>
-        <SectionTitle>총 교습시간별 참고표</SectionTitle>
+        {/* 분야 선택 버튼 */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+          {FIELD_BUTTONS.map((f) => {
+            const isActive = selectedField?.label === f.label;
+            return (
+              <button
+                key={f.label}
+                onClick={() => setSelectedField(isActive ? null : f)}
+                style={{
+                  padding: '5px 10px',
+                  fontSize: '0.8rem',
+                  fontWeight: isActive ? '700' : '500',
+                  fontFamily: 'inherit',
+                  border: isActive ? '2px solid #1d4ed8' : '1.5px solid #d1d5db',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  backgroundColor: isActive ? '#1d4ed8' : '#f9fafb',
+                  color: isActive ? '#fff' : '#374151',
+                  boxShadow: isActive ? '0 2px 6px rgba(29,78,216,0.25)' : 'none',
+                  transition: 'all 0.15s',
+                  lineHeight: 1.3,
+                }}
+                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#4338ca'; } }}
+                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#374151'; } }}
+              >
+                {f.label}
+                <span style={{ fontSize: '0.7rem', opacity: 0.75, marginLeft: '3px' }}>{f.rate}</span>
+              </button>
+            );
+          })}
+        </div>
+        {/* ── 스티키 분야 인디케이터 바 ── */}
+        {selectedField && (
+          <div style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '5px 12px',
+            backgroundColor: '#1d4ed8',
+            color: '#fff',
+            fontSize: '0.83rem',
+            fontWeight: 700,
+            boxShadow: '0 2px 6px rgba(29,78,216,0.3)',
+            borderRadius: '8px 8px 0 0',
+            height: '32px',
+            boxSizing: 'border-box',
+          }}>
+            <span style={{ opacity: 0.75, fontWeight: 500 }}>분야</span>
+            <span>{selectedField.label}</span>
+            <span style={{ opacity: 0.65, fontWeight: 500, fontSize: '0.77rem' }}>기준단가 {selectedField.rate}원/분</span>
+            <button
+              onClick={() => setSelectedField(null)}
+              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', fontSize: '0.9rem', padding: '0 2px', lineHeight: 1, fontFamily: 'inherit' }}
+            >✕</button>
+          </div>
+        )}
         <div style={{ overflowX: 'clip' }}>
           <table style={{ ...TABLE_STYLE, tableLayout: 'fixed' }}>
             <colgroup>
@@ -295,14 +370,19 @@ export default function TuitionCheckTab() {
               <col style={{ width: '68px' }} />
             </colgroup>
             <thead>
-              <tr>
-                <th style={{ ...TH_LG, fontSize: '0.88rem', padding: '8px 4px' }}>일(분)</th>
-                <th style={{ ...TH_LG, fontSize: '0.88rem', padding: '8px 4px' }}>주(회)</th>
-                <th style={{ ...TH_LG, fontSize: '0.88rem', padding: '8px 4px' }}>월(주)</th>
-                <th style={{ ...TH_LG, fontSize: '0.88rem', padding: '8px 4px' }}>총교습<br />시간(분)</th>
-                <th style={{ ...TH_LG, fontSize: '0.88rem', padding: '8px 4px', background: '#fef9ee' }}>교습비(원)</th>
-                <th style={{ ...TH_LG, fontSize: '0.88rem', padding: '8px 4px' }}>분당단가</th>
-              </tr>
+              {(() => {
+                const thTop = selectedField ? 32 : 0;
+                return (
+                  <tr>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>일(분)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>주(회)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>월(주)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>총교습<br />시간(분)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px', background: '#fef9ee' }}>교습비(원)</th>
+                    <th style={{ ...TH_LG, top: thTop, fontSize: '0.88rem', padding: '8px 4px' }}>분당단가</th>
+                  </tr>
+                );
+              })()}
             </thead>
             <tbody>
               {/* ── 직접 입력 행 ── */}
@@ -347,9 +427,23 @@ export default function TuitionCheckTab() {
                         onFocus={e => { e.currentTarget.style.borderColor = '#7c3aed'; }}
                         onBlur={e => { e.currentTarget.style.borderColor = '#c4b5fd'; }} />
                     </td>
-                    <td style={{ ...TD_CU, fontWeight: 700, color: customRate ? '#1e3a8a' : '#9ca3af' }}>
-                      {customRate ? `${fmtNum(customRate)}원` : '—'}
-                    </td>
+                    {(() => {
+                      const cFeeNum = parseInt(custom.fee.replace(/[^0-9]/g, ''), 10);
+                      const cMaxFee = selectedField && customTotal ? Math.floor(selectedField.rate * customTotal) : null;
+                      const showHint = selectedField && customTotal > 0 && (!cFeeNum || cFeeNum <= 10000);
+                      const showRate = customRate && cFeeNum > 10000;
+                      const isOver = selectedField && showRate && customRate > selectedField.rate;
+                      const rateColor = !selectedField
+                        ? (customRate ? '#1e3a8a' : '#9ca3af')
+                        : showRate ? (isOver ? '#dc2626' : '#1d4ed8') : '#9ca3af';
+                      return (
+                        <td style={{ ...TD_CU, fontWeight: 700, color: rateColor }}>
+                          {showHint && cMaxFee
+                            ? <span style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 600 }}>상한 {fmtNum(cMaxFee)}원</span>
+                            : showRate ? `${fmtNum(customRate)}원` : '—'}
+                        </td>
+                      );
+                    })()}
                   </tr>
                 );
               })()}
@@ -367,6 +461,15 @@ export default function TuitionCheckTab() {
                 const highlighted = HIGHLIGHT_TOTALS.has(total);
                 const bg = highlighted ? '#fffbeb' : '#fff';
                 const TD_SM = { ...TD_LG, fontSize: '0.88rem', padding: '7px 4px', borderBottom: 'none' };
+
+                const maxFee = selectedField ? Math.floor(selectedField.rate * total) : null;
+                const showHint = selectedField && total > 0 && (!feeNum || feeNum <= 10000);
+                const showRate = rate && feeNum > 10000;
+                const isOver = selectedField && showRate && rate > selectedField.rate;
+                const rateColor = !selectedField
+                  ? (rate ? '#1e3a8a' : '#9ca3af')
+                  : showRate ? (isOver ? '#dc2626' : '#1d4ed8') : '#9ca3af';
+
                 return (
                   <tr key={key} style={{ background: bg }}>
                     <td style={{ ...TD_SM, fontWeight: 700, color: '#1d4ed8', ...groupBorder }}>
@@ -394,8 +497,10 @@ export default function TuitionCheckTab() {
                         onBlur={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.boxShadow = 'none'; }}
                       />
                     </td>
-                    <td style={{ ...TD_SM, fontWeight: 700, color: rate ? '#1e3a8a' : '#9ca3af', ...groupBorder }}>
-                      {rate ? `${fmtNum(rate)}원` : '—'}
+                    <td style={{ ...TD_SM, fontWeight: 700, color: rateColor, ...groupBorder }}>
+                      {showHint && maxFee
+                        ? <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600 }}>상한 {fmtNum(maxFee)}원</span>
+                        : showRate ? `${fmtNum(rate)}원` : (rate && !selectedField ? `${fmtNum(rate)}원` : '—')}
                     </td>
                   </tr>
                 );
