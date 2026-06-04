@@ -210,10 +210,20 @@ const TABLE_STYLE = {
   fontSize: '0.83rem',
 };
 
-const DM_LIST = [180, 150, 120, 90, 80, 70, 60, 50];
-const ROWS = DM_LIST.flatMap(dm =>
-  [5, 4, 3, 2, 1].map(wc => ({ dm, wc, total: Math.round(dm * wc * 4.3) }))
-);
+const DM_LIST = [180, 150, 130, 120, 90, 80, 70, 60, 50];
+const DM_MAX_WC = { 70: 6 }; // 70분은 6회까지
+
+const ROWS = DM_LIST.flatMap(dm => {
+  const maxWc = DM_MAX_WC[dm] || 5;
+  return Array.from({ length: maxWc }, (_, i) => maxWc - i)
+    .map(wc => ({ dm, wc, total: Math.round(dm * wc * 4.3) }));
+});
+
+// 빈도 상위 20개 총교습시간(분) - 강조 대상
+const HIGHLIGHT_TOTALS = new Set([
+  1548, 2322, 1935, 1290, 1806, 2064, 1677, 1032, 1161, 774,
+  2580, 1720, 903, 1376, 1505,
+]);
 
 // 기준단가 데이터 (교습과정별 배경색 포함)
 const RATE_DATA = [
@@ -255,11 +265,18 @@ const TD_LG = {
 
 export default function TuitionCheckTab() {
   const [fees, setFees] = useState({});
+  const [custom, setCustom] = useState({ dm: '', wc: '', wk: '4.3', fee: '' });
 
   function setFee(key, val) {
     const raw = val.replace(/[^0-9]/g, '');
     setFees(prev => ({ ...prev, [key]: raw }));
   }
+
+  const customTotal = custom.dm && custom.wc && custom.wk
+    ? Math.round(parseFloat(custom.dm) * parseFloat(custom.wc) * parseFloat(custom.wk))
+    : null;
+  const customFeeNum = parseInt(custom.fee.replace(/[^0-9]/g, ''), 10);
+  const customRate = customFeeNum > 0 && customTotal > 0 ? Math.ceil(customFeeNum / customTotal) : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', paddingBottom: '40px' }}>
@@ -288,22 +305,78 @@ export default function TuitionCheckTab() {
               </tr>
             </thead>
             <tbody>
-              {ROWS.map(({ dm, wc, total }, idx) => {
-                const isGroupStart = wc === 5;
+              {/* ── 직접 입력 행 ── */}
+              {(() => {
+                const TD_CU = { ...TD_LG, fontSize: '0.88rem', padding: '4px 3px', borderBottom: '2px solid #a5b4fc', borderTop: '2px solid #a5b4fc', background: '#f5f3ff' };
+                const inputBase = {
+                  width: '100%', border: '1px solid #c4b5fd', borderRadius: '4px',
+                  padding: '4px 3px', fontSize: '0.88rem', fontWeight: 600, textAlign: 'center',
+                  background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#4c1d95', boxSizing: 'border-box',
+                };
+                return (
+                  <tr>
+                    <td style={{ ...TD_CU, color: '#6d28d9', fontWeight: 700 }}>
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="분" value={custom.dm}
+                        onChange={e => setCustom(p => ({ ...p, dm: e.target.value.replace(/[^0-9]/g, '') }))}
+                        style={{ ...inputBase }}
+                        onFocus={e => { e.currentTarget.style.borderColor = '#7c3aed'; }}
+                        onBlur={e => { e.currentTarget.style.borderColor = '#c4b5fd'; }} />
+                    </td>
+                    <td style={TD_CU}>
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="회" value={custom.wc}
+                        onChange={e => setCustom(p => ({ ...p, wc: e.target.value.replace(/[^0-9]/g, '') }))}
+                        style={{ ...inputBase }}
+                        onFocus={e => { e.currentTarget.style.borderColor = '#7c3aed'; }}
+                        onBlur={e => { e.currentTarget.style.borderColor = '#c4b5fd'; }} />
+                    </td>
+                    <td style={TD_CU}>
+                      <select value={custom.wk} onChange={e => setCustom(p => ({ ...p, wk: e.target.value }))}
+                        style={{ ...inputBase, appearance: 'auto', cursor: 'pointer' }}>
+                        <option value="4.3">4.3</option>
+                        <option value="4.2">4.2</option>
+                        <option value="4.0">4.0</option>
+                      </select>
+                    </td>
+                    <td style={{ ...TD_CU, fontWeight: 700, color: customTotal ? '#4c1d95' : '#9ca3af', textAlign: 'right', paddingRight: '20px' }}>
+                      {customTotal ? fmtNum(customTotal) : '—'}
+                    </td>
+                    <td style={{ ...TD_CU, padding: '4px 3px' }}>
+                      <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="교습비" value={custom.fee}
+                        onChange={e => setCustom(p => ({ ...p, fee: e.target.value.replace(/[^0-9]/g, '') }))}
+                        style={{ ...inputBase, textAlign: 'right', color: '#92400e' }}
+                        onFocus={e => { e.currentTarget.style.borderColor = '#7c3aed'; }}
+                        onBlur={e => { e.currentTarget.style.borderColor = '#c4b5fd'; }} />
+                    </td>
+                    <td style={{ ...TD_CU, fontWeight: 700, color: customRate ? '#1e3a8a' : '#9ca3af' }}>
+                      {customRate ? `${fmtNum(customRate)}원` : '—'}
+                    </td>
+                  </tr>
+                );
+              })()}
+
+              {/* ── 데이터 행 ── */}
+              {ROWS.map(({ dm, wc, total }) => {
+                const maxWc = DM_MAX_WC[dm] || 5;
+                const isGroupStart = wc === maxWc;
+                const groupIdx = DM_LIST.indexOf(dm);
                 const key = `${dm}-${wc}`;
                 const feeRaw = fees[key] || '';
                 const feeNum = parseInt(feeRaw, 10);
                 const rate = feeNum > 0 && total > 0 ? Math.ceil(feeNum / total) : null;
-                const groupBorder = isGroupStart ? { borderTop: '2.5px solid #6b7280' } : {};
-                const bg = idx % 2 === 0 ? '#fff' : '#f9fafb';
-                const TD_SM = { ...TD_LG, fontSize: '0.88rem', padding: '7px 4px' };
+                const groupBorder = isGroupStart && groupIdx > 0 ? { borderTop: '1px solid #94a3b8' } : {};
+                const highlighted = HIGHLIGHT_TOTALS.has(total);
+                const bg = highlighted ? '#fffbeb' : '#fff';
+                const TD_SM = { ...TD_LG, fontSize: '0.88rem', padding: '7px 4px', borderBottom: 'none' };
                 return (
                   <tr key={key} style={{ background: bg }}>
-                    <td style={{ ...TD_SM, fontWeight: 700, color: '#1d4ed8', ...groupBorder }}>{dm}</td>
+                    <td style={{ ...TD_SM, fontWeight: 700, color: '#1d4ed8', ...groupBorder }}>
+                      {highlighted && <span style={{ color: '#f59e0b', marginRight: '2px' }}>★</span>}
+                      {dm}
+                    </td>
                     <td style={{ ...TD_SM, fontWeight: 600, color: '#1d4ed8', ...groupBorder }}>{wc}</td>
                     <td style={{ ...TD_SM, color: '#4b5563', ...groupBorder }}>4.3</td>
                     <td style={{ ...TD_SM, fontWeight: 700, color: '#1e3a8a', textAlign: 'right', paddingRight: '20px', ...groupBorder }}>{fmtNum(total)}</td>
-                    <td style={{ ...TD_SM, padding: '4px 4px', background: '#fefce8', ...groupBorder }}>
+                    <td style={{ ...TD_SM, padding: '4px 4px', background: highlighted ? '#fef9e7' : '#fefce8', ...groupBorder }}>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -312,18 +385,10 @@ export default function TuitionCheckTab() {
                         onChange={e => setFee(key, e.target.value.replace(/,/g, ''))}
                         placeholder="입력"
                         style={{
-                          width: '100%',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '4px',
-                          padding: '4px 4px',
-                          fontSize: '0.88rem',
-                          fontWeight: 600,
-                          textAlign: 'right',
-                          background: '#fff',
-                          outline: 'none',
-                          fontFamily: 'inherit',
-                          color: '#92400e',
-                          boxSizing: 'border-box',
+                          width: '100%', border: '1px solid #d1d5db', borderRadius: '4px',
+                          padding: '4px 4px', fontSize: '0.88rem', fontWeight: 600,
+                          textAlign: 'right', background: '#fff', outline: 'none',
+                          fontFamily: 'inherit', color: '#92400e', boxSizing: 'border-box',
                         }}
                         onFocus={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.boxShadow = '0 0 0 2px #e0e7ff'; }}
                         onBlur={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.boxShadow = 'none'; }}
