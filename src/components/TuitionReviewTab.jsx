@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import FieldStatistics from './FieldStatistics';
 import TuitionCheckTab from './TuitionCheckTab';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm } from '../utils/generateRegistrationPDF';
@@ -52,7 +51,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   const isTutoring = mode === 'tutoring';
 
   // ── 신설/변경 서브탭 ──
-  const [subTab, setSubTab] = useState('검토');
+  const [subTab, setSubTab] = useState('신설');
 
   // ── 신설 탭 상태 ──
   const [subjects, setSubjects] = useState([
@@ -60,7 +59,10 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   ]);
 
   function addSubject() {
-    setSubjects(prev => [...prev, { id: Date.now(), rateIdx: '', dm: '', wc: '', wk: '', fee: '', subjectName: '' }]);
+    setSubjects(prev => {
+      const last = prev[prev.length - 1];
+      return [...prev, { id: Date.now(), rateIdx: '', dm: '', wc: '', wk: last?.wk || '4.3', fee: '', subjectName: '' }];
+    });
   }
   function updateSubject(id, key, val) {
     setSubjects(prev => prev.map(sub => sub.id === id ? { ...sub, [key]: val } : sub));
@@ -175,17 +177,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     setChangeSubjects(prev => prev.filter(sub => sub.id !== id));
   }
 
-  // ── 신설 탭 참고값 ──
   const lastSub = subjects[subjects.length - 1];
-  const fieldStats = !isTutoring && subTab === '신설' && (
-    <FieldStatistics
-      selectedRateIdx={lastSub?.rateIdx ?? ''}
-      onFieldChange={(fieldIdx) => { patchSubject(lastSub.id, { rateIdx: String(fieldIdx) }); }}
-      onSelect={({ rateIdx, dm, wc, wk, fee }) => {
-        patchSubject(lastSub.id, { rateIdx: String(rateIdx), dm: String(dm), wc: String(wc), wk, fee: String(fee) });
-      }}
-    />
-  );
 
   const subTabStyle = (active) => ({
     flex: 1,
@@ -207,7 +199,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
       {/* 검토 / 신설 / 변경 서브탭 (학원·교습소만) */}
       {!isTutoring && (
         <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '4px' }}>
-          {['검토', '신설', '변경'].map(t => (
+          {['신설', '변경', '검토'].map(t => (
             <button key={t} style={subTabStyle(subTab === t)} onClick={() => setSubTab(t)}>{t}</button>
           ))}
         </div>
@@ -219,7 +211,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
       {/* ── 신설 탭 / 과외 모드 ── */}
       {(isTutoring || subTab === '신설') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {subjects.slice(0, -1).map((sub, idx) => (
+          {subjects.map((sub, idx) => (
             <SubjectCard
               key={sub.id}
               index={idx}
@@ -227,28 +219,10 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
               mode={mode}
               onUpdate={updateSubject}
               onRemove={removeSubject}
-              isLast={false}
+              isLast={idx === subjects.length - 1}
               onAdd={addSubject}
             />
           ))}
-          {fieldStats}
-          {fieldStats && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '-8px 0 -4px', fontSize: '0.8rem', color: '#9ca3af' }}>
-              <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
-              <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>↓ 상세 입력 · 조정</span>
-              <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
-            </div>
-          )}
-          <SubjectCard
-            key={lastSub.id}
-            index={subjects.length - 1}
-            sub={lastSub}
-            mode={mode}
-            onUpdate={updateSubject}
-            onRemove={removeSubject}
-            isLast={true}
-            onAdd={addSubject}
-          />
           {!isTutoring && (
             <PrintBar
               onPrint={() => printRegistrationForm({ regType: '신규등록', subjects })}
@@ -496,19 +470,21 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
           value={selectVal}
           onChange={handleChange}
           style={{
-            padding: '3px 2px',
-            border: 'none',
-            borderBottom: '1.5px solid #9ca3af',
-            borderRadius: '0',
+            padding: '6px 4px',
+            border: '1px solid #d1d5db',
+            borderRadius: '6px',
             fontSize: '1rem',
             color: value === '' ? '#9ca3af' : '#111827',
             fontWeight: value === '' ? '400' : '600',
-            background: 'transparent',
+            background: '#fff',
             outline: 'none',
             fontFamily: 'inherit',
             cursor: 'pointer',
             appearance: 'auto',
-            maxWidth: '62px',
+            WebkitAppearance: 'auto',
+            maxWidth: '72px',
+            minHeight: '36px',
+            touchAction: 'manipulation',
           }}
         >
           <option value="">선택</option>
@@ -709,15 +685,15 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
         )}
 
         {/* 2. 월 교습시간 */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: '4px 6px', fontSize: '0.95rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px', fontSize: '0.95rem' }}>
           <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0, marginRight: '4px', minWidth: '115px' }}>
-            {isTutoring ? '1. 월 교습시간(분)' : '2. 월 교습시간(분)'}
+            {isTutoring ? '1. 월교습시간(분)' : '2. 월교습시간(분)'}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px', flex: 1, minWidth: '200px' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#374151', fontWeight: '500' }}>일</span>
               <DropdownSelect
-                options={['50', '60', '70', '80', '90', '120', '180']}
+                options={Array.from({ length: 14 }, (_, i) => String(50 + i * 10))}
                 value={dm}
                 onChange={val => onUpdate(id, 'dm', val)}
                 unit="분"
@@ -729,7 +705,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#374151', fontWeight: '500' }}>주</span>
               <DropdownSelect
-                options={['1', '2', '3', '4', '5']}
+                options={['1', '2', '3', '4', '5', '6', '7']}
                 value={wc}
                 onChange={val => onUpdate(id, 'wc', val)}
                 unit="회"
@@ -752,7 +728,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <strong style={{ fontWeight: '900', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', WebkitTextStroke: totalMinutes > 0 ? '0.4px #1d4ed8' : 'none' }}>
-                {totalMinutes > 0 ? totalMinutes.toLocaleString() : '________'}
+                {totalMinutes > 0 ? totalMinutes.toLocaleString() : '____'}
               </strong>
               <span style={{ color: '#374151', fontWeight: '500', marginLeft: '2px' }}>분</span>
             </span>

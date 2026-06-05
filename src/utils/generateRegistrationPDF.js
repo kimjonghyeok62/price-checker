@@ -43,8 +43,8 @@ export function printRegistrationForm(data) {
         subjects = [],
     } = data;
 
-    // 최소 8행 보장, 초과 시 다음 페이지로 자동 넘김
-    const MIN_ROWS = 8;
+    // 최소 5행 보장 (A4 1페이지 내 출력)
+    const MIN_ROWS = 5;
     const rows = [...subjects];
     while (rows.length < MIN_ROWS) rows.push(null);
 
