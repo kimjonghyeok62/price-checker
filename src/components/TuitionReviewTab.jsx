@@ -565,6 +565,10 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
   }
   function handleFeePointerUp() {
     clearTimeout(longPressTimer.current);
+    setFeeEditMode(true);
+  }
+  function handleFeePointerLeave() {
+    clearTimeout(longPressTimer.current);
   }
   function handleFeeStep(delta) {
     const next = Math.max(0, (parseFloat(fee) || 0) + delta);
@@ -792,8 +796,8 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             <span
               onPointerDown={handleFeePointerDown}
               onPointerUp={handleFeePointerUp}
-              onPointerLeave={handleFeePointerUp}
-              title="길게 누르면 직접 입력"
+              onPointerLeave={handleFeePointerLeave}
+              title="클릭하면 직접 입력"
               style={{
                 width: '120px',
                 textAlign: 'right',

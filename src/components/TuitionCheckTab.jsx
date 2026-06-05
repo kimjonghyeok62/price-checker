@@ -281,7 +281,7 @@ const FIELD_BUTTONS = [
 
 export default function TuitionCheckTab() {
   const [fees, setFees] = useState({});
-  const [custom, setCustom] = useState({ dm: '', wc: '', wk: '4.3', fee: '' });
+  const [custom, setCustom] = useState({ dm: '', wc: '', wk: '', fee: '' });
   const [selectedField, setSelectedField] = useState(null);
 
   function setFee(key, val) {
@@ -412,6 +412,7 @@ export default function TuitionCheckTab() {
                     <td style={TD_CU}>
                       <select value={custom.wk} onChange={e => setCustom(p => ({ ...p, wk: e.target.value }))}
                         style={{ ...inputBase, appearance: 'auto', cursor: 'pointer' }}>
+                        <option value="">월</option>
                         <option value="4.3">4.3</option>
                         <option value="4.2">4.2</option>
                         <option value="4.0">4.0</option>
@@ -439,7 +440,7 @@ export default function TuitionCheckTab() {
                       return (
                         <td style={{ ...TD_CU, fontWeight: 700, color: rateColor }}>
                           {showHint && cMaxFee
-                            ? <span style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>≤{fmtNum(cMaxFee)}원</span>
+                            ? <span style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>상한 {fmtNum(cMaxFee)}원</span>
                             : showRate ? `${fmtNum(customRate)}원` : '—'}
                         </td>
                       );
@@ -471,7 +472,8 @@ export default function TuitionCheckTab() {
                   : showRate ? (isOver ? '#dc2626' : '#1d4ed8') : '#9ca3af';
 
                 return (
-                  <tr key={key} style={{ background: bg }}>
+                  <tr key={key} style={{ background: bg, cursor: 'pointer' }}
+                    onClick={() => setCustom({ dm: String(dm), wc: String(wc), wk: '4.3', fee: feeRaw || '' })}>
                     <td style={{ ...TD_SM, fontWeight: 700, color: '#1d4ed8', ...groupBorder }}>
                       {highlighted && <span style={{ color: '#f59e0b', marginRight: '2px' }}>★</span>}
                       {dm}
@@ -479,7 +481,8 @@ export default function TuitionCheckTab() {
                     <td style={{ ...TD_SM, fontWeight: 600, color: '#1d4ed8', ...groupBorder }}>{wc}</td>
                     <td style={{ ...TD_SM, color: '#4b5563', ...groupBorder }}>4.3</td>
                     <td style={{ ...TD_SM, fontWeight: 700, color: '#1e3a8a', textAlign: 'right', paddingRight: '6px', ...groupBorder }}>{fmtNum(total)}</td>
-                    <td style={{ ...TD_SM, padding: '4px 4px', background: highlighted ? '#fef9e7' : '#fefce8', ...groupBorder }}>
+                    <td style={{ ...TD_SM, padding: '4px 4px', background: highlighted ? '#fef9e7' : '#fefce8', ...groupBorder }}
+                      onClick={e => e.stopPropagation()}>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -499,7 +502,7 @@ export default function TuitionCheckTab() {
                     </td>
                     <td style={{ ...TD_SM, fontWeight: 700, color: rateColor, ...groupBorder }}>
                       {showHint && maxFee
-                        ? <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>≤{fmtNum(maxFee)}원</span>
+                        ? <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>상한 {fmtNum(maxFee)}원</span>
                         : showRate ? `${fmtNum(rate)}원` : (rate && !selectedField ? `${fmtNum(rate)}원` : '—')}
                     </td>
                   </tr>
