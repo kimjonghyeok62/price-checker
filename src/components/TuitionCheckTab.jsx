@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 // ── 원본 참고값 데이터 (모든 분야) ─────────────────────────────
 const ALL_STATS_RAW = [
@@ -283,6 +283,7 @@ export default function TuitionCheckTab() {
   const [fees, setFees] = useState({});
   const [custom, setCustom] = useState({ dm: '', wc: '', wk: '', fee: '' });
   const [selectedField, setSelectedField] = useState(null);
+  const customRowRef = useRef(null);
 
   function setFee(key, val) {
     const raw = val.replace(/[^0-9]/g, '');
@@ -387,14 +388,16 @@ export default function TuitionCheckTab() {
             <tbody>
               {/* ── 직접 입력 행 ── */}
               {(() => {
-                const TD_CU = { ...TD_LG, fontSize: '0.88rem', padding: '4px 3px', borderBottom: '2px solid #a5b4fc', borderTop: '2px solid #a5b4fc', background: '#f5f3ff' };
+                const thTop = selectedField ? 32 : 0;
+                const customTop = thTop + 54;
+                const TD_CU = { ...TD_LG, fontSize: '0.88rem', padding: '4px 3px', borderBottom: '2px solid #a5b4fc', borderTop: '2px solid #a5b4fc', background: '#f5f3ff', position: 'sticky', top: customTop, zIndex: 1 };
                 const inputBase = {
                   width: '100%', border: '1px solid #c4b5fd', borderRadius: '4px',
                   padding: '4px 3px', fontSize: '0.88rem', fontWeight: 600, textAlign: 'center',
                   background: '#fff', outline: 'none', fontFamily: 'inherit', color: '#4c1d95', boxSizing: 'border-box',
                 };
                 return (
-                  <tr>
+                  <tr ref={customRowRef}>
                     <td style={{ ...TD_CU, color: '#6d28d9', fontWeight: 700 }}>
                       <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="분" value={custom.dm}
                         onChange={e => setCustom(p => ({ ...p, dm: e.target.value.replace(/[^0-9]/g, '') }))}
@@ -415,6 +418,7 @@ export default function TuitionCheckTab() {
                         <option value="">월</option>
                         <option value="4.3">4.3</option>
                         <option value="4.2">4.2</option>
+                        <option value="4.1">4.1</option>
                         <option value="4.0">4.0</option>
                       </select>
                     </td>
@@ -460,7 +464,7 @@ export default function TuitionCheckTab() {
                 const rate = feeNum > 0 && total > 0 ? Math.ceil(feeNum / total) : null;
                 const groupBorder = isGroupStart && groupIdx > 0 ? { borderTop: '1px solid #94a3b8' } : {};
                 const highlighted = HIGHLIGHT_TOTALS.has(total);
-                const bg = highlighted ? '#fffbeb' : '#fff';
+                const bg = highlighted ? '#fef9c3' : '#fff';
                 const TD_SM = { ...TD_LG, fontSize: '0.88rem', padding: '5px 3px', borderBottom: 'none' };
 
                 const maxFee = selectedField ? Math.floor(selectedField.rate * total) : null;
@@ -473,15 +477,17 @@ export default function TuitionCheckTab() {
 
                 return (
                   <tr key={key} style={{ background: bg, cursor: 'pointer' }}
-                    onClick={() => setCustom({ dm: String(dm), wc: String(wc), wk: '4.3', fee: feeRaw || '' })}>
+                    onClick={() => {
+                      setCustom({ dm: String(dm), wc: String(wc), wk: '4.3', fee: feeRaw || '' });
+                      setTimeout(() => customRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 30);
+                    }}>
                     <td style={{ ...TD_SM, fontWeight: 700, color: '#1d4ed8', ...groupBorder }}>
-                      {highlighted && <span style={{ color: '#f59e0b', marginRight: '2px' }}>★</span>}
                       {dm}
                     </td>
                     <td style={{ ...TD_SM, fontWeight: 600, color: '#1d4ed8', ...groupBorder }}>{wc}</td>
                     <td style={{ ...TD_SM, color: '#4b5563', ...groupBorder }}>4.3</td>
                     <td style={{ ...TD_SM, fontWeight: 700, color: '#1e3a8a', textAlign: 'right', paddingRight: '6px', ...groupBorder }}>{fmtNum(total)}</td>
-                    <td style={{ ...TD_SM, padding: '4px 4px', background: highlighted ? '#fef9e7' : '#fefce8', ...groupBorder }}
+                    <td style={{ ...TD_SM, padding: '4px 4px', background: highlighted ? '#fde68a' : '#fef9c3', ...groupBorder }}
                       onClick={e => e.stopPropagation()}>
                       <input
                         type="text"
