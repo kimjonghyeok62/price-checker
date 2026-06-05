@@ -555,11 +555,11 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
   const totalMinutes = Math.round((parseFloat(dm) || 0) * (parseFloat(wc) || 0) * wkVal);
   const calcRate = totalMinutes > 0 ? (parseFloat(fee) || 0) / totalMinutes : 0;
   const calcRatePrecision5 = totalMinutes > 0 ? calcRate.toFixed(5) : '0';
-  const calcRateCeil1 = totalMinutes > 0 ? (Math.ceil(calcRate * 10) / 10).toFixed(1) : '0';
+  const calcRateCeil1 = totalMinutes > 0 ? String(Math.ceil(calcRate)) : '0';
 
   const calcHourlyRate = calcRate * 60;
   const calcHourlyRatePrecision5 = totalMinutes > 0 ? calcHourlyRate.toFixed(5) : '0';
-  const calcHourlyRateCeil1 = totalMinutes > 0 ? (Math.ceil(calcHourlyRate * 10) / 10).toFixed(1) : '0';
+  const calcHourlyRateCeil1 = totalMinutes > 0 ? String(Math.ceil(calcHourlyRate)) : '0';
 
   const hasRateSelected = isTutoring || rateIdx !== '';
   const standardRate = isTutoring
@@ -837,8 +837,8 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
               <span style={{ color: '#9ca3af', fontWeight: '600' }}>→</span>
               <strong style={{ fontWeight: '900', color: '#1d4ed8', fontSize: '1rem', WebkitTextStroke: '0.4px #1d4ed8' }}>
                 {isTutoring
-                  ? `${Number(calcHourlyRateCeil1).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}원/시간`
-                  : `${calcRateCeil1}원/분`}
+                  ? `${Number(calcHourlyRateCeil1).toLocaleString()}원/시간`
+                  : `${Number(calcRateCeil1).toLocaleString()}원/분`}
               </strong>
               <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>(올림)</span>
             </>
