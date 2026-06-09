@@ -302,7 +302,7 @@ export default function TuitionCheckTab() {
       {/* ── 섹션 1: 분야 선택 버튼 + 총교습시간별 참고표 ── */}
       <div>
         {/* 분야 선택 버튼 */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '6px', marginBottom: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
           {FIELD_BUTTONS.map((f) => {
             const isActive = selectedField?.label === f.label;
             return (
@@ -322,6 +322,8 @@ export default function TuitionCheckTab() {
                   boxShadow: isActive ? '0 2px 6px rgba(29,78,216,0.25)' : 'none',
                   transition: 'all 0.15s',
                   lineHeight: 1.3,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
                 onMouseEnter={e => { if (!isActive) { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#4338ca'; } }}
                 onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#374151'; } }}
