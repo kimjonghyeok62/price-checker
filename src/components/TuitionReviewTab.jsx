@@ -196,6 +196,43 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+      {/* 탭 전용 안내 배너 */}
+      {!isTutoring ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '9px 14px',
+          backgroundColor: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          borderRadius: '8px',
+          fontSize: '0.8rem',
+          color: '#1d4ed8',
+          lineHeight: 1.4,
+        }}>
+          <span style={{ fontSize: '1rem', flexShrink: 0 }}>ℹ️</span>
+          <span>
+            이 탭은 <strong>학원·교습소</strong> 전용입니다.&nbsp;
+            개인과외는 상단 <strong>'개인과외'</strong> 탭을 이용해 주세요.
+          </span>
+        </div>
+      ) : (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '9px 14px',
+          backgroundColor: '#fffbeb',
+          border: '1px solid #fde68a',
+          borderRadius: '8px',
+          fontSize: '0.8rem',
+          color: '#92400e',
+          lineHeight: 1.4,
+        }}>
+          <span style={{ fontSize: '1rem', flexShrink: 0 }}>ℹ️</span>
+          <span>
+            이 탭은 <strong>개인과외</strong> 전용입니다.&nbsp;
+            학원·교습소는 상단 <strong>'학원·교습소'</strong> 탭을 이용해 주세요.
+          </span>
+        </div>
+      )}
+
       {/* 검토 / 신설 / 변경 서브탭 (학원·교습소만) */}
       {!isTutoring && (
         <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: '4px' }}>
@@ -237,11 +274,14 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
 
           {/* 안내 박스 */}
           <div style={{ backgroundColor: '#f8fafc', border: '1.5px solid var(--border-color)', borderRadius: '12px', padding: '14px 18px', fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-main)' }}>
+            <div style={{ marginBottom: '10px', color: '#374151', fontSize: '0.88rem' }}>
+              기존 학원·교습소의 교습비를 변경할 때, 나이스에 기등록된 자료를 바탕으로 수정하고자 하는 경우 아래를 참고하세요.
+            </div>
             <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
               </svg>
-              나이스 엑셀 파일 다운로드 방법 안내
+              나이스 학원에 기등록된 자료를 바탕으로 변경하고자 할 때
             </div>
             <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontWeight: '600' }}>
               <li><a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>나이스 학원</a>{' '}방문</li>

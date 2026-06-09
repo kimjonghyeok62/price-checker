@@ -180,16 +180,16 @@ export default function App() {
             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
-          <span className="tab-maintext">교습비 변경</span>
-          <span className="tab-subtext">(학원,교습소)</span>
+          <span className="tab-maintext">학원·교습소</span>
+          <span className="tab-subtext">교습비 변경</span>
         </button>
         <button className="tab-btn" style={tabStyle(tab === 'tutoring')} onClick={() => setTab('tutoring')}>
           <svg className="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/>
             <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
           </svg>
-          <span className="tab-maintext">교습비 변경</span>
-          <span className="tab-subtext">(과외)</span>
+          <span className="tab-maintext">개인과외</span>
+          <span className="tab-subtext">교습비 변경</span>
         </button>
         <button className="tab-btn" style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>
           <svg className="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -330,11 +330,14 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
         borderRadius: '12px', padding: '14px 18px', marginBottom: '16px',
         fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-main)'
       }}>
+        <div style={{ marginBottom: '10px', color: '#374151', fontSize: '0.88rem' }}>
+          기존 학원·교습소의 교습비를 변경할 때, 나이스에 기등록된 자료를 바탕으로 수정하고자 하는 경우 아래를 참고하세요.
+        </div>
         <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
-          나이스 엑셀 파일 다운로드 방법 안내
+          나이스 학원에 기등록된 자료를 바탕으로 변경하고자 할 때
         </div>
         <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontWeight: '600' }}>
           <li>
