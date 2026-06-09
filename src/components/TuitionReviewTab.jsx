@@ -204,11 +204,11 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           backgroundColor: '#eff6ff',
           border: '1px solid #bfdbfe',
           borderRadius: '8px',
-          fontSize: '0.8rem',
+          fontSize: '0.95rem',
           color: '#1d4ed8',
           lineHeight: 1.4,
         }}>
-          <span style={{ fontSize: '1rem', flexShrink: 0 }}>ℹ️</span>
+          <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>ℹ️</span>
           <span>
             이 탭은 <strong>학원·교습소</strong> 전용입니다.&nbsp;
             개인과외는 상단 <strong>'개인과외'</strong> 탭을 이용해 주세요.
@@ -221,11 +221,11 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           backgroundColor: '#fffbeb',
           border: '1px solid #fde68a',
           borderRadius: '8px',
-          fontSize: '0.8rem',
+          fontSize: '0.95rem',
           color: '#92400e',
           lineHeight: 1.4,
         }}>
-          <span style={{ fontSize: '1rem', flexShrink: 0 }}>ℹ️</span>
+          <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>ℹ️</span>
           <span>
             이 탭은 <strong>개인과외</strong> 전용입니다.&nbsp;
             학원·교습소는 상단 <strong>'학원·교습소'</strong> 탭을 이용해 주세요.

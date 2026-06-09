@@ -70,7 +70,7 @@ body {
   }
   /* 모바일 탭 텍스트 최적화 */
   .tab-maintext {
-    font-size: 1rem !important;
+    font-size: 1.15rem !important;
   }
   .tab-subtext {
     font-size: 0.82rem !important;
@@ -79,7 +79,7 @@ body {
 
 /* 탭 텍스트 스타일 정의 */
 .tab-maintext {
-  font-size: 1.18rem;
+  font-size: 1.32rem;
   font-weight: 850;
   display: block;
 }

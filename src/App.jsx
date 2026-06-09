@@ -331,13 +331,13 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
         fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-main)'
       }}>
         <div style={{ marginBottom: '10px', color: '#374151', fontSize: '0.88rem' }}>
-          기존 학원·교습소의 교습비를 변경할 때, 나이스에 기등록된 자료를 바탕으로 수정하고자 하는 경우 아래를 참고하세요.
+          나이스에 등록된 기존 학원·교습소의 교습비를 내부용과 외부용으로 출력할 때, 사용해주세요.
         </div>
         <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
-          나이스 학원에 기등록된 자료를 바탕으로 변경하고자 할 때
+          나이스에 등록된 교습비 출력방법
         </div>
         <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontWeight: '600' }}>
           <li>
