@@ -483,6 +483,7 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
   const CUSTOM = '__custom__';
   const initialIsCustom = value !== '' && !options.includes(String(value));
   const [isCustomMode, setIsCustomMode] = useState(initialIsCustom);
+  const inputRef = React.useRef(null);
 
   React.useEffect(() => {
     if (value !== '') {
@@ -490,6 +491,16 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
       setIsCustomMode(!isValInOptions);
     }
   }, [value, options]);
+
+  React.useEffect(() => {
+    if (isCustomMode && inputRef.current) {
+      // autoFocus가 일부 모바일에서 동작 안 하는 경우를 대비해 ref로 직접 포커스
+      const timer = setTimeout(() => {
+        try { inputRef.current && inputRef.current.focus(); } catch (_) {}
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isCustomMode]);
 
   function handleChange(e) {
     if (e.target.value === CUSTOM) {
@@ -536,12 +547,14 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
       ) : (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '1px' }}>
           <input
+            ref={inputRef}
             type="number"
             inputMode="numeric"
             value={value}
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
             autoFocus
+            onClick={() => { try { inputRef.current && inputRef.current.focus(); } catch (_) {} }}
             onBlur={() => {
               if (value === '') setIsCustomMode(false);
             }}
@@ -733,7 +746,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#374151', fontWeight: '500' }}>일</span>
               <DropdownSelect
-                options={Array.from({ length: 14 }, (_, i) => String(50 + i * 10))}
+                options={Array.from({ length: 34 }, (_, i) => String(30 + i * 10))}
                 value={dm}
                 onChange={val => onUpdate(id, 'dm', val)}
                 unit="분"
