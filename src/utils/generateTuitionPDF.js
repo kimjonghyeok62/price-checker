@@ -231,10 +231,10 @@ function _openPrintWindow(html) {
     const url = URL.createObjectURL(blob);
     const w = window.open(url, '_blank');
     if (!w) {
-        // 팝업 차단된 경우 현재 탭에서 열기
-        window.location.href = url;
+        URL.revokeObjectURL(url);
+        alert('팝업이 차단되었습니다.\n브라우저 주소창 오른쪽의 팝업 차단 아이콘을 클릭하여 허용해 주세요.');
+        return;
     }
-    // 메모리 정리는 새 창이 열린 후 약간 지연
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
