@@ -157,7 +157,7 @@ export function printTuitionForm(academy) {
 <body>
 <div class="print-bar no-print">
   <button class="btn-print" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
-  <button class="btn-close" onclick="window.close()">✕ 닫기</button>
+  <button class="btn-close" onclick="window.opener ? window.close() : history.back()">✕ 닫기</button>
 </div>
 <div class="page">
   <div class="form-label">[별지 제4호서식]</div>
@@ -395,7 +395,7 @@ export function printTuitionFormExternal(academy) {
 <body>
 <div class="print-bar no-print">
   <button class="btn-print" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
-  <button class="btn-close" onclick="window.close()">✕ 닫기</button>
+  <button class="btn-close" onclick="window.opener ? window.close() : history.back()">✕ 닫기</button>
 </div>
 <div class="page">
   <div style="font-size:8.5pt; color:#555; margin-bottom:2mm;">■ 교육부「학원비 옥외가격표시제 가이드라인」[별첨1]&lt;신설 2017. 8.&gt; (옥외용)</div>
