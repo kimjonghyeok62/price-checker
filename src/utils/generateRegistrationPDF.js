@@ -457,7 +457,11 @@ export function printRegistrationForm(data) {
 function _openPrintWindow(html) {
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const w = window.open(url, '_blank');
-    if (!w) window.location.href = url;
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
