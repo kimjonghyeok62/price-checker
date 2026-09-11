@@ -14,7 +14,7 @@ import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall,
 const NEIS_HAKWON_URL = 'https://hakwon.neis.go.kr';
 
 export default function App() {
-  const [tab, setTab] = useState('review'); // 'review' | 'tutoring' | 'excel'
+  const [tab, setTab] = useState('excel'); // 'review' | 'tutoring' | 'excel'
   const [showStandardPrices, setShowStandardPrices] = useState(false);
 
   // 학원 검색 탭
@@ -116,7 +116,7 @@ export default function App() {
     }
   }
 
-  // 안드로이드 "공유 → 교습비 관리·게시표"로 열린 경우(/?shared=1): 공유받은 엑셀을 바로 불러온다
+  // 안드로이드 "공유 → 교습비 계산·게시표"로 열린 경우(/?shared=1): 공유받은 엑셀을 바로 불러온다
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has('shared')) return;
     window.history.replaceState(null, '', window.location.pathname);
@@ -160,7 +160,7 @@ export default function App() {
               <path d="m9 11 2 2 4-4"/>
             </svg>
           </div>
-          <h1 className="app-title">교습비 관리·게시표</h1>
+          <h1 className="app-title">교습비 계산·게시표</h1>
         </div>
         <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
           <div className="app-subtitle">
@@ -469,7 +469,7 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
 
       {showAndroidTip && (
         <div style={{ marginTop: '-10px', marginBottom: '20px', fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span>📱 앱을 설치하면 받은 엑셀을 '공유 → 교습비 관리·게시표'로 바로 열 수 있어요</span>
+          <span>📱 앱을 설치하면 받은 엑셀을 '공유 → 교습비 계산·게시표'로 바로 열 수 있어요</span>
           {installable && (
             <button onClick={promptInstall} style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', cursor: 'pointer' }}>
               앱 설치
