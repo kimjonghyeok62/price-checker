@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 import TuitionReviewTab from './components/TuitionReviewTab';
 import { printTuitionForm, printTuitionFormExternal } from './utils/generateTuitionPDF';
@@ -9,6 +9,9 @@ import { getRegNoText } from './utils/tuitionFormCommon';
 import { parseExcelTuition } from './utils/parseExcelTuition';
 import { fetchGoogleSheetData, transformAcademyData, attachRegNo, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
 import StandardPriceTable from './components/StandardPriceTable';
+import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall, isAndroid, isInstalledApp } from './utils/pwa';
+
+const NEIS_HAKWON_URL = 'https://hakwon.neis.go.kr';
 
 export default function App() {
   const [tab, setTab] = useState('review'); // 'review' | 'tutoring' | 'excel'
@@ -112,6 +115,16 @@ export default function App() {
       e.target.value = '';
     }
   }
+
+  // 안드로이드 "공유 → 교습비 관리"로 열린 경우(/?shared=1): 공유받은 엑셀을 바로 불러온다
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('shared')) return;
+    window.history.replaceState(null, '', window.location.pathname);
+    setTab('excel');
+    takeSharedFile()
+      .then(file => { if (file) handleFile({ target: { files: [file], value: '' } }); })
+      .catch(() => {});
+  }, []);
 
   const tabStyle = (active) => ({
     flex: 1,
@@ -336,84 +349,172 @@ export default function App() {
   );
 }
 
+// PC 크롬/엣지: 다운로드 폴더가 바로 열리는 파일 선택창 (지원하지 않으면 null)
+async function pickExcelFromDownloads() {
+  if (!window.showOpenFilePicker) return null;
+  const [handle] = await window.showOpenFilePicker({
+    startIn: 'downloads',
+    types: [{
+      description: '엑셀 파일',
+      accept: {
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+        'application/vnd.ms-excel': ['.xls'],
+      },
+    }],
+  });
+  return handle.getFile();
+}
+
+const hasDraggedFiles = (e) => Array.from(e.dataTransfer?.types || []).includes('Files');
+
+function copyTextSync(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed; top:0; left:-9999px; opacity:0;';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+function StepBadge({ n }) {
+  return (
+    <span style={{
+      width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: '#fff',
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: '800', flexShrink: 0,
+    }}>{n}</span>
+  );
+}
+
 function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelected, setExcelSelected, fileInputRef, handleFile }) {
   const [dragOver, setDragOver] = React.useState(false);
+  const dragDepthRef = useRef(0);
+  const [neisName, setNeisName] = useState('');
+  const [copiedName, setCopiedName] = useState('');
+  const neisLinkRef = useRef(null);
+  const [installable, setInstallable] = useState(canPromptInstall());
+  useEffect(() => onInstallPromptChange(() => setInstallable(canPromptInstall())), []);
+  const showAndroidTip = isAndroid() && !isInstalledApp();
 
-  function handleDrop(e) {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleFile({ target: { files: [file], value: '' } });
+  const loadFile = (file) => { if (file) handleFile({ target: { files: [file], value: '' } }); };
+
+  // 게시표 탭 어디에 끌어다 놓아도 업로드
+  const dropHandlers = {
+    onDragEnter: e => { if (!hasDraggedFiles(e)) return; e.preventDefault(); dragDepthRef.current++; setDragOver(true); },
+    onDragOver: e => { if (hasDraggedFiles(e)) e.preventDefault(); },
+    onDragLeave: () => { dragDepthRef.current = Math.max(0, dragDepthRef.current - 1); if (!dragDepthRef.current) setDragOver(false); },
+    onDrop: e => {
+      if (!hasDraggedFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current = 0;
+      setDragOver(false);
+      loadFile(e.dataTransfer.files?.[0]);
+    },
+  };
+
+  async function openFilePicker() {
+    try {
+      const file = await pickExcelFromDownloads();
+      if (file) return loadFile(file);
+    } catch (e) {
+      if (e?.name === 'AbortError') return; // 선택창에서 취소
+    }
+    fileInputRef.current?.click();
+  }
+
+  // 나이스 학원 열기 — 입력한 학원명은 클립보드에 복사해 나이스 검색창에 붙여넣기만 하면 되게
+  // (새 탭이 열리기 전에 동기 방식으로 먼저 복사, 안 되면 Clipboard API)
+  function copyNeisName() {
+    const name = neisName.trim();
+    if (!name) return;
+    if (copyTextSync(name)) { setCopiedName(name); return; }
+    navigator.clipboard?.writeText(name).then(() => setCopiedName(name)).catch(() => {});
   }
 
   return (
-    <>
-      {/* 안내 박스 */}
+    <div {...dropHandlers}>
+      {/* ① 나이스 학원에서 엑셀 받기 */}
       <div style={{
-        backgroundColor: '#f8fafc', border: '1.5px solid var(--border-color)',
-        borderRadius: '12px', padding: '14px 18px', marginBottom: '16px',
-        fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-main)'
+        backgroundColor: '#eef2ff', border: '2px solid #c7d2fe', borderRadius: '14px',
+        padding: '18px', marginBottom: '14px',
       }}>
-        <div style={{ marginBottom: '10px', color: '#374151', fontSize: '0.88rem' }}>
-          나이스에 등록된 기존 학원·교습소의 교습비를 내부용과 외부용으로 출력할 때, 사용해주세요.
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <StepBadge n="1" />
+          <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#312e81' }}>나이스 학원에서 엑셀 받기</span>
         </div>
-        <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
-          나이스에 등록된 교습비 출력방법
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={neisName}
+            onChange={e => { setNeisName(e.target.value); setCopiedName(''); }}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); neisLinkRef.current?.click(); } }}
+            placeholder="학원(교습소)명 (선택)"
+            aria-label="나이스에서 검색할 학원(교습소)명"
+            style={{
+              flex: '1 1 180px', minWidth: 0, padding: '14px 14px', fontSize: '1rem',
+              border: '1.5px solid #c7d2fe', borderRadius: '10px', backgroundColor: '#fff', outline: 'none',
+            }}
+          />
+          <a
+            ref={neisLinkRef}
+            href={NEIS_HAKWON_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={copyNeisName}
+            style={{
+              flex: '1 1 200px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              padding: '14px 18px', borderRadius: '10px', backgroundColor: 'var(--primary)', color: '#fff',
+              fontSize: '1.1rem', fontWeight: '800', textDecoration: 'none', boxShadow: '0 3px 10px rgba(79,70,229,0.3)',
+            }}
+          >
+            나이스 학원 열기
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
         </div>
-        <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontWeight: '600' }}>
-          <li>
-            <a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>
-              나이스 학원
-            </a>{' '}방문
-          </li>
-          <li>경기도교육청 선택</li>
-          <li>학원 교습소 정보 조회 (엑셀내려받기)</li>
-          <li>아래 영역에 엑셀 업로드</li>
-        </ol>
-        <div style={{
-          backgroundColor: '#fff7ed', border: '1px solid #fed7aa',
-          borderRadius: '8px', padding: '8px 12px',
-          display: 'flex', gap: '6px', alignItems: 'center',
-          fontSize: '0.85rem', color: '#92400e', fontWeight: '600',
-        }}>
-          <span style={{ flexShrink: 0 }}>⚠️</span>
-          PC 전용 기능 (모바일은 불완전)
-        </div>
+        {copiedName && (
+          <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#3730a3', fontWeight: '600' }}>
+            ✓ '{copiedName}' 복사됨 — 나이스 학원명 칸에 붙여넣기(Ctrl+V) 하세요
+          </div>
+        )}
       </div>
 
-      {/* 드래그앤드롭 + 파일 선택 */}
+      {/* ② 받은 엑셀 올리기 */}
       <div
-        onClick={() => fileInputRef.current?.click()}
-        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-        onDragEnter={e => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={e => { e.preventDefault(); setDragOver(false); }}
-        onDrop={handleDrop}
+        onClick={openFilePicker}
         style={{
-          border: `2px dashed ${dragOver ? 'var(--primary)' : 'var(--border-color)'}`,
-          borderRadius: '12px', padding: '32px 20px', textAlign: 'center', cursor: 'pointer',
+          border: `2px dashed ${dragOver ? 'var(--primary)' : '#a5b4fc'}`,
+          borderRadius: '14px', padding: '26px 20px', textAlign: 'center', cursor: 'pointer',
           backgroundColor: dragOver ? '#eef2ff' : 'var(--bg-card)',
           marginBottom: '20px', transition: 'border-color 0.15s, background-color 0.15s',
         }}
         onMouseEnter={e => { if (!dragOver) e.currentTarget.style.borderColor = 'var(--primary)'; }}
-        onMouseLeave={e => { if (!dragOver) e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+        onMouseLeave={e => { if (!dragOver) e.currentTarget.style.borderColor = '#a5b4fc'; }}
       >
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)', marginBottom: '10px' }}>
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="12" y1="18" x2="12" y2="12"/>
-          <line x1="9" y1="15" x2="15" y2="15"/>
-        </svg>
-        <div style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '4px' }}>
-          {excelLoading ? '파일 분석 중...' : dragOver ? '여기에 놓으세요!' : '엑셀 파일 선택 또는 여기에 끌어다 놓기'}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+          <StepBadge n="2" />
+          <span style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-main)' }}>받은 엑셀 올리기</span>
         </div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          나이스 학원에서 엑셀내려받기 한 파일(.xlsx) 업로드
+        <div style={{ fontSize: '0.92rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+          {excelLoading ? '파일 분석 중...' : dragOver ? '여기에 놓으세요!' : '여기를 눌러 선택하거나 끌어다 놓기'}
         </div>
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display: 'none' }} />
       </div>
+
+      {showAndroidTip && (
+        <div style={{ marginTop: '-10px', marginBottom: '20px', fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span>📱 앱을 설치하면 받은 엑셀을 '공유 → 교습비 관리'로 바로 열 수 있어요</span>
+          {installable && (
+            <button onClick={promptInstall} style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', cursor: 'pointer' }}>
+              앱 설치
+            </button>
+          )}
+        </div>
+      )}
 
       {excelError && (
         <div style={{ color: '#dc2626', fontSize: '0.85rem', marginBottom: '16px', padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
@@ -503,7 +604,7 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
           </svg>
         </a>
       </div>
-    </>
+    </div>
   );
 }
 
