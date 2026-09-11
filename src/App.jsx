@@ -3,8 +3,11 @@ import './App.css';
 import TuitionReviewTab from './components/TuitionReviewTab';
 import { printTuitionForm, printTuitionFormExternal } from './utils/generateTuitionPDF';
 import { downloadTuitionInternalDOCX, downloadTuitionExternalDOCX } from './utils/generateTuitionDOCX';
+import { downloadTuitionInternalJPG, downloadTuitionExternalJPG } from './utils/generateTuitionJPG';
+import { downloadTuitionInternalHWPX, downloadTuitionExternalHWPX } from './utils/generateTuitionHWPX';
+import { getRegNoText } from './utils/tuitionFormCommon';
 import { parseExcelTuition } from './utils/parseExcelTuition';
-import { fetchGoogleSheetData, transformAcademyData, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
+import { fetchGoogleSheetData, transformAcademyData, attachRegNo, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
 import StandardPriceTable from './components/StandardPriceTable';
 
 export default function App() {
@@ -27,17 +30,28 @@ export default function App() {
   const [excelError, setExcelError] = useState('');
   const [excelLoading, setExcelLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const uploadSeqRef = useRef(0);
+
+  // 구글시트 학원·교습소 목록 (한 번만 받아서 재사용, 실패 시 다음에 다시 시도)
+  const masterAcademiesRef = useRef(null);
+  function loadMasterAcademies() {
+    if (!masterAcademiesRef.current) {
+      masterAcademiesRef.current = Promise.all([
+        fetchGoogleSheetData(DATA_GID),
+        fetchGoogleSheetData(GYOSEUPSO_GID),
+      ])
+        .then(([academyData, gyoseupsoData]) => transformAcademyData([...academyData, ...gyoseupsoData]))
+        .catch(err => { masterAcademiesRef.current = null; throw err; });
+    }
+    return masterAcademiesRef.current;
+  }
 
   async function loadAcademyData() {
     if (searchLoaded || searchLoading) return;
     setSearchLoading(true);
     setSearchError('');
     try {
-      const [academyData, gyoseupsoData] = await Promise.all([
-        fetchGoogleSheetData(DATA_GID),
-        fetchGoogleSheetData(GYOSEUPSO_GID),
-      ]);
-      setAcademies(transformAcademyData([...academyData, ...gyoseupsoData]));
+      setAcademies(await loadMasterAcademies());
       setSearchLoaded(true);
     } catch (err) {
       setSearchError('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
@@ -73,6 +87,7 @@ export default function App() {
     setExcelLoading(true);
     setExcelAcademies([]);
     setExcelSelected(null);
+    const seq = ++uploadSeqRef.current;
     try {
       const result = await parseExcelTuition(file);
       if (!result.length) {
@@ -80,6 +95,15 @@ export default function App() {
       } else {
         setExcelAcademies(result);
         if (result.length === 1) setExcelSelected(result[0]);
+        // 나이스 엑셀엔 등록번호가 없어 구글시트에서 찾아 붙인다 (실패하면 등록번호 없이 출력)
+        loadMasterAcademies()
+          .then(master => {
+            if (seq !== uploadSeqRef.current) return;
+            const enriched = attachRegNo(result, master);
+            setExcelAcademies(enriched);
+            setExcelSelected(prev => (prev ? enriched.find(a => a.name === prev.name) || prev : prev));
+          })
+          .catch(() => {});
       }
     } catch (err) {
       setExcelError('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
@@ -521,17 +545,24 @@ function PrintButtons({ academy }) {
     );
   }
 
-  function BtnDOCX({ onClick, label, busy, size = 'normal' }) {
+  const SAVE_THEMES = {
+    jpg: { bg: '#ecfdf5', busyBg: '#d1fae5', color: '#047857', border: '#6ee7b7' },
+    docx: { bg: '#eff6ff', busyBg: '#dbeafe', color: '#1d4ed8', border: '#93c5fd' },
+    hwpx: { bg: '#f0f9ff', busyBg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc' },
+  };
+
+  function BtnSave({ onClick, label, busy, theme = 'docx', size = 'normal' }) {
     const isLarge = size === 'large';
+    const t = SAVE_THEMES[theme];
     return (
       <button
         onClick={onClick}
         disabled={!!downloading}
         style={{
           padding: isLarge ? '14px 10px' : '12px 8px',
-          backgroundColor: busy ? '#dbeafe' : '#eff6ff',
-          color: '#1d4ed8',
-          border: '2px solid #93c5fd',
+          backgroundColor: busy ? t.busyBg : t.bg,
+          color: t.color,
+          border: `2px solid ${t.border}`,
           borderRadius: '10px',
           fontSize: isLarge ? '1rem' : '0.92rem',
           fontWeight: '700',
@@ -546,7 +577,9 @@ function PrintButtons({ academy }) {
         onMouseEnter={e => { if (!downloading) e.currentTarget.style.filter = 'brightness(0.95)'; }}
         onMouseLeave={e => e.currentTarget.style.filter = ''}
       >
-        <DocxIcon busy={busy} size={isLarge ? 16 : 14} /> {busy ? '생성중...' : label}
+        {theme === 'jpg'
+          ? <ImageIcon busy={busy} size={isLarge ? 16 : 14} />
+          : <DocxIcon busy={busy} size={isLarge ? 16 : 14} />} {busy ? '생성중...' : label}
       </button>
     );
   }
@@ -563,8 +596,13 @@ function PrintButtons({ academy }) {
     <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
       {/* 학원 정보 */}
       <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1.5px solid var(--border-color)' }}>
-        <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '4px' }}>{academy.name}</div>
-        {academy.address && <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>{academy.address}</div>}
+        <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '4px' }}>
+          {academy.name}
+          {getRegNoText(academy) && (
+            <span style={{ marginLeft: '6px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>{getRegNoText(academy)}</span>
+          )}
+        </div>
+        {academy.address &&<div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>{academy.address}</div>}
         {academy.courses?.length > 0 && (
           <div style={{ display: 'inline-block', marginTop: '6px', fontSize: '0.78rem', color: '#6366f1', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', padding: '2px 8px', fontWeight: '600' }}>
             교습과정 {academy.courses.length}개
@@ -585,7 +623,9 @@ function PrintButtons({ academy }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <BtnPDF onClick={() => printTuitionForm(academy)} label="PDF 출력" size="large" />
-          <BtnDOCX onClick={() => withLoading('int-docx', () => downloadTuitionInternalDOCX(academy))} label="DOCX 저장" busy={downloading === 'int-docx'} size="large" />
+          <BtnSave theme="jpg" onClick={() => withLoading('int-jpg', () => downloadTuitionInternalJPG(academy))} label="JPG 저장" busy={downloading === 'int-jpg'} size="large" />
+          <BtnSave theme="docx" onClick={() => withLoading('int-docx', () => downloadTuitionInternalDOCX(academy))} label="DOCX 저장" busy={downloading === 'int-docx'} size="large" />
+          <BtnSave theme="hwpx" onClick={() => withLoading('int-hwpx', () => downloadTuitionInternalHWPX(academy))} label="HWPX 저장" busy={downloading === 'int-hwpx'} size="large" />
         </div>
       </div>
 
@@ -602,7 +642,9 @@ function PrintButtons({ academy }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <BtnPDF onClick={() => printTuitionFormExternal(academy)} label="PDF 출력" size="large" />
-          <BtnDOCX onClick={() => withLoading('ext-docx', () => downloadTuitionExternalDOCX(academy))} label="DOCX 저장" busy={downloading === 'ext-docx'} size="large" />
+          <BtnSave theme="jpg" onClick={() => withLoading('ext-jpg', () => downloadTuitionExternalJPG(academy))} label="JPG 저장" busy={downloading === 'ext-jpg'} size="large" />
+          <BtnSave theme="docx" onClick={() => withLoading('ext-docx', () => downloadTuitionExternalDOCX(academy))} label="DOCX 저장" busy={downloading === 'ext-docx'} size="large" />
+          <BtnSave theme="hwpx" onClick={() => withLoading('ext-hwpx', () => downloadTuitionExternalHWPX(academy))} label="HWPX 저장" busy={downloading === 'ext-hwpx'} size="large" />
         </div>
       </div>
     </div>
@@ -617,6 +659,11 @@ function PrintIcon({ size = 13 }) {
       <rect x="6" y="14" width="12" height="8"></rect>
     </svg>
   );
+}
+function ImageIcon({ busy, size = 13 }) {
+  return busy
+    ? <span style={{ fontSize: '0.9rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
+    : <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>;
 }
 function DocxIcon({ busy, size = 13 }) {
   return busy
