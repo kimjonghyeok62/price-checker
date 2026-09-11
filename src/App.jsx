@@ -116,7 +116,7 @@ export default function App() {
     }
   }
 
-  // 안드로이드 "공유 → 교습비 관리"로 열린 경우(/?shared=1): 공유받은 엑셀을 바로 불러온다
+  // 안드로이드 "공유 → 교습비 관리·게시표"로 열린 경우(/?shared=1): 공유받은 엑셀을 바로 불러온다
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has('shared')) return;
     window.history.replaceState(null, '', window.location.pathname);
@@ -160,7 +160,7 @@ export default function App() {
               <path d="m9 11 2 2 4-4"/>
             </svg>
           </div>
-          <h1 className="app-title">교습비 관리</h1>
+          <h1 className="app-title">교습비 관리·게시표</h1>
         </div>
         <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
           <div className="app-subtitle">
@@ -367,19 +367,6 @@ async function pickExcelFromDownloads() {
 
 const hasDraggedFiles = (e) => Array.from(e.dataTransfer?.types || []).includes('Files');
 
-function copyTextSync(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.setAttribute('readonly', '');
-  ta.style.cssText = 'position:fixed; top:0; left:-9999px; opacity:0;';
-  document.body.appendChild(ta);
-  ta.select();
-  let ok = false;
-  try { ok = document.execCommand('copy'); } catch { ok = false; }
-  ta.remove();
-  return ok;
-}
-
 function StepBadge({ n }) {
   return (
     <span style={{
@@ -392,9 +379,6 @@ function StepBadge({ n }) {
 function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelected, setExcelSelected, fileInputRef, handleFile }) {
   const [dragOver, setDragOver] = React.useState(false);
   const dragDepthRef = useRef(0);
-  const [neisName, setNeisName] = useState('');
-  const [copiedName, setCopiedName] = useState('');
-  const neisLinkRef = useRef(null);
   const [installable, setInstallable] = useState(canPromptInstall());
   useEffect(() => onInstallPromptChange(() => setInstallable(canPromptInstall())), []);
   const showAndroidTip = isAndroid() && !isInstalledApp();
@@ -425,15 +409,6 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
     fileInputRef.current?.click();
   }
 
-  // 나이스 학원 열기 — 입력한 학원명은 클립보드에 복사해 나이스 검색창에 붙여넣기만 하면 되게
-  // (새 탭이 열리기 전에 동기 방식으로 먼저 복사, 안 되면 Clipboard API)
-  function copyNeisName() {
-    const name = neisName.trim();
-    if (!name) return;
-    if (copyTextSync(name)) { setCopiedName(name); return; }
-    navigator.clipboard?.writeText(name).then(() => setCopiedName(name)).catch(() => {});
-  }
-
   return (
     <div {...dropHandlers}>
       {/* ① 나이스 학원에서 엑셀 받기 */}
@@ -445,69 +420,56 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
           <StepBadge n="1" />
           <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#312e81' }}>나이스 학원에서 엑셀 받기</span>
         </div>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            value={neisName}
-            onChange={e => { setNeisName(e.target.value); setCopiedName(''); }}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); neisLinkRef.current?.click(); } }}
-            placeholder="학원(교습소)명 (선택)"
-            aria-label="나이스에서 검색할 학원(교습소)명"
-            style={{
-              flex: '1 1 180px', minWidth: 0, padding: '14px 14px', fontSize: '1rem',
-              border: '1.5px solid #c7d2fe', borderRadius: '10px', backgroundColor: '#fff', outline: 'none',
-            }}
-          />
-          <a
-            ref={neisLinkRef}
-            href={NEIS_HAKWON_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={copyNeisName}
-            style={{
-              flex: '1 1 200px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              padding: '14px 18px', borderRadius: '10px', backgroundColor: 'var(--primary)', color: '#fff',
-              fontSize: '1.1rem', fontWeight: '800', textDecoration: 'none', boxShadow: '0 3px 10px rgba(79,70,229,0.3)',
-            }}
-          >
-            나이스 학원 열기
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-          </a>
-        </div>
-        {copiedName && (
-          <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#3730a3', fontWeight: '600' }}>
-            ✓ '{copiedName}' 복사됨 — 나이스 학원명 칸에 붙여넣기(Ctrl+V) 하세요
-          </div>
-        )}
+        <a
+          href={NEIS_HAKWON_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '16px 18px', borderRadius: '10px', backgroundColor: 'var(--primary)', color: '#fff',
+            fontSize: '1.15rem', fontWeight: '800', textDecoration: 'none', boxShadow: '0 3px 10px rgba(79,70,229,0.3)',
+          }}
+        >
+          나이스 학원 열기
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
       </div>
 
-      {/* ② 받은 엑셀 올리기 */}
-      <div
-        onClick={openFilePicker}
-        style={{
-          border: `2px dashed ${dragOver ? 'var(--primary)' : '#a5b4fc'}`,
-          borderRadius: '14px', padding: '26px 20px', textAlign: 'center', cursor: 'pointer',
-          backgroundColor: dragOver ? '#eef2ff' : 'var(--bg-card)',
-          marginBottom: '20px', transition: 'border-color 0.15s, background-color 0.15s',
-        }}
-        onMouseEnter={e => { if (!dragOver) e.currentTarget.style.borderColor = 'var(--primary)'; }}
-        onMouseLeave={e => { if (!dragOver) e.currentTarget.style.borderColor = '#a5b4fc'; }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+      {/* ② 받은 엑셀 올리기 — ①과 같은 카드 구조 (제목 왼쪽 + 아래 동작 영역) */}
+      <div style={{
+        backgroundColor: '#eef2ff', border: '2px solid #c7d2fe', borderRadius: '14px',
+        padding: '18px', marginBottom: '20px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <StepBadge n="2" />
-          <span style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-main)' }}>받은 엑셀 올리기</span>
+          <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#312e81' }}>받은 엑셀 올리기</span>
         </div>
-        <div style={{ fontSize: '0.92rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-          {excelLoading ? '파일 분석 중...' : dragOver ? '여기에 놓으세요!' : '여기를 눌러 선택하거나 끌어다 놓기'}
+        <div
+          onClick={openFilePicker}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '14px 18px', borderRadius: '10px', cursor: 'pointer',
+            border: `2px dashed ${dragOver ? 'var(--primary)' : '#a5b4fc'}`,
+            backgroundColor: dragOver ? '#e0e7ff' : '#fff',
+            color: 'var(--primary)', fontSize: '1rem', fontWeight: '700',
+            transition: 'border-color 0.15s, background-color 0.15s',
+          }}
+          onMouseEnter={e => { if (!dragOver) e.currentTarget.style.borderColor = 'var(--primary)'; }}
+          onMouseLeave={e => { if (!dragOver) e.currentTarget.style.borderColor = '#a5b4fc'; }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          {excelLoading ? '파일 분석 중...' : dragOver ? '여기에 놓으세요!' : '눌러서 선택하거나 끌어다 놓기'}
         </div>
         <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display: 'none' }} />
       </div>
 
       {showAndroidTip && (
         <div style={{ marginTop: '-10px', marginBottom: '20px', fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span>📱 앱을 설치하면 받은 엑셀을 '공유 → 교습비 관리'로 바로 열 수 있어요</span>
+          <span>📱 앱을 설치하면 받은 엑셀을 '공유 → 교습비 관리·게시표'로 바로 열 수 있어요</span>
           {installable && (
             <button onClick={promptInstall} style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', cursor: 'pointer' }}>
               앱 설치
@@ -560,48 +522,43 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
       )}
 
 
-      {/* 교습비등 반환기준 게시표 */}
-      <div style={{ marginTop: '32px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+      {/* 교습비등 반환기준 게시표 — 위 게시표 카드와 같은 형식, 주황 계열로 구분 */}
+      <div style={{
+        marginTop: '20px', backgroundColor: '#fffbeb', border: '2px solid #fcd34d',
+        borderRadius: '14px', padding: '18px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+          <div style={{ width: '4px', height: '22px', backgroundColor: '#d97706', borderRadius: '2px', flexShrink: 0 }} />
+          <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#78350f', letterSpacing: '-0.01em' }}>
+            교습비등 반환기준 게시표
+          </div>
+          <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#b45309', backgroundColor: '#fef3c7', border: '1.5px solid #fcd34d', borderRadius: '20px', padding: '2px 10px' }}>
+            [별지 제5호서식]
+          </div>
+        </div>
+        <div style={{ fontSize: '0.8rem', color: '#92400e', marginBottom: '12px', paddingLeft: '12px', wordBreak: 'keep-all' }}>
+          경기도 학원의 설립·운영 및 과외교습에 관한 조례 시행규칙
+        </div>
         <a
           href="/refund-standard.pdf"
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '14px 18px',
-            backgroundColor: '#f8fafc',
-            border: '1.5px solid #e2e8f0',
-            borderRadius: '10px',
-            textDecoration: 'none',
-            color: 'var(--text-main)',
-            transition: 'border-color 0.15s, background-color 0.15s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            padding: '14px 18px', borderRadius: '10px', backgroundColor: '#d97706', color: '#fff',
+            fontSize: '1rem', fontWeight: '800', textDecoration: 'none', boxShadow: '0 3px 10px rgba(217,119,6,0.3)',
+            transition: 'filter 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.backgroundColor = '#eef2ff'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+          onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.08)'; }}
+          onMouseLeave={e => { e.currentTarget.style.filter = ''; }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="9" y1="12" x2="15" y2="12"/>
-              <line x1="9" y1="16" x2="13" y2="16"/>
-            </svg>
-            <div>
-              <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e293b' }}>
-                ※ 참고 — 교습비등 반환기준 게시표
-              </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                경기도 학원의 설립·운영 및 과외교습에 관한 조례 시행규칙 [별지 제5호서식]
-              </div>
-            </div>
-          </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15 3 21 3 21 9"/>
-            <line x1="10" y1="14" x2="21" y2="3"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="9" y1="13" x2="15" y2="13"/>
+            <line x1="9" y1="17" x2="13" y2="17"/>
           </svg>
+          반환기준 게시표 PDF 보기
         </a>
       </div>
     </div>
