@@ -98,6 +98,7 @@ export function transformAcademyData(rawRows) {
         if (!academyMap.has(name)) {
             academyMap.set(name, {
                 id: rowId,
+                regNo: rowId,
                 name,
                 category: row['학원종류'] || '교습소',
                 address: row['학원주소'] || row['교습소주소'] || '',
@@ -112,6 +113,7 @@ export function transformAcademyData(rawRows) {
             if (rowId !== existing.id && ACTIVE.includes(rowStatus) && !ACTIVE.includes(existing.status)) {
                 Object.assign(existing, {
                     id: rowId,
+                    regNo: rowId,
                     category: row['학원종류'] || existing.category,
                     address: row['학원주소'] || row['교습소주소'] || existing.address,
                     regDate: row['등록일'] || existing.regDate,
@@ -142,4 +144,22 @@ export function transformAcademyData(rawRows) {
         }
     });
     return Array.from(academyMap.values());
+}
+
+/**
+ * 나이스 엑셀에는 등록번호가 없으므로, 구글시트(학원·교습소 목록)에서
+ * 같은 이름의 운영 중인 학원을 찾아 등록번호(신고번호)와 학원종류를 붙인다.
+ * 못 찾으면 그대로 반환 → 게시표에서 등록번호 문구 생략
+ */
+export function attachRegNo(academies, masterAcademies) {
+    const key = (name) => (name || '').replace(/\s+/g, '');
+    const byName = new Map();
+    masterAcademies
+        .filter(m => ['개원', '신고'].includes(m.status) && m.regNo)
+        .forEach(m => byName.set(key(m.name), m));
+    return academies.map(a => {
+        const m = byName.get(key(a.name));
+        if (!m) return a;
+        return { ...a, regNo: m.regNo, category: a.category || m.category };
+    });
 }

@@ -7,8 +7,18 @@ import {
   TextRun, WidthType, AlignmentType, BorderStyle, ShadingType,
   convertMillimetersToTwip, HeightRule, VerticalAlign,
 } from 'docx';
+import { getRegNoText } from './tuitionFormCommon';
 
 // ─── 공통 헬퍼 ───────────────────────────────────────────────────
+
+// 학원명 + [등록번호: 제 ○○호] (번호 없으면 학원명만)
+function academyNameRuns(academy, size) {
+  const regNo = getRegNoText(academy);
+  return [
+    new TextRun({ text: academy.name, bold: true, size, font: FONT }),
+    ...(regNo ? [new TextRun({ text: ` ${regNo}`, size: size - 6, font: FONT })] : []),
+  ];
+}
 
 function fmtNum(val) {
   if (!val && val !== 0) return '';
@@ -267,7 +277,7 @@ export async function downloadTuitionInternalDOCX(academy) {
       children: [
         new Paragraph({ children: [new TextRun({ text: '[별지 제4호서식]', size: 16, font: FONT })], spacing: { after: 40 } }),
         new Paragraph({ children: [new TextRun({ text: '교습비등  게시표', bold: true, size: 48, font: FONT })], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
-        new Paragraph({ children: [new TextRun({ text: academy.name, bold: true, size: 28, font: FONT })], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
+        new Paragraph({ children: academyNameRuns(academy, 28), alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
         new Paragraph({
           children: [
             new TextRun({ text: `${d.year}년  ${d.month}월  ${d.day}일  현재`, size: 20, font: FONT }),
@@ -456,7 +466,7 @@ export async function downloadTuitionExternalDOCX(academy) {
       children: [
         new Paragraph({ children: [new TextRun({ text: '■ 교육부「학원비 옥외가격표시제 가이드라인」[별첨1]<신설 2017. 8.> (옥외용)', size: 14, font: FONT })], spacing: { after: 40 } }),
         new Paragraph({ children: [new TextRun({ text: '교습비등  게시표', bold: true, size: 52, font: FONT })], alignment: AlignmentType.CENTER, spacing: { after: 80 } }),
-        new Paragraph({ children: [new TextRun({ text: academy.name, bold: true, size: 30, font: FONT })], alignment: AlignmentType.CENTER, spacing: { after: 60 } }),
+        new Paragraph({ children: academyNameRuns(academy, 30), alignment: AlignmentType.CENTER, spacing: { after: 60 } }),
         new Paragraph({ children: [new TextRun({ text: `${d.year}년  ${d.month}월  ${d.day}일`, size: 22, font: FONT })], alignment: AlignmentType.RIGHT, spacing: { after: 60 } }),
         table,
         new Paragraph({ children: [new TextRun({ text: '「학원의 설립·운영 및 과외교습에 관한 법률」제15조제3항에 따라 교습비등을 위와 같이 게시합니다.', size: 20, font: FONT })], spacing: { before: 100, after: 40 } }),

@@ -3,7 +3,14 @@
  * [별지 제4호서식] - 경기도 학원의 설립·운영 및 과외교습에 관한 조례 시행규칙 제8조의2
  *
  * 브라우저 print 방식으로 A4 PDF 생성 (한글 깨짐 없음, 추가 라이브러리 불필요)
+ * build*HTML 함수는 JPG 출력(generateTuitionJPG.js)에서도 재사용
  */
+import { getRegNoText } from './tuitionFormCommon';
+
+function regNoHtml(academy) {
+    const text = getRegNoText(academy);
+    return text ? ` <span class="form-regno">${text}</span>` : '';
+}
 
 function fmtNum(val) {
     if (!val && val !== 0) return '';
@@ -48,6 +55,10 @@ function formatChangeDateKo(dateStr) {
 }
 
 export function printTuitionForm(academy) {
+    _openPrintWindow(buildTuitionFormHTML(academy));
+}
+
+export function buildTuitionFormHTML(academy) {
     const baseDateStr = academy.changeDate || academy.regDate || '';
     const baseDate = formatChangeDateKo(baseDateStr);
 
@@ -127,6 +138,7 @@ export function printTuitionForm(academy) {
   .form-label { font-size: 10pt; text-align: left; margin-bottom: 2mm; }
   .form-title { font-size: 24pt; font-weight: bold; text-align: center; letter-spacing: 8px; margin-bottom: 3mm; }
   .form-academy { font-size: 14pt; font-weight: bold; text-align: center; margin-bottom: 4mm; }
+  .form-regno { font-size: 11pt; font-weight: normal; }
   .form-date-unit { display: flex; justify-content: space-between; align-items: baseline; font-size: 11pt; margin-bottom: 4mm; border-bottom: 1.5px solid #000; padding-bottom: 2mm; }
   .form-date { display: flex; gap: 6px; align-items: baseline; }
   .date-val { display: inline-block; border-bottom: 1px solid #000; min-width: 26px; text-align: center; font-size: 11pt; padding: 0 2px; }
@@ -141,14 +153,14 @@ export function printTuitionForm(academy) {
   .total-cell { background-color: #ffffff; }
   .note-row td { background-color: #fafafa; font-size: 10pt; }
   .notice-text { font-size: 10.5pt; line-height: 1.8; margin-bottom: 5mm; }
-  .sign-area { margin-bottom: 8mm; }
+  .sign-area { margin-bottom: 8mm; break-inside: avoid; page-break-inside: avoid; }
   .sign-date-row { font-size: 12pt; display: flex; gap: 8px; align-items: baseline; justify-content: center; margin-bottom: 5mm; }
   .sign-name-row { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 11pt; }
   .sign-prefix { font-weight: normal; }
   .sign-person { font-weight: bold; }
   .sign-suffix { font-size: 10pt; color: #333; }
   .sign-box { display: inline-block; border: 1px solid #000; width: 25mm; height: 14mm; vertical-align: middle; margin-left: 4px; }
-  .notes-box { border: 1px solid #000; padding: 4mm 6mm; font-size: 10pt; line-height: 1.8; margin-top: 4mm; }
+  .notes-box { border: 1px solid #000; padding: 4mm 6mm; font-size: 10pt; line-height: 1.8; margin-top: 4mm; break-inside: avoid; page-break-inside: avoid; }
   .notes-title { font-weight: bold; letter-spacing: 4px; text-align: center; font-size: 11pt; margin-bottom: 3mm; }
   .notes-item { margin-bottom: 1.5mm; }
   .paper-size { text-align: right; font-size: 8pt; margin-top: 3mm; color: #555; }
@@ -162,7 +174,7 @@ export function printTuitionForm(academy) {
 <div class="page">
   <div class="form-label">[별지 제4호서식]</div>
   <div class="form-title">교습비등 게시표</div>
-  <div class="form-academy">${academy.name}</div>
+  <div class="form-academy">${academy.name}${regNoHtml(academy)}</div>
   <div class="form-date-unit">
     <div class="form-date">
       <span><span class="date-val">${baseDate.year}</span> 년</span>
@@ -223,7 +235,7 @@ export function printTuitionForm(academy) {
 </body>
 </html>`;
 
-    _openPrintWindow(html);
+    return html;
 }
 
 function _openPrintWindow(html) {
@@ -291,6 +303,10 @@ function getSignLabelExternal(academy) {
 }
 
 export function printTuitionFormExternal(academy) {
+    _openPrintWindow(buildTuitionFormExternalHTML(academy));
+}
+
+export function buildTuitionFormExternalHTML(academy) {
     const baseDateStr = academy.changeDate || academy.regDate || '';
     const baseDate = formatChangeDateKo(baseDateStr);
     const courses = academy.courses || [];
@@ -374,6 +390,7 @@ export function printTuitionFormExternal(academy) {
   .btn-close { background: #64748b; color: white; }
   .form-title { font-size: 26pt; font-weight: bold; text-align: center; letter-spacing: 8px; margin-bottom: 3mm; }
   .form-academy { font-size: 15pt; font-weight: bold; text-align: center; margin-bottom: 3mm; }
+  .form-regno { font-size: 12pt; font-weight: normal; }
   .form-date-row { display: flex; justify-content: flex-end; align-items: baseline; font-size: 12pt; margin-bottom: 4mm; }
   .form-date { display: flex; gap: 6px; align-items: baseline; }
   .date-val { display: inline-block; border-bottom: 1px solid #000; min-width: 26px; text-align: center; font-size: 12pt; padding: 0 2px; }
@@ -383,7 +400,7 @@ export function printTuitionFormExternal(academy) {
   table.main-table thead th { background-color: #e8e8e8; font-weight: bold; }
   table.main-table tbody tr { height: 14mm; }
   .notice-text { font-size: 11pt; line-height: 1.9; margin-bottom: 6mm; }
-  .sign-area { margin-bottom: 6mm; }
+  .sign-area { margin-bottom: 6mm; break-inside: avoid; page-break-inside: avoid; }
   .sign-row { font-size: 12pt; display: flex; justify-content: center; align-items: center; gap: 8px; }
   .sign-label { font-weight: normal; }
   .sign-person { font-weight: bold; }
@@ -400,7 +417,7 @@ export function printTuitionFormExternal(academy) {
 <div class="page">
   <div style="font-size:8.5pt; color:#555; margin-bottom:2mm;">■ 교육부「학원비 옥외가격표시제 가이드라인」[별첨1]&lt;신설 2017. 8.&gt; (옥외용)</div>
   <div class="form-title">교습비등 게시표</div>
-  <div class="form-academy">${academy.name}</div>
+  <div class="form-academy">${academy.name}${regNoHtml(academy)}</div>
   <div class="form-date-row">
     <div class="form-date">
       <span><span class="date-val">${baseDate.year}</span> 년</span>
@@ -443,5 +460,5 @@ export function printTuitionFormExternal(academy) {
 </body>
 </html>`;
 
-    _openPrintWindow(html);
+    return html;
 }
