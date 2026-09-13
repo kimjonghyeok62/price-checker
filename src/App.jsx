@@ -9,7 +9,9 @@ import { getRegNoText } from './utils/tuitionFormCommon';
 import { parseExcelTuition } from './utils/parseExcelTuition';
 import { fetchGoogleSheetData, transformAcademyData, attachRegNo, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
 import StandardPriceTable from './components/StandardPriceTable';
-import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall, isAndroid, isInstalledApp, getNeisHakwonUrl } from './utils/pwa';
+import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall, isAndroid, isInstalledApp, isAndroidDesktopMode } from './utils/pwa';
+
+const NEIS_HAKWON_URL = 'https://hakwon.neis.go.kr';
 
 export default function App() {
   const [tab, setTab] = useState('excel'); // 'review' | 'tutoring' | 'excel'
@@ -419,7 +421,7 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
           <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#312e81' }}>나이스 학원에서 엑셀 받기</span>
         </div>
         <a
-          href={getNeisHakwonUrl()}
+          href={NEIS_HAKWON_URL}
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -433,6 +435,15 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
           </svg>
         </a>
+        {isAndroidDesktopMode() && (
+          <div style={{
+            marginTop: '10px', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#fff7ed',
+            border: '1px solid #fdba74', color: '#9a3412', fontSize: '0.9rem', lineHeight: 1.5,
+          }}>
+            크롬 <b>'데스크톱 사이트'</b>가 켜져 있어 나이스 학원이 PC 화면으로 열리고 터치가 잘 안 됩니다.
+            크롬 오른쪽 위 <b>⋮ 메뉴 → '데스크톱 사이트' 체크 해제</b> 후 다시 열어 주세요.
+          </div>
+        )}
       </div>
 
       {/* ② 받은 엑셀 올리기 — ①과 같은 카드 구조 (제목 왼쪽 + 아래 동작 영역) */}
