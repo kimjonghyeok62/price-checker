@@ -5,7 +5,7 @@
  * @param {Object} data
  * @param {string} data.academyName   학원명
  * @param {string} data.operator      운영자
- * @param {string} data.regNumber     등록번호
+ * @param {string} data.regNumber     등록(신고)번호
  * @param {string} data.address       위치
  * @param {string} data.phone         전화번호
  * @param {'신규등록'|'일부변경'|'전체변경'} data.regType
@@ -334,7 +334,7 @@ export function printRegistrationForm(data) {
       <td colspan="3" style="letter-spacing:1px">
         ${val(academyName)}&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;${val(operator)}
       </td>
-      <td class="th-label" style="width:10%">등록번호</td>
+      <td class="th-label" style="width:10%; line-height:1.4">등록(신고)<br>번호</td>
       <td style="width:15%">${val(regNumber)}</td>
     </tr>
     <tr>
