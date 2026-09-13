@@ -473,7 +473,7 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
             padding: '6px 4px',
             border: '1px solid #d1d5db',
             borderRadius: '6px',
-            fontSize: '1rem',
+            fontSize: '1.1rem',
             color: value === '' ? '#9ca3af' : '#111827',
             fontWeight: value === '' ? '400' : '600',
             background: '#fff',
@@ -482,8 +482,8 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
             cursor: 'pointer',
             appearance: 'auto',
             WebkitAppearance: 'auto',
-            maxWidth: '72px',
-            minHeight: '36px',
+            maxWidth: '86px',
+            minHeight: '42px',
             touchAction: 'manipulation',
           }}
         >
@@ -508,20 +508,20 @@ function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidt
               if (value === '') setIsCustomMode(false);
             }}
             style={{
-              width: (parseFloat(inputWidth) - 8) + 'px',
+              width: (parseFloat(inputWidth) + 4) + 'px',
               textAlign: 'center',
               padding: '3px 0px',
               border: 'none',
               borderBottom: '1.5px solid #9ca3af',
               background: 'transparent',
-              fontSize: '1rem',
+              fontSize: '1.1rem',
               fontWeight: '600',
               color: '#111827',
               outline: 'none',
               fontFamily: 'inherit',
             }}
           />
-          {unit && <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: '500', marginLeft: '1px' }}>{unit}</span>}
+          {unit && <span style={{ fontSize: '1rem', color: '#374151', fontWeight: '500', marginLeft: '1px' }}>{unit}</span>}
         </span>
       )}
     </span>
@@ -594,12 +594,12 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '8px 14px',
+        padding: '11px 16px',
         backgroundColor: headerBg,
         borderBottom: `1px solid ${borderColor}`,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontWeight: '800', fontSize: '1rem', color: '#111827', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+          <span style={{ fontWeight: '800', fontSize: '1.15rem', color: '#111827', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
             {index + 1}.{' '}
             {nameEditMode ? (
               <input
@@ -616,9 +616,9 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 onKeyDown={e => { if (e.key === 'Enter') setNameEditMode(false); }}
                 placeholder={`과목${index + 1}`}
                 style={{
-                  fontSize: '1rem', fontWeight: '800', color: '#111827',
+                  fontSize: '1.15rem', fontWeight: '800', color: '#111827',
                   border: 'none', borderBottom: '1.5px solid #6366f1', background: 'transparent',
-                  outline: 'none', fontFamily: 'inherit', width: '100px', padding: '0 2px',
+                  outline: 'none', fontFamily: 'inherit', width: '140px', padding: '0 2px',
                 }}
               />
             ) : (
@@ -632,11 +632,12 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             )}
           </span>
           <span style={{
-            fontSize: '0.78rem',
+            fontSize: '0.92rem',
             fontWeight: '700',
             color: '#fff',
             backgroundColor: statusColor,
-            padding: '2px 9px',
+            padding: '3px 11px',
+            whiteSpace: 'nowrap',
             borderRadius: '20px',
           }}>
             {!canJudge ? '입력 중' : isCompliant ? '✓ 적합' : '✗ 부적합'}
@@ -644,19 +645,19 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
         </div>
         <button
           onClick={() => onRemove(id)}
-          style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '1rem', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+          style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '1.3rem', cursor: 'pointer', padding: '4px 6px', lineHeight: 1 }}
         >
           ✕
         </button>
       </div>
 
       {/* 카드 본문 */}
-      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#fff' }}>
+      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '18px', backgroundColor: '#fff' }}>
 
         {/* 1. 교습 분야 선택 (학원/교습소만) */}
         {!isTutoring && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <span style={{ fontSize: '1.05rem', fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
               1. 교습 분야 선택
             </span>
             <select
@@ -665,10 +666,12 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
               className="tuition-select"
               style={{
                 flex: 1,
-                padding: '6px 10px',
+                minWidth: 0,
+                minHeight: '44px',
+                padding: '8px 10px',
                 border: '1.5px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
+                borderRadius: '8px',
+                fontSize: '1.05rem',
                 color: rateIdx === '' ? '#9ca3af' : '#111827',
                 fontWeight: rateIdx === '' ? '400' : '600',
                 background: '#fff',
@@ -687,7 +690,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
         )}
 
         {/* 2. 월 교습시간 */}
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 6px', fontSize: '0.95rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '1.05rem' }}>
           <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0, marginRight: '4px', minWidth: '115px' }}>
             {isTutoring ? '1. 월교습시간(분)' : '2. 월교습시간(분)'}
           </span>
@@ -702,7 +705,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 placeholder="0"
                 inputWidth="52px"
               />
-              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.15rem' }}>×</span>
+              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.3rem' }}>×</span>
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#374151', fontWeight: '500' }}>주</span>
@@ -714,7 +717,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 placeholder="0"
                 inputWidth="40px"
               />
-              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.15rem' }}>×</span>
+              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.3rem' }}>×</span>
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#374151', fontWeight: '500' }}>월</span>
@@ -726,10 +729,10 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 placeholder="4.3"
                 inputWidth="46px"
               />
-              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.15rem' }}>=</span>
+              <span style={{ color: '#4b5563', margin: '0 4px', fontSize: '1.3rem' }}>=</span>
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
-              <strong style={{ fontWeight: '900', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', WebkitTextStroke: totalMinutes > 0 ? '0.4px #1d4ed8' : 'none' }}>
+              <strong style={{ fontWeight: '900', fontSize: '1.2rem', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', WebkitTextStroke: totalMinutes > 0 ? '0.4px #1d4ed8' : 'none' }}>
                 {totalMinutes > 0 ? totalMinutes.toLocaleString() : '____'}
               </strong>
               <span style={{ color: '#374151', fontWeight: '500', marginLeft: '2px' }}>분</span>
@@ -738,7 +741,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
         </div>
 
         {/* 3. 교습비 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.05rem', flexWrap: 'wrap' }}>
           <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {isTutoring ? '2. 교습비(원)' : '3. 교습비(원)'}
           </span>
@@ -757,13 +760,13 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 setFeeEditMode(false);
               }}
               style={{
-                width: '120px',
+                width: '130px',
                 textAlign: 'right',
                 padding: '4px 2px',
                 border: 'none',
                 borderBottom: '1.5px solid #6366f1',
                 background: 'transparent',
-                fontSize: '1.05rem',
+                fontSize: '1.25rem',
                 fontWeight: '700',
                 color: '#1d4ed8',
                 outline: 'none',
@@ -777,11 +780,11 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
               onPointerLeave={handleFeePointerLeave}
               title="클릭하면 직접 입력"
               style={{
-                width: '120px',
+                width: '130px',
                 textAlign: 'right',
                 padding: '4px 2px',
                 borderBottom: '1.5px solid #9ca3af',
-                fontSize: '1.05rem',
+                fontSize: '1.25rem',
                 fontWeight: '700',
                 color: fee ? '#1d4ed8' : '#9ca3af',
                 cursor: 'text',
@@ -792,7 +795,7 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
               {fee ? Number(fee).toLocaleString() : '금액 입력'}
             </span>
           )}
-          <span style={{ fontSize: '0.95rem', color: '#374151', fontWeight: '600', flexShrink: 0 }}>원</span>
+          <span style={{ fontSize: '1.05rem', color: '#374151', fontWeight: '600', flexShrink: 0 }}>원</span>
           {/* ▲▼ 스피너 버튼 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flexShrink: 0 }}>
             {['▲', '▼'].map((arrow, i) => (
@@ -800,10 +803,10 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 key={arrow}
                 onClick={() => handleFeeStep(i === 0 ? 10000 : -10000)}
                 style={{
-                  width: '26px',
-                  height: '18px',
+                  width: '32px',
+                  height: '22px',
                   padding: 0,
-                  fontSize: '0.6rem',
+                  fontSize: '0.72rem',
                   lineHeight: 1,
                   border: '1px solid #d1d5db',
                   borderRadius: i === 0 ? '4px 4px 0 0' : '0 0 4px 4px',
@@ -821,13 +824,13 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
               </button>
             ))}
           </div>
-          <span style={{ fontSize: '0.85rem', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', backgroundColor: totalMinutes > 0 ? '#eff6ff' : '#f1f5f9', padding: '2px 7px', borderRadius: '4px', fontWeight: '700', flexShrink: 0, border: `1px solid ${totalMinutes > 0 ? '#bfdbfe' : '#e2e8f0'}` }}>
+          <span style={{ fontSize: '0.98rem', color: totalMinutes > 0 ? '#1d4ed8' : '#9ca3af', backgroundColor: totalMinutes > 0 ? '#eff6ff' : '#f1f5f9', padding: '3px 9px', borderRadius: '6px', fontWeight: '700', flexShrink: 0, border: `1px solid ${totalMinutes > 0 ? '#bfdbfe' : '#e2e8f0'}` }}>
             상한 {totalMinutes > 0 ? maxAllowedFee.toLocaleString() : '—'}원
           </span>
         </div>
 
         {/* 4. 분당단가 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1.05rem', flexWrap: 'wrap' }}>
           <span style={{ fontWeight: '700', color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {isTutoring ? '3. 시간당단가' : '4. 분당단가'}
           </span>
@@ -837,12 +840,12 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
                 {isTutoring ? calcHourlyRatePrecision5 : calcRatePrecision5}원
               </span>
               <span style={{ color: '#9ca3af', fontWeight: '600' }}>→</span>
-              <strong style={{ fontWeight: '900', color: '#1d4ed8', fontSize: '1rem', WebkitTextStroke: '0.4px #1d4ed8' }}>
+              <strong style={{ fontWeight: '900', color: '#1d4ed8', fontSize: '1.2rem', WebkitTextStroke: '0.4px #1d4ed8' }}>
                 {isTutoring
                   ? `${Number(calcHourlyRateCeil1).toLocaleString()}원/시간`
                   : `${Number(calcRateCeil1).toLocaleString()}원/분`}
               </strong>
-              <span style={{ color: '#9ca3af', fontSize: '0.8rem' }}>(올림)</span>
+              <span style={{ color: '#9ca3af', fontSize: '0.92rem' }}>(올림)</span>
             </>
           ) : (
             <span style={{ color: '#9ca3af' }}>_____ 원/분 (자동계산)</span>
@@ -857,12 +860,12 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
             style={{
               marginTop: '2px',
               width: '100%',
-              padding: '10px',
+              padding: '13px',
               backgroundColor: '#f3f4f6',
               color: '#374151',
               border: '1.5px dashed #d1d5db',
-              borderRadius: '8px',
-              fontSize: '0.9rem',
+              borderRadius: '10px',
+              fontSize: '1.05rem',
               fontWeight: '700',
               cursor: 'pointer',
               letterSpacing: '0.02em',
@@ -882,27 +885,27 @@ function PrintBar({ onPrint, showRegTypeSelector = false, regType, onRegTypeChan
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      gap: '10px',
-      padding: '14px 16px',
-      backgroundColor: '#f8fafc',
-      border: '1.5px solid #e2e8f0',
-      borderRadius: '10px',
+      gap: '14px',
+      padding: '18px',
+      backgroundColor: '#eff6ff',
+      border: '2px solid #bfdbfe',
+      borderRadius: '14px',
       marginTop: '4px',
     }}>
-      <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px' }}>
+      <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#1e3a8a', borderBottom: '1px solid #bfdbfe', paddingBottom: '10px', wordBreak: 'keep-all' }}>
         학원(교습소) 교습비등 등록신청서
       </div>
       {showRegTypeSelector && (
-        <div style={{ display: 'flex', gap: '12px', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', gap: '10px', fontSize: '1.05rem' }}>
           {['일부변경', '전체변경'].map(t => (
-            <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontWeight: regType === t ? '700' : '500', color: regType === t ? '#1d4ed8' : '#6b7280' }}>
+            <label key={t} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 8px', borderRadius: '10px', backgroundColor: '#fff', border: `2px solid ${regType === t ? '#2563eb' : '#dbeafe'}`, cursor: 'pointer', fontWeight: regType === t ? '700' : '500', color: regType === t ? '#1d4ed8' : '#6b7280' }}>
               <input
                 type="radio"
                 name="regType"
                 value={t}
                 checked={regType === t}
                 onChange={() => onRegTypeChange(t)}
-                style={{ accentColor: '#2563eb' }}
+                style={{ accentColor: '#2563eb', width: '18px', height: '18px', margin: 0 }}
               />
               {t}
             </label>
@@ -915,21 +918,22 @@ function PrintBar({ onPrint, showRegTypeSelector = false, regType, onRegTypeChan
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '7px',
-          padding: '10px 16px',
+          gap: '8px',
+          padding: '15px 16px',
           backgroundColor: '#1d4ed8',
           color: '#fff',
           border: 'none',
-          borderRadius: '8px',
-          fontSize: '0.92rem',
-          fontWeight: '700',
+          borderRadius: '10px',
+          fontSize: '1.1rem',
+          fontWeight: '800',
+          boxShadow: '0 3px 10px rgba(29,78,216,0.3)',
           cursor: 'pointer',
           letterSpacing: '0.02em',
         }}
         onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#1e40af'; }}
         onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 6 2 18 2 18 9"/>
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
           <rect x="6" y="14" width="12" height="8"/>
