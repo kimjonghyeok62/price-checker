@@ -9,9 +9,7 @@ import { getRegNoText } from './utils/tuitionFormCommon';
 import { parseExcelTuition } from './utils/parseExcelTuition';
 import { fetchGoogleSheetData, transformAcademyData, attachRegNo, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
 import StandardPriceTable from './components/StandardPriceTable';
-import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall, isAndroid, isInstalledApp } from './utils/pwa';
-
-const NEIS_HAKWON_URL = 'https://hakwon.neis.go.kr';
+import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall, isAndroid, isInstalledApp, getNeisHakwonUrl } from './utils/pwa';
 
 export default function App() {
   const [tab, setTab] = useState('excel'); // 'review' | 'tutoring' | 'excel'
@@ -421,7 +419,7 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
           <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#312e81' }}>나이스 학원에서 엑셀 받기</span>
         </div>
         <a
-          href={NEIS_HAKWON_URL}
+          href={getNeisHakwonUrl()}
           target="_blank"
           rel="noopener noreferrer"
           style={{

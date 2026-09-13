@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import TuitionCheckTab from './TuitionCheckTab';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm } from '../utils/generateRegistrationPDF';
+import { getNeisHakwonUrl } from '../utils/pwa';
 
 // ─── 교습과정/과목명에서 분야 인덱스 추정 ────────────────────
 function guessRateIdx(text) {
@@ -284,7 +285,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
               나이스 학원에 기등록된 자료를 바탕으로 변경하고자 할 때
             </div>
             <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontWeight: '600' }}>
-              <li><a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>나이스 학원</a>{' '}방문</li>
+              <li><a href={getNeisHakwonUrl()} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>나이스 학원</a>{' '}방문</li>
               <li>경기도교육청 선택</li>
               <li>학원 교습소 정보 조회 (엑셀내려받기)</li>
               <li>아래 영역에 엑셀 업로드</li>
