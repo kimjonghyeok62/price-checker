@@ -32,78 +32,8 @@ function val(v, fallback = '') {
     return v ? String(v) : fallback;
 }
 
-export function printRegistrationForm(data) {
-    const {
-        academyName = '',
-        operator = '',
-        regNumber = '',
-        address = '',
-        phone = '',
-        regType = '신규등록',
-        subjects = [],
-    } = data;
-
-    // 교습과목·교습시간·교습비를 하나도 적지 않은 줄(교습과정·정원만 따라 들어간 줄)은 출력하지 않음
-    const hasCourseContent = (sub) => sub && (String(sub.subjectName || '').trim() || parseInt(String(sub.fee || '').replace(/,/g, ''), 10) > 0 || sub.dm || sub.wc);
-
-    // 최소 5행 보장 (A4 1페이지 내 출력)
-    const MIN_ROWS = 5;
-    const rows = subjects.filter(hasCourseContent);
-    while (rows.length < MIN_ROWS) rows.push(null);
-
-    const courseRows = rows.map(sub => {
-        if (!sub) {
-            return `
-      <tr>
-        <td></td><td></td><td></td>
-        <td class="time-cell">
-          일 <span class="fill"></span>분 × 주 <span class="fill"></span>회 × <span class="fill-sm">4.3</span>주 = <span class="fill"></span>분
-        </td>
-        <td></td><td></td><td></td>
-      </tr>`;
-        }
-        const processLabel = sub.rateIdx !== '' && sub.rateIdx !== undefined
-            ? (PROCESS_LABELS[sub.rateIdx] || '')
-            : '';
-        const subjectName = sub.subjectName || '';
-        const dm = val(sub.dm);
-        const wc = val(sub.wc);
-        const wk = val(sub.wk, '4.3');
-        const totalMinutes = (dm && wc && wk)
-            ? Math.round(parseFloat(dm) * parseFloat(wc) * parseFloat(wk))
-            : 0;
-        const feeNum = parseInt(String(sub.fee || '').replace(/,/g, ''), 10) || 0;
-        const feeStr = feeNum > 0 ? feeNum.toLocaleString('ko-KR') : '';
-        // 입력 화면과 같은 1원 단위 올림
-        const rateStr = (feeNum > 0 && totalMinutes > 0)
-            ? Math.ceil(feeNum / totalMinutes).toLocaleString('ko-KR')
-            : '';
-
-        const dmHtml = dm ? `<strong>${dm}</strong>` : '<span class="fill"></span>';
-        const wcHtml = wc ? `<strong>${wc}</strong>` : '<span class="fill"></span>';
-        const wkHtml = `<span style="font-size:0.85em">${wk}</span>`;
-        const totalHtml = totalMinutes > 0 ? `<strong>${totalMinutes.toLocaleString()}</strong>` : '<span class="fill"></span>';
-
-        return `
-      <tr>
-        <td>${processLabel}</td>
-        <td>${subjectName}</td>
-        <td>${val(sub.period)}</td>
-        <td class="time-cell">
-          일 ${dmHtml}분 × 주 ${wcHtml}회 × ${wkHtml}주 = ${totalHtml}분
-        </td>
-        <td>${sub.capacity ? `${sub.capacity}명` : ''}</td>
-        <td class="num-cell">${feeStr}</td>
-        <td class="num-cell">${rateStr}</td>
-      </tr>`;
-    }).join('');
-
-    const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>학원(교습소) 교습비등 등록신청서${academyName ? ' — ' + academyName : ''}</title>
-<style>
+// 등록신청서·개인과외 신고서 공통 서식 스타일
+const FORM_STYLE = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: '맑은 고딕', 'Malgun Gothic', '나눔고딕', 'NanumGothic', sans-serif;
@@ -309,7 +239,81 @@ export function printRegistrationForm(data) {
     font-weight: bold;
     padding: 1.5mm 2mm;
   }
-</style>
+`;
+
+export function printRegistrationForm(data) {
+    const {
+        academyName = '',
+        operator = '',
+        regNumber = '',
+        address = '',
+        phone = '',
+        regType = '신규등록',
+        subjects = [],
+    } = data;
+
+    // 교습과목·교습시간·교습비를 하나도 적지 않은 줄(교습과정·정원만 따라 들어간 줄)은 출력하지 않음
+    const hasCourseContent = (sub) => sub && (String(sub.subjectName || '').trim() || parseInt(String(sub.fee || '').replace(/,/g, ''), 10) > 0 || sub.dm || sub.wc);
+
+    // 최소 5행 보장 (A4 1페이지 내 출력)
+    const MIN_ROWS = 5;
+    const rows = subjects.filter(hasCourseContent);
+    while (rows.length < MIN_ROWS) rows.push(null);
+
+    const courseRows = rows.map(sub => {
+        if (!sub) {
+            return `
+      <tr>
+        <td></td><td></td><td></td>
+        <td class="time-cell">
+          일 <span class="fill"></span>분 × 주 <span class="fill"></span>회 × <span class="fill-sm">4.3</span>주 = <span class="fill"></span>분
+        </td>
+        <td></td><td></td><td></td>
+      </tr>`;
+        }
+        const processLabel = sub.rateIdx !== '' && sub.rateIdx !== undefined
+            ? (PROCESS_LABELS[sub.rateIdx] || '')
+            : '';
+        const subjectName = sub.subjectName || '';
+        const dm = val(sub.dm);
+        const wc = val(sub.wc);
+        const wk = val(sub.wk, '4.3');
+        const totalMinutes = (dm && wc && wk)
+            ? Math.round(parseFloat(dm) * parseFloat(wc) * parseFloat(wk))
+            : 0;
+        const feeNum = parseInt(String(sub.fee || '').replace(/,/g, ''), 10) || 0;
+        const feeStr = feeNum > 0 ? feeNum.toLocaleString('ko-KR') : '';
+        // 입력 화면과 같은 1원 단위 올림
+        const rateStr = (feeNum > 0 && totalMinutes > 0)
+            ? Math.ceil(feeNum / totalMinutes).toLocaleString('ko-KR')
+            : '';
+
+        const dmHtml = dm ? `<strong>${dm}</strong>` : '<span class="fill"></span>';
+        const wcHtml = wc ? `<strong>${wc}</strong>` : '<span class="fill"></span>';
+        const wkHtml = `<span style="font-size:0.85em">${wk}</span>`;
+        const totalHtml = totalMinutes > 0 ? `<strong>${totalMinutes.toLocaleString()}</strong>` : '<span class="fill"></span>';
+
+        return `
+      <tr>
+        <td>${processLabel}</td>
+        <td>${subjectName}</td>
+        <td>${val(sub.period)}</td>
+        <td class="time-cell">
+          일 ${dmHtml}분 × 주 ${wcHtml}회 × ${wkHtml}주 = ${totalHtml}분
+        </td>
+        <td>${sub.capacity ? `${sub.capacity}명` : ''}</td>
+        <td class="num-cell">${feeStr}</td>
+        <td class="num-cell">${rateStr}</td>
+      </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>학원(교습소) 교습비등 등록신청서${academyName ? ' — ' + academyName : ''}</title>
+<style>
+${FORM_STYLE}</style>
 </head>
 <body>
 <div class="print-bar no-print">
@@ -433,6 +437,186 @@ export function printRegistrationForm(data) {
   </div>
 
   <!-- 10. 하단 수신처 & 결재란 병렬 배치 -->
+  <div class="bottom-container">
+    <div class="recipient-box">
+      경기도광주하남교육지원청교육장 귀하
+    </div>
+    <table class="approval-table">
+      <tr>
+        <td rowspan="2" class="ap-label" style="width: 50px;">결<br>재</td>
+        <td class="ap-label" style="width: 80px;">담당</td>
+        <td class="ap-label" style="width: 80px;">담당주무</td>
+        <td class="ap-label" style="width: 120px;">평생교육건강과장</td>
+      </tr>
+      <tr>
+        <td style="height: 12mm;"></td>
+        <td></td>
+        <td style="font-size: 9.5pt; font-weight: 500;">전결</td>
+      </tr>
+    </table>
+  </div>
+</div>
+</body>
+</html>`;
+
+    _openPrintWindow(html);
+}
+
+/**
+ * 개인과외교습자 교습비 (변경)신고서 출력
+ *
+ * @param {Object} data
+ * @param {string} data.operator   교습자 성명
+ * @param {string} data.regNumber  신고번호
+ * @param {string} data.address    교습장소
+ * @param {string} data.phone      전화번호
+ * @param {Array}  data.subjects   과목 배열
+ */
+export function printTutoringForm(data) {
+    const {
+        operator = '',
+        regNumber = '',
+        address = '',
+        phone = '',
+        subjects = [],
+    } = data;
+
+    // 교습과목·교습시간·교습비를 하나도 적지 않은 줄은 출력하지 않음
+    const hasCourseContent = (sub) => sub && (String(sub.subjectName || '').trim() || parseInt(String(sub.fee || '').replace(/,/g, ''), 10) > 0 || sub.dm || sub.wc);
+
+    const MIN_ROWS = 5;
+    const rows = subjects.filter(hasCourseContent);
+    while (rows.length < MIN_ROWS) rows.push(null);
+
+    const courseRows = rows.map(sub => {
+        if (!sub) {
+            return `
+      <tr class="course-row">
+        <td></td><td></td>
+        <td class="time-cell">
+          일 <span class="fill"></span>분 × 주 <span class="fill"></span>회 × <span class="fill-sm">4.3</span>주 = <span class="fill"></span>분
+        </td>
+        <td></td><td></td>
+      </tr>`;
+        }
+        const dm = val(sub.dm);
+        const wc = val(sub.wc);
+        const wk = val(sub.wk, '4.3');
+        const totalMinutes = (dm && wc && wk)
+            ? Math.round(parseFloat(dm) * parseFloat(wc) * parseFloat(wk))
+            : 0;
+        const feeNum = parseInt(String(sub.fee || '').replace(/,/g, ''), 10) || 0;
+        const feeStr = feeNum > 0 ? feeNum.toLocaleString('ko-KR') : '';
+        // 입력 화면과 같은 1원 단위 올림
+        const hourlyStr = (feeNum > 0 && totalMinutes > 0)
+            ? Math.ceil((feeNum / totalMinutes) * 60).toLocaleString('ko-KR')
+            : '';
+
+        const dmHtml = dm ? `<strong>${dm}</strong>` : '<span class="fill"></span>';
+        const wcHtml = wc ? `<strong>${wc}</strong>` : '<span class="fill"></span>';
+        const wkHtml = `<span style="font-size:0.85em">${wk}</span>`;
+        const totalHtml = totalMinutes > 0 ? `<strong>${totalMinutes.toLocaleString()}</strong>` : '<span class="fill"></span>';
+
+        return `
+      <tr class="course-row">
+        <td>${val(sub.subjectName)}</td>
+        <td>${val(sub.period)}</td>
+        <td class="time-cell">
+          일 ${dmHtml}분 × 주 ${wcHtml}회 × ${wkHtml}주 = ${totalHtml}분
+        </td>
+        <td class="num-cell">${feeStr}</td>
+        <td class="num-cell">${hourlyStr}</td>
+      </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>개인과외교습자 교습비 (변경)신고서${operator ? ' — ' + operator : ''}</title>
+<style>
+${FORM_STYLE}</style>
+</head>
+<body>
+<div class="print-bar no-print">
+  <button class="btn-print" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+  <button class="btn-close"  onclick="window.close()">✕ 닫기</button>
+</div>
+
+<div class="page">
+  <h1 class="form-title">개인과외교습자 교습비 (변경)신고서</h1>
+
+  <!-- 1. 상단 정보 테이블 -->
+  <table class="info-table">
+    <tr>
+      <td class="th-label" style="width:15%">접수번호</td>
+      <td style="width:20%"></td>
+      <td class="th-label" style="width:15%">접수일자</td>
+      <td style="width:25%"></td>
+      <td colspan="2" style="width:25%"></td>
+    </tr>
+    <tr>
+      <td class="th-label">교습자 성명</td>
+      <td colspan="3" style="letter-spacing:1px">${val(operator)}</td>
+      <td class="th-label" style="width:10%">신고번호</td>
+      <td style="width:15%">${val(regNumber)}</td>
+    </tr>
+    <tr>
+      <td class="th-label">교습장소</td>
+      <td colspan="5">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <span>${val(address)}</span>
+          <span>(전화번호:&nbsp;&nbsp;${val(phone)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</span>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- 2. 교습비 신고 내용 섹션 타이틀 -->
+  <div class="section-title">교 습 비 &nbsp;(변경) &nbsp;신 고 내 용</div>
+
+  <!-- 3. 교습비 테이블 -->
+  <table class="subject-table">
+    <thead>
+      <tr class="course-head">
+        <th rowspan="2" style="width:20%">교습과목</th>
+        <th rowspan="2" style="width:9%">교습<br>기간</th>
+        <th style="width:39%">총 교습시간(A)</th>
+        <th rowspan="2" style="width:15%">교습비(B)</th>
+        <th rowspan="2" style="width:17%">시간당단가<br>(B÷A×60)</th>
+      </tr>
+      <tr class="course-head">
+        <th style="font-size:8.2pt; font-weight:normal; color:#444; padding: 1mm 0.5mm;">
+          일 분 × 주 회 × 4.3주 = 분
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      ${courseRows}
+    </tbody>
+  </table>
+
+  <!-- 4. 유의사항 -->
+  <div class="notice-box">
+    <strong>❏ 작성 시 유의사항</strong> : 개인과외교습자의 교습비는 시간당 20,000원 이하로 신고하여야 하며,
+    신고한 교습비를 초과하여 징수하거나 거짓으로 표시·게시·고지한 경우 <strong>과태료 부과 대상</strong>이 될 수 있습니다.
+  </div>
+
+  <!-- 5. 확인서 -->
+  <div class="confirm-box">
+    <div class="confirm-title">확 인 서</div>
+    학원의 설립·운영 및 과외교습에 관한 법률에 따라 위와 같이 개인과외교습자의 교습비를 (변경)신고하며,
+    신고한 내용이 사실과 다르지 않음을 확인합니다.
+
+    <div class="sign-date">년 &nbsp;&nbsp;&nbsp;&nbsp; 월 &nbsp;&nbsp;&nbsp;&nbsp; 일</div>
+    <div class="sign-line">
+      신고인(개인과외교습자) :
+      <span class="sign-underline"></span>
+      (인)
+    </div>
+  </div>
+
+  <!-- 6. 하단 수신처 & 결재란 -->
   <div class="bottom-container">
     <div class="recipient-box">
       경기도광주하남교육지원청교육장 귀하
