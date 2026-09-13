@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import TuitionCheckTab from './TuitionCheckTab';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm } from '../utils/generateRegistrationPDF';
+import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './NeisExcelSteps';
 // ─── 교습과정/과목명에서 분야 인덱스 추정 ────────────────────
 function guessRateIdx(text) {
   if (!text) return '';
@@ -140,8 +141,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     setChangeSubjects(subs.length ? subs : [{ id: 1, subjectName: '', rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
   }
 
-  async function handleChangeFile(e) {
-    const file = e.target.files?.[0];
+  async function loadChangeFile(file) {
     if (!file) return;
     setChangeError('');
     setChangeLoading(true);
@@ -160,16 +160,23 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
       setChangeError('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
     } finally {
       setChangeLoading(false);
-      e.target.value = '';
     }
   }
 
-  function handleChangeDrop(e) {
-    e.preventDefault();
-    setChangeDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleChangeFile({ target: { files: [file], value: '' } });
-  }
+  // 변경 탭 어디에 끌어다 놓아도 업로드 (게시표 출력 탭과 같은 방식)
+  const changeDragDepthRef = useRef(0);
+  const changeDropHandlers = {
+    onDragEnter: e => { if (!hasDraggedFiles(e)) return; e.preventDefault(); changeDragDepthRef.current++; setChangeDragOver(true); },
+    onDragOver: e => { if (hasDraggedFiles(e)) e.preventDefault(); },
+    onDragLeave: () => { changeDragDepthRef.current = Math.max(0, changeDragDepthRef.current - 1); if (!changeDragDepthRef.current) setChangeDragOver(false); },
+    onDrop: e => {
+      if (!hasDraggedFiles(e)) return;
+      e.preventDefault();
+      changeDragDepthRef.current = 0;
+      setChangeDragOver(false);
+      loadChangeFile(e.dataTransfer.files?.[0]);
+    },
+  };
 
   function removeChangeSubject(id) {
     if (changeSubjects.length === 1) return;
@@ -267,113 +274,56 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
         </div>
       )}
 
-      {/* ── 변경 탭 ── */}
+      {/* ── 변경 탭 — 게시표 출력 탭과 같은 ①②단계 카드 ── */}
       {!isTutoring && subTab === '변경' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div {...changeDropHandlers} style={{ display: 'flex', flexDirection: 'column' }}>
 
-          {/* 안내 박스 */}
-          <div style={{ backgroundColor: '#f8fafc', border: '1.5px solid var(--border-color)', borderRadius: '12px', padding: '14px 18px', fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-main)' }}>
-            <div style={{ marginBottom: '10px', color: '#374151', fontSize: '0.88rem' }}>
-              기존 학원·교습소의 교습비를 변경할 때, 나이스에 기등록된 자료를 바탕으로 수정하고자 하는 경우 아래를 참고하세요.
-            </div>
-            <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-              </svg>
-              나이스 학원에 기등록된 자료를 바탕으로 변경하고자 할 때
-            </div>
-            <ol style={{ paddingLeft: '20px', margin: '0 0 10px', display: 'flex', flexDirection: 'column', gap: '4px', color: 'var(--text-muted)', fontWeight: '600' }}>
-              <li><a href="https://hakwon.neis.go.kr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', fontWeight: '700', textDecoration: 'underline' }}>나이스 학원</a>{' '}방문</li>
-              <li>경기도교육청 선택</li>
-              <li>학원 교습소 정보 조회 (엑셀내려받기)</li>
-              <li>아래 영역에 엑셀 업로드</li>
-            </ol>
-            <div style={{ backgroundColor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '8px 12px', display: 'flex', gap: '6px', alignItems: 'center', fontSize: '0.85rem', color: '#92400e', fontWeight: '600' }}>
-              <span style={{ flexShrink: 0 }}>⚠️</span>
-              PC 전용 기능 (모바일은 불완전)
-            </div>
-          </div>
-
-          {/* 드래그앤드롭 업로드 */}
           {!changeSelected && (
-            <div
-              onClick={() => changeFileInputRef.current?.click()}
-              onDragOver={e => { e.preventDefault(); setChangeDragOver(true); }}
-              onDragEnter={e => { e.preventDefault(); setChangeDragOver(true); }}
-              onDragLeave={e => { e.preventDefault(); setChangeDragOver(false); }}
-              onDrop={handleChangeDrop}
-              style={{
-                border: `2px dashed ${changeDragOver ? 'var(--primary)' : 'var(--border-color)'}`,
-                borderRadius: '12px', padding: '32px 20px', textAlign: 'center', cursor: 'pointer',
-                backgroundColor: changeDragOver ? '#eef2ff' : 'var(--bg-card)',
-                transition: 'border-color 0.15s, background-color 0.15s',
-              }}
-              onMouseEnter={e => { if (!changeDragOver) e.currentTarget.style.borderColor = 'var(--primary)'; }}
-              onMouseLeave={e => { if (!changeDragOver) e.currentTarget.style.borderColor = 'var(--border-color)'; }}
-            >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--primary)', marginBottom: '10px' }}>
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="12" y1="18" x2="12" y2="12"/>
-                <line x1="9" y1="15" x2="15" y2="15"/>
-              </svg>
-              <div style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '4px' }}>
-                {changeLoading ? '파일 분석 중...' : changeDragOver ? '여기에 놓으세요!' : '엑셀 파일 선택 또는 여기에 끌어다 놓기'}
+            <>
+              <div style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-main)', lineHeight: 1.5, marginBottom: '14px', wordBreak: 'keep-all' }}>
+                나이스 학원에 등록된 교습비를 불러와서 바꿀 부분만 수정합니다.
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                나이스 학원에서 엑셀내려받기 한 파일(.xlsx) 업로드
-              </div>
-              <input ref={changeFileInputRef} type="file" accept=".xlsx,.xls" onChange={handleChangeFile} style={{ display: 'none' }} />
-            </div>
+              <NeisHakwonCard />
+              <ExcelUploadCard loading={changeLoading} dragOver={changeDragOver} fileInputRef={changeFileInputRef} onFile={loadChangeFile} />
+            </>
           )}
 
           {changeError && (
-            <div style={{ color: '#dc2626', fontSize: '0.85rem', padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
+            <div style={{ color: '#dc2626', fontSize: '0.95rem', marginBottom: '16px', padding: '12px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
               {changeError}
             </div>
           )}
 
           {/* 복수 학원 선택 */}
           {changeAcademies.length > 1 && !changeSelected && (
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '10px' }}>
-                파일에서 {changeAcademies.length}개 학원을 찾았습니다. 선택하세요.
-              </div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {changeAcademies.map((a, i) => (
-                  <li key={i} onClick={() => selectChangeAcademy(a)}
-                    style={{ padding: '12px 16px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '10px', cursor: 'pointer', transition: 'border-color 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
-                  >
-                    <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{a.name}</div>
-                    {a.address && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{a.address}</div>}
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>교습과정 {a.courses.length}개</div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <AcademyPickList academies={changeAcademies} onSelect={selectChangeAcademy} label="변경할" />
           )}
 
           {/* 선택된 학원 — 편집 가능한 과목 카드 */}
           {changeSelected && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#1e293b' }}>
-                  {changeSelected.name}
-                  {changeSelected.address && (
-                    <span style={{ fontSize: '0.8rem', fontWeight: '400', color: 'var(--text-muted)', marginLeft: '8px' }}>
-                      {changeSelected.address}
-                    </span>
-                  )}
+            <div className="animate-enter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '16px 18px', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '4px', wordBreak: 'keep-all' }}>
+                      {changeSelected.name}
+                    </div>
+                    {changeSelected.address && <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>{changeSelected.address}</div>}
+                    <div style={{ display: 'inline-block', marginTop: '6px', fontSize: '0.85rem', color: '#6366f1', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', padding: '2px 8px', fontWeight: '600' }}>
+                      교습과정 {changeSubjects.length}개
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setChangeSelected(null); setChangeSubjects([]); setChangeAcademies([]); }}
+                    style={{ flexShrink: 0, padding: '8px 12px', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#334155', fontSize: '0.92rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'inherit' }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    다시 선택
+                  </button>
                 </div>
-                <button
-                  onClick={() => { setChangeSelected(null); setChangeSubjects([]); setChangeAcademies([]); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.83rem', padding: 0, display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'inherit' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  다시 선택
-                </button>
+              </div>
+              <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontWeight: '600', marginTop: '-4px' }}>
+                바꿀 교습시간·교습비를 수정한 뒤 아래에서 등록신청서를 출력하세요.
               </div>
               {changeSubjects.map((sub, idx) => (
                 <SubjectCard
