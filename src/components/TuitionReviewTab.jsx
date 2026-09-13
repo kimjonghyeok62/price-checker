@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
-import { printRegistrationForm } from '../utils/generateRegistrationPDF';
+import { printRegistrationForm, printTutoringForm } from '../utils/generateRegistrationPDF';
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './NeisExcelSteps';
 import { guessRateIdx } from './tuitionInputs';
 import RegistrationSheet, { newSheetSubject, padSheetSubjects } from './RegistrationSheet';
@@ -204,6 +204,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           onInfoChange={setNewInfo}
           subjects={newSheetSubjects}
           onSubjectsChange={setNewSheetSubjects}
+          onPrint={() => printTutoringForm({ ...newInfo, subjects: newSheetSubjects })}
         />
       )}
 

@@ -90,7 +90,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
   return (
     <div className="reg-sheet-wrap">
       <div className="reg-sheet-guide">
-        <span className="reg-sheet-guide-swatch" /> <b>노란 칸</b>에 적어 넣으세요. {isTutoring ? <><b>시간당단가</b>는 자동으로 계산됩니다.</> : <>다 적으면 맨 아래 <b>등록신청서 출력</b>을 누르세요.</>}
+        <span className="reg-sheet-guide-swatch" /> <b>노란 칸</b>에 적어 넣으세요. {isTutoring ? <><b>시간당단가</b>는 자동으로 계산됩니다. 다 적으면 맨 아래 <b>신고서 출력</b>을 누르세요.</> : <>다 적으면 맨 아래 <b>등록신청서 출력</b>을 누르세요.</>}
       </div>
 
       <div className={`reg-sheet${isTutoring ? ' is-tutoring' : ''}`}>
@@ -269,7 +269,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
           <rect x="6" y="14" width="12" height="8" />
         </svg>
-        등록신청서 출력 (PDF)
+        {isTutoring ? '교습비 신고서 출력 (PDF)' : '등록신청서 출력 (PDF)'}
       </button>
       )}
     </div>
