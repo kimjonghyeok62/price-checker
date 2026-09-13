@@ -26,9 +26,23 @@ export function padSheetSubjects(subjects) {
 // 첫 줄에서 바꾸면 아래 줄도 따라가는 칸 (아래 줄에서 따로 고친 값은 그대로 둠)
 const FOLLOW_FIRST_ROW_KEYS = ['rateIdx', 'capacity'];
 
-function judge(sub) {
+// 개인과외: 시간당 20,000원 기준
+const TUTORING_HOURLY_RATE = 20000;
+
+function judge(sub, isTutoring) {
   const total = Math.round((parseFloat(sub.dm) || 0) * (parseFloat(sub.wc) || 0) * (parseFloat(sub.wk) || 0));
   const fee = parseFloat(sub.fee) || 0;
+  if (isTutoring) {
+    const hourly = total > 0 ? (fee / total) * 60 : 0;
+    return {
+      total,
+      rateCeil: Math.ceil(hourly),
+      canJudge: total > 0 && fee > 0,
+      isCompliant: hourly <= TUTORING_HOURLY_RATE + 0.01,
+      standardRate: TUTORING_HOURLY_RATE,
+      maxAllowedFee: Math.floor((total / 60) * TUTORING_HOURLY_RATE),
+    };
+  }
   const standardRate = sub.rateIdx !== '' ? STANDARD_RATE_OPTIONS[sub.rateIdx].rate : 0;
   const rateCeil = total > 0 ? Math.ceil(fee / total) : 0;
   const canJudge = sub.rateIdx !== '' && total > 0 && fee > 0;
@@ -42,7 +56,8 @@ function judge(sub) {
   };
 }
 
-export default function RegistrationSheet({ info, onInfoChange, regType, regTypeOptions, onRegTypeChange, subjects, onSubjectsChange, onPrint }) {
+export default function RegistrationSheet({ mode = 'academy', info, onInfoChange, regType, regTypeOptions = [], onRegTypeChange, subjects, onSubjectsChange, onPrint }) {
+  const isTutoring = mode === 'tutoring';
   const setInfo = (key, value) => onInfoChange({ ...info, [key]: value });
 
   function updateSub(id, patch) {
@@ -75,13 +90,31 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
   return (
     <div className="reg-sheet-wrap">
       <div className="reg-sheet-guide">
-        <span className="reg-sheet-guide-swatch" /> <b>노란 칸</b>에 적어 넣으세요. 다 적으면 맨 아래 <b>등록신청서 출력</b>을 누르세요.
+        <span className="reg-sheet-guide-swatch" /> <b>노란 칸</b>에 적어 넣으세요. {isTutoring ? <><b>시간당단가</b>는 자동으로 계산됩니다.</> : <>다 적으면 맨 아래 <b>등록신청서 출력</b>을 누르세요.</>}
       </div>
 
-      <div className="reg-sheet">
-        <h2 className="reg-sheet-title">학원(교습소) 교습비등 등록신청서</h2>
+      <div className={`reg-sheet${isTutoring ? ' is-tutoring' : ''}`}>
+        <h2 className="reg-sheet-title">{isTutoring ? '개인과외교습자 교습비 신고 내용' : '학원(교습소) 교습비등 등록신청서'}</h2>
 
         {/* 상단 정보 */}
+        {isTutoring ? (
+        <table className="reg-info">
+          <tbody>
+            <tr>
+              <th>교습자 성명</th>
+              <td><input className="reg-input" value={info.operator} onChange={e => setInfo('operator', e.target.value)} placeholder="예) 홍길동" /></td>
+              <th>신고번호</th>
+              <td><input className="reg-input" value={info.regNumber} onChange={e => setInfo('regNumber', e.target.value)} placeholder="예) 제 하남-000호" /></td>
+            </tr>
+            <tr>
+              <th>교습장소</th>
+              <td><input className="reg-input" value={info.address} onChange={e => setInfo('address', e.target.value)} placeholder="예) 경기도 하남시 ○○로 00" /></td>
+              <th>전화번호</th>
+              <td><input className="reg-input" inputMode="tel" value={info.phone} onChange={e => setInfo('phone', e.target.value)} placeholder="예) 010-0000-0000" /></td>
+            </tr>
+          </tbody>
+        </table>
+        ) : (
         <table className="reg-info">
           <tbody>
             <tr>
@@ -102,9 +135,11 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
             </tr>
           </tbody>
         </table>
+        )}
 
-        <div className="reg-section-title">교 습 비 등 &nbsp;(변경) &nbsp;등 록 내 용</div>
+        <div className="reg-section-title">{isTutoring ? '교 습 비  (변경)  신 고 내 용' : '교 습 비 등  (변경)  등 록 내 용'}</div>
 
+        {!isTutoring && (
         <div className="reg-regtype">
           <span className="reg-regtype-label">교 습 비</span>
           {REG_TYPES.map(t => {
@@ -118,32 +153,29 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
             );
           })}
         </div>
-
-        <div className="reg-follow-hint">
-          💡 <b>첫 줄</b>에서 교습과정·정원을 고르면 아래 줄에도 똑같이 들어갑니다. 다른 줄은 따로 고칠 수 있어요.
-          교습과목·교습비를 적지 않은 줄은 출력할 때 빠집니다.
-        </div>
+        )}
 
         {/* 교습비 표 — 한 과목 한 줄 */}
         <table className="reg-subjects">
           <thead>
             <tr>
-              <th className="col-process">교습<br />과정</th>
+              {!isTutoring && <th className="col-process">교습<br />과정</th>}
               <th className="col-subject">교습과목<br />(반)</th>
               <th className="col-period">교습<br />기간</th>
               <th className="col-time">총 교습시간(A)<div className="reg-th-sub">일 □분 × 주 □회 × □주 = □분</div></th>
-              <th className="col-capacity">정원<br />(반별)</th>
+              {!isTutoring && <th className="col-capacity">정원<br />(반별)</th>}
               <th className="col-fee">교습비(B)</th>
-              <th className="col-rate">분당단가<br />(B÷A)</th>
+              <th className="col-rate">{isTutoring ? <>시간당단가<br />(B÷A×60)</> : <>분당단가<br />(B÷A)</>}</th>
               <th className="col-del" aria-label="삭제" />
             </tr>
           </thead>
           <tbody>
             {subjects.map((sub, idx) => {
-              const j = judge(sub);
+              const j = judge(sub, isTutoring);
               const rowClass = j.canJudge ? (j.isCompliant ? 'is-ok' : 'is-over') : '';
               return (
                 <tr key={sub.id} className={rowClass}>
+                  {!isTutoring && (
                   <td className="col-process" data-label={`${idx + 1}. 교습과정`}>
                     <select
                       className="reg-input reg-select"
@@ -156,17 +188,18 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
                       ))}
                     </select>
                   </td>
-                  <td className="col-subject" data-label="교습과목(반)">
+                  )}
+                  <td className="col-subject" data-label={isTutoring ? `${idx + 1}. 교습과목` : '교습과목(반)'}>
                     <input
                       className="reg-input"
                       title={sub.subjectName}
                       value={sub.subjectName}
                       onChange={e => {
                         const name = e.target.value;
-                        const guessed = guessRateIdx(name);
+                        const guessed = isTutoring ? '' : guessRateIdx(name);
                         updateSub(sub.id, guessed !== '' ? { subjectName: name, rateIdx: guessed } : { subjectName: name });
                       }}
-                      placeholder="예) 초등반"
+                      placeholder={isTutoring ? '예) 수학' : '예) 초등반'}
                     />
                   </td>
                   <td className="col-period" data-label="교습기간">
@@ -183,12 +216,14 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
                       <span className="reg-time-total"><strong>{j.total > 0 ? j.total.toLocaleString() : '—'}</strong>분</span>
                     </span>
                   </td>
+                  {!isTutoring && (
                   <td className="col-capacity" data-label="정원(반별)">
                     <span className="reg-unit-field">
                       <input className="reg-input reg-input-num" inputMode="numeric" value={sub.capacity} onChange={e => updateSub(sub.id, { capacity: e.target.value.replace(/[^0-9]/g, '') })} placeholder="0" />
                       <span className="reg-unit">명</span>
                     </span>
                   </td>
+                  )}
                   <td className="col-fee" data-label="교습비(B)">
                     <span className="reg-unit-field">
                       <input
@@ -204,15 +239,15 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
                       <span className="reg-unit">원</span>
                     </span>
                   </td>
-                  <td className="col-rate" data-label="분당단가(B÷A)">
+                  <td className="col-rate" data-label={isTutoring ? '시간당단가' : '분당단가(B÷A)'}>
                     {j.canJudge ? (
                       <div className="reg-rate">
                         <div className={`reg-rate-value ${j.isCompliant ? 'ok' : 'over'}`}>{j.rateCeil.toLocaleString()}원 {j.isCompliant ? '✓' : '✗'}</div>
-                        <div className="reg-rate-std">기준 {j.standardRate}원</div>
+                        <div className="reg-rate-std">기준 {j.standardRate.toLocaleString()}원</div>
                         {!j.isCompliant && <div className="reg-rate-max">상한 {j.maxAllowedFee.toLocaleString()}원</div>}
                       </div>
                     ) : (
-                      <span className="reg-rate-empty">{sub.rateIdx !== '' ? `기준 ${STANDARD_RATE_OPTIONS[sub.rateIdx].rate}원` : '자동 계산'}</span>
+                      <span className="reg-rate-empty">{isTutoring ? `기준 ${TUTORING_HOURLY_RATE.toLocaleString()}원` : sub.rateIdx !== '' ? `기준 ${STANDARD_RATE_OPTIONS[sub.rateIdx].rate}원` : '자동 계산'}</span>
                     )}
                   </td>
                   <td className="col-del">
@@ -227,6 +262,7 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
         <button type="button" className="reg-add" onClick={addFiveRows}>+ 과목 다섯 줄 추가</button>
       </div>
 
+      {onPrint && (
       <button type="button" className="reg-print" onClick={onPrint}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 6 2 18 2 18 9" />
@@ -235,6 +271,7 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
         </svg>
         등록신청서 출력 (PDF)
       </button>
+      )}
     </div>
   );
 }

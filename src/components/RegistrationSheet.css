@@ -110,8 +110,7 @@
 .reg-select { padding: 6px 2px; cursor: pointer; }
 
 .reg-section-title,
-.reg-regtype,
-.reg-follow-hint {
+.reg-regtype {
   border: 1px solid var(--reg-line);
   border-top: none;
 }
@@ -163,19 +162,6 @@
 .reg-check:not(.is-disabled):hover { background: #f1f5f9; }
 .reg-check:focus-within .reg-check-box { outline: 2px solid #93c5fd; outline-offset: 2px; }
 
-/* ── 첫 줄 따라가기 안내 (서식에는 없는 도움 줄) ── */
-.reg-follow-hint {
-  padding: 9px 14px;
-  background: #f0f7ff;
-  border-style: dashed;
-  border-color: #93c5fd;
-  border-top: none;
-  font-size: 0.98rem;
-  color: #1e3a8a;
-  line-height: 1.5;
-  word-break: keep-all;
-}
-
 /* ── 교습비 표 ── */
 .reg-subjects { border-top: none; }
 .reg-subjects thead th { border-top: none; }
@@ -190,6 +176,13 @@
 .reg-subjects .col-fee { width: 11%; }
 .reg-subjects .col-rate { width: 9.5%; }
 .reg-subjects .col-del { width: 40px; }
+
+/* 개인과외: 교습과정·정원 칸 없음 */
+.is-tutoring .reg-subjects .col-subject { width: 20%; }
+.is-tutoring .reg-subjects .col-period { width: 9%; }
+.is-tutoring .reg-subjects .col-time { width: 43%; }
+.is-tutoring .reg-subjects .col-fee { width: 14%; }
+.is-tutoring .reg-subjects .col-rate { width: 12%; }
 
 .reg-subjects tr.is-over td { background: #fff1f2; }
 
