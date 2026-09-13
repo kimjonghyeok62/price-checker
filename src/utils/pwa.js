@@ -60,3 +60,17 @@ export async function promptInstall() {
 
 export const isAndroid = () => /Android/i.test(navigator.userAgent);
 export const isInstalledApp = () => window.matchMedia?.('(display-mode: standalone)').matches;
+
+// ─── 나이스 학원 바로가기 ─────────────────────────────────────
+// 나이스 학원(넥사크로)은 기기 폭 추정이 브라우저마다 달라 모바일 크롬에서 PC 화면이 뜨기도 한다.
+// 휴대폰이면 ?screenid=mobile 로 모바일 화면을 직접 지정한다 (카톡 인앱과 같은 화면).
+const NEIS_HAKWON_URL = 'https://hakwon.neis.go.kr';
+
+const isPhone = () => {
+    if (/iPhone|iPod|Android.*Mobile|Mobi/i.test(navigator.userAgent)) return true;
+    // '데스크톱 사이트' 모드처럼 UA가 PC로 바뀐 경우: 작은 터치 화면이면 휴대폰으로 본다
+    const shortSide = Math.min(window.screen?.width || 0, window.screen?.height || 0);
+    return shortSide > 0 && shortSide < 600 && !!window.matchMedia?.('(pointer: coarse)').matches;
+};
+
+export const getNeisHakwonUrl = () => (isPhone() ? `${NEIS_HAKWON_URL}/?screenid=mobile` : NEIS_HAKWON_URL);
