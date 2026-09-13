@@ -4,7 +4,7 @@ import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm } from '../utils/generateRegistrationPDF';
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './NeisExcelSteps';
 import { guessRateIdx, STANDARD_RATE_OPTIONS, DropdownSelect } from './tuitionInputs';
-import RegistrationSheet, { newSheetSubject } from './RegistrationSheet';
+import RegistrationSheet, { newSheetSubject, padSheetSubjects } from './RegistrationSheet';
 
 const EMPTY_INFO = { academyName: '', operator: '', regNumber: '', phone: '', address: '' };
 
@@ -48,7 +48,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
 
   // ── 신설 탭 등록신청서(학원·교습소) ──
   const [newInfo, setNewInfo] = useState(EMPTY_INFO);
-  const [newSheetSubjects, setNewSheetSubjects] = useState(() => [newSheetSubject()]);
+  const [newSheetSubjects, setNewSheetSubjects] = useState(() => padSheetSubjects([]));
 
   // ── 변경 탭 상태 ──
   const [changeInfo, setChangeInfo] = useState(EMPTY_INFO);
@@ -111,7 +111,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
       const { dm, wc, wk } = reverseCalcTime(c.totalTime);
       return newSheetSubject({ id: i + 1, subjectName: label || '', rateIdx, dm, wc, wk, period: c.period || '1개월', fee: parseFeeStr(c.tuitionFee) });
     });
-    setChangeSubjects(subs.length ? subs : [newSheetSubject()]);
+    setChangeSubjects(padSheetSubjects(subs));
     setChangeInfo({
       ...EMPTY_INFO,
       academyName: academy.name || '',

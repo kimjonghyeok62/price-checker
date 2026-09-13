@@ -43,9 +43,12 @@ export function printRegistrationForm(data) {
         subjects = [],
     } = data;
 
+    // 교습과목·교습시간·교습비를 하나도 적지 않은 줄(교습과정·정원만 따라 들어간 줄)은 출력하지 않음
+    const hasCourseContent = (sub) => sub && (String(sub.subjectName || '').trim() || parseInt(String(sub.fee || '').replace(/,/g, ''), 10) > 0 || sub.dm || sub.wc);
+
     // 최소 5행 보장 (A4 1페이지 내 출력)
     const MIN_ROWS = 5;
-    const rows = [...subjects];
+    const rows = subjects.filter(hasCourseContent);
     while (rows.length < MIN_ROWS) rows.push(null);
 
     const courseRows = rows.map(sub => {
