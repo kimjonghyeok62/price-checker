@@ -12,7 +12,7 @@
  * @param {Array}  data.subjects      과목 배열
  */
 
-const PROCESS_LABELS = [
+export const PROCESS_LABELS = [
     '보습(초등)', '보습(중등)', '보습(고등)', '진학상담·지도',
     '어학', '음악', '음악(입시)', '미술', '미술(입시)',
     '무용', '무용(입시)', '정보', '기타',
@@ -84,11 +84,11 @@ export function printRegistrationForm(data) {
       <tr>
         <td>${processLabel}</td>
         <td>${subjectName}</td>
-        <td></td>
+        <td>${val(sub.period)}</td>
         <td class="time-cell">
           일 ${dmHtml}분 × 주 ${wcHtml}회 × ${wkHtml}주 = ${totalHtml}분
         </td>
-        <td></td>
+        <td>${sub.capacity ? `${sub.capacity}명` : ''}</td>
         <td class="num-cell">${feeStr}</td>
         <td class="num-cell">${rateStr}</td>
       </tr>`;
