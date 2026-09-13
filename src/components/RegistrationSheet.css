@@ -111,7 +111,7 @@
 
 .reg-section-title,
 .reg-regtype,
-.reg-bulk {
+.reg-follow-hint {
   border: 1px solid var(--reg-line);
   border-top: none;
 }
@@ -163,22 +163,18 @@
 .reg-check:not(.is-disabled):hover { background: #f1f5f9; }
 .reg-check:focus-within .reg-check-box { outline: 2px solid #93c5fd; outline-offset: 2px; }
 
-/* ── 정원 한꺼번에 입력 (서식에는 없는 도움 줄) ── */
-.reg-bulk {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  padding: 10px 14px;
+/* ── 첫 줄 따라가기 안내 (서식에는 없는 도움 줄) ── */
+.reg-follow-hint {
+  padding: 9px 14px;
   background: #f0f7ff;
   border-style: dashed;
   border-color: #93c5fd;
   border-top: none;
+  font-size: 0.98rem;
+  color: #1e3a8a;
+  line-height: 1.5;
+  word-break: keep-all;
 }
-.reg-bulk-label { font-weight: 800; font-size: 1.05rem; color: #1e3a8a; }
-.reg-bulk-field { display: inline-flex; align-items: center; gap: 6px; font-size: 1.05rem; font-weight: 600; }
-.reg-bulk-field .reg-input { width: 80px; }
-.reg-bulk-hint { font-size: 0.95rem; color: #475569; word-break: keep-all; }
 
 /* ── 교습비 표 ── */
 .reg-subjects { border-top: none; }

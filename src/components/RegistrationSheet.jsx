@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './RegistrationSheet.css';
 import { guessRateIdx, STANDARD_RATE_OPTIONS, DropdownSelect } from './tuitionInputs';
 import { PROCESS_LABELS } from '../utils/generateRegistrationPDF';
@@ -9,9 +9,22 @@ import { PROCESS_LABELS } from '../utils/generateRegistrationPDF';
 const DEFAULT_PERIOD = '1개월';
 const REG_TYPES = ['신규등록', '일부변경', '전체변경'];
 
+export const SHEET_ROWS_STEP = 5; // 처음 보여줄 줄 수 = 한 번에 추가하는 줄 수
+
 export function newSheetSubject(patch = {}) {
   return { id: Date.now() + Math.random(), rateIdx: '', subjectName: '', period: DEFAULT_PERIOD, dm: '', wc: '', wk: '4.3', capacity: '', fee: '', ...patch };
 }
+
+/** 과목 줄이 SHEET_ROWS_STEP 줄보다 적으면 빈 줄로 채움 (빈 줄은 첫 줄의 교습과정·정원을 따라감) */
+export function padSheetSubjects(subjects) {
+  const first = subjects[0];
+  const rows = [...subjects];
+  while (rows.length < SHEET_ROWS_STEP) rows.push(newSheetSubject(first ? { rateIdx: first.rateIdx, capacity: first.capacity } : {}));
+  return rows;
+}
+
+// 첫 줄에서 바꾸면 아래 줄도 따라가는 칸 (아래 줄에서 따로 고친 값은 그대로 둠)
+const FOLLOW_FIRST_ROW_KEYS = ['rateIdx', 'capacity'];
 
 function judge(sub) {
   const total = Math.round((parseFloat(sub.dm) || 0) * (parseFloat(sub.wc) || 0) * (parseFloat(sub.wk) || 0));
@@ -30,22 +43,34 @@ function judge(sub) {
 }
 
 export default function RegistrationSheet({ info, onInfoChange, regType, regTypeOptions, onRegTypeChange, subjects, onSubjectsChange, onPrint }) {
-  const [bulkCapacity, setBulkCapacity] = useState('');
-
   const setInfo = (key, value) => onInfoChange({ ...info, [key]: value });
-  const updateSub = (id, patch) => onSubjectsChange(subjects.map(s => (s.id === id ? { ...s, ...patch } : s)));
-  const removeSub = (id) => onSubjectsChange(subjects.length === 1 ? [newSheetSubject({ capacity: bulkCapacity })] : subjects.filter(s => s.id !== id));
-  const addSub = () => {
-    const last = subjects[subjects.length - 1];
-    onSubjectsChange([...subjects, newSheetSubject({ wk: last?.wk || '4.3', period: last?.period || DEFAULT_PERIOD, capacity: bulkCapacity })]);
-  };
 
-  // 정원 한꺼번에 입력 → 모든 과목에 채움 (과목별로는 표에서 다시 고칠 수 있음)
-  function applyBulkCapacity(value) {
-    const v = value.replace(/[^0-9]/g, '');
-    setBulkCapacity(v);
-    onSubjectsChange(subjects.map(s => ({ ...s, capacity: v })));
+  function updateSub(id, patch) {
+    const first = subjects[0];
+    const isFirst = first?.id === id;
+    onSubjectsChange(subjects.map(s => {
+      if (s.id === id) return { ...s, ...patch };
+      if (!isFirst) return s;
+      // 첫 줄의 교습과정·정원 → 비어 있거나 첫 줄과 같던 아래 줄에 같은 값
+      const follow = {};
+      for (const key of FOLLOW_FIRST_ROW_KEYS) {
+        if (key in patch && (s[key] === '' || s[key] === first[key])) follow[key] = patch[key];
+      }
+      return { ...s, ...follow };
+    }));
   }
+  const removeSub = (id) => onSubjectsChange(subjects.length === 1 ? padSheetSubjects([]).slice(0, 1) : subjects.filter(s => s.id !== id));
+  const addFiveRows = () => {
+    const first = subjects[0];
+    const last = subjects[subjects.length - 1];
+    const added = Array.from({ length: SHEET_ROWS_STEP }, () => newSheetSubject({
+      rateIdx: first?.rateIdx ?? '',
+      capacity: first?.capacity ?? '',
+      wk: last?.wk || '4.3',
+      period: last?.period || DEFAULT_PERIOD,
+    }));
+    onSubjectsChange([...subjects, ...added]);
+  };
 
   return (
     <div className="reg-sheet-wrap">
@@ -61,13 +86,13 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
           <tbody>
             <tr>
               <th>학원(교습소)명</th>
-              <td><input className="reg-input" value={info.academyName} onChange={e => setInfo('academyName', e.target.value)} placeholder="예) 클릭미술학원" /></td>
+              <td><input className="reg-input" value={info.academyName} onChange={e => setInfo('academyName', e.target.value)} placeholder="예) 하남미술학원" /></td>
               <th>운영자</th>
               <td><input className="reg-input" value={info.operator} onChange={e => setInfo('operator', e.target.value)} placeholder="예) 홍길동" /></td>
             </tr>
             <tr>
-              <th>등록번호</th>
-              <td><input className="reg-input" value={info.regNumber} onChange={e => setInfo('regNumber', e.target.value)} placeholder="예) 제 하남285호" /></td>
+              <th>등록(신고)번호</th>
+              <td><input className="reg-input" value={info.regNumber} onChange={e => setInfo('regNumber', e.target.value)} placeholder="예) 제 하남675호" /></td>
               <th>전화번호</th>
               <td><input className="reg-input" inputMode="tel" value={info.phone} onChange={e => setInfo('phone', e.target.value)} placeholder="예) 031-000-0000" /></td>
             </tr>
@@ -94,13 +119,9 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
           })}
         </div>
 
-        <div className="reg-bulk">
-          <span className="reg-bulk-label">정원(반별) 한꺼번에 입력</span>
-          <span className="reg-bulk-field">
-            <input className="reg-input reg-input-num" inputMode="numeric" value={bulkCapacity} onChange={e => applyBulkCapacity(e.target.value)} placeholder="0" />
-            명
-          </span>
-          <span className="reg-bulk-hint">→ 모든 과목에 들어갑니다. 과목마다 다르면 표에서 고치세요.</span>
+        <div className="reg-follow-hint">
+          💡 <b>첫 줄</b>에서 교습과정·정원을 고르면 아래 줄에도 똑같이 들어갑니다. 다른 줄은 따로 고칠 수 있어요.
+          교습과목·교습비를 적지 않은 줄은 출력할 때 빠집니다.
         </div>
 
         {/* 교습비 표 — 한 과목 한 줄 */}
@@ -203,7 +224,7 @@ export default function RegistrationSheet({ info, onInfoChange, regType, regType
           </tbody>
         </table>
 
-        <button type="button" className="reg-add" onClick={addSub}>+ 과목 한 줄 추가</button>
+        <button type="button" className="reg-add" onClick={addFiveRows}>+ 과목 다섯 줄 추가</button>
       </div>
 
       <button type="button" className="reg-print" onClick={onPrint}>
