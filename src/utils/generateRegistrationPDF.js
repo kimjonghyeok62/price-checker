@@ -71,8 +71,9 @@ export function printRegistrationForm(data) {
             : 0;
         const feeNum = parseInt(String(sub.fee || '').replace(/,/g, ''), 10) || 0;
         const feeStr = feeNum > 0 ? feeNum.toLocaleString('ko-KR') : '';
+        // 입력 화면과 같은 1원 단위 올림
         const rateStr = (feeNum > 0 && totalMinutes > 0)
-            ? (Math.ceil((feeNum / totalMinutes) * 10) / 10).toFixed(1)
+            ? Math.ceil(feeNum / totalMinutes).toLocaleString('ko-KR')
             : '';
 
         const dmHtml = dm ? `<strong>${dm}</strong>` : '<span class="fill"></span>';
