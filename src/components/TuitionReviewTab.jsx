@@ -3,25 +3,10 @@ import TuitionCheckTab from './TuitionCheckTab';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm } from '../utils/generateRegistrationPDF';
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './NeisExcelSteps';
-// ─── 교습과정/과목명에서 분야 인덱스 추정 ────────────────────
-function guessRateIdx(text) {
-  if (!text) return '';
-  const p = text.toLowerCase();
-  if (p.includes('어학') || p.includes('외국어')) return 4;
-  if (p.includes('음악')) return p.includes('입시') ? 6 : 5;
-  if (p.includes('미술')) return p.includes('입시') ? 8 : 7;
-  if (p.includes('무용') || p.includes('댄스') || p.includes('체육')) return p.includes('입시') ? 10 : 9;
-  if (p.includes('정보') || p.includes('컴퓨터') || p.includes('코딩')) return 11;
-  if (p.includes('진학') || p.includes('상담')) return 3;
-  const isHabeop = p.includes('보습') || p.includes('단과') || p.includes('보통교과');
-  if (isHabeop || p.includes('고등') || p.includes('고교') || p.includes('수능') ||
-      p.includes('중등') || p.includes('중학') || p.includes('초등')) {
-    if (p.includes('고등') || p.includes('고교') || p.includes('수능')) return 2;
-    if (p.includes('중등') || p.includes('중학')) return 1;
-    if (isHabeop) return 0;
-  }
-  return '';
-}
+import { guessRateIdx, STANDARD_RATE_OPTIONS, DropdownSelect } from './tuitionInputs';
+import RegistrationSheet, { newSheetSubject } from './RegistrationSheet';
+
+const EMPTY_INFO = { academyName: '', operator: '', regNumber: '', phone: '', address: '' };
 
 // 같은 분야의 입시/비입시 쌍인지 확인 (자동 전환 허용 범위)
 function isSameCategoryPair(a, b) {
@@ -29,23 +14,6 @@ function isSameCategoryPair(a, b) {
   const na = Number(a); const nb = Number(b);
   return pairs.some(p => p.includes(na) && p.includes(nb));
 }
-
-// ─── 기준단가 옵션 ───────────────────────────────────────────
-const STANDARD_RATE_OPTIONS = [
-  { label: '보습 — 단과(초등)', rate: 210 },
-  { label: '보습 — 단과(중등)', rate: 222 },
-  { label: '보습 — 단과(고등)', rate: 234 },
-  { label: '진학상담, 지도', rate: 234 },
-  { label: '어학 (실용외국어 포함)', rate: 259 },
-  { label: '음악 — 유,초,중,고', rate: 224 },
-  { label: '음악 — 입시', rate: 336 },
-  { label: '미술 — 유,초,중,고', rate: 212 },
-  { label: '미술 — 입시', rate: 255 },
-  { label: '무용 — 유,초,중,고', rate: 212 },
-  { label: '무용 — 입시', rate: 255 },
-  { label: '정보 — 일반', rate: 230 },
-  { label: '기타 — 일반', rate: 230 },
-];
 
 export default function TuitionReviewTab({ mode = 'academy' }) {
   const isTutoring = mode === 'tutoring';
@@ -78,7 +46,12 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     setSubjects(prev => prev.filter(sub => sub.id !== id));
   }
 
+  // ── 신설 탭 등록신청서(학원·교습소) ──
+  const [newInfo, setNewInfo] = useState(EMPTY_INFO);
+  const [newSheetSubjects, setNewSheetSubjects] = useState(() => [newSheetSubject()]);
+
   // ── 변경 탭 상태 ──
+  const [changeInfo, setChangeInfo] = useState(EMPTY_INFO);
   const [changeRegType, setChangeRegType] = useState('일부변경');
   const changeFileInputRef = useRef(null);
   const [changeLoading, setChangeLoading] = useState(false);
@@ -133,12 +106,19 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   function selectChangeAcademy(academy) {
     setChangeSelected(academy);
     const subs = academy.courses.map((c, i) => {
-      const label = c.subject ? `${c.process}(${c.subject})` : c.process;
+      const label = c.subject || c.process;
       const rateIdx = guessRateIdx(`${c.process} ${c.subject || ''}`);
       const { dm, wc, wk } = reverseCalcTime(c.totalTime);
-      return { id: i + 1, subjectName: label || '', rateIdx, dm, wc, wk, fee: parseFeeStr(c.tuitionFee) };
+      return newSheetSubject({ id: i + 1, subjectName: label || '', rateIdx, dm, wc, wk, period: c.period || '1개월', fee: parseFeeStr(c.tuitionFee) });
     });
-    setChangeSubjects(subs.length ? subs : [{ id: 1, subjectName: '', rateIdx: '', dm: '', wc: '', wk: '4.3', fee: '' }]);
+    setChangeSubjects(subs.length ? subs : [newSheetSubject()]);
+    setChangeInfo({
+      ...EMPTY_INFO,
+      academyName: academy.name || '',
+      operator: academy.founder?.name || '',
+      regNumber: academy.regNo || '',
+      address: academy.address || '',
+    });
   }
 
   async function loadChangeFile(file) {
@@ -177,11 +157,6 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
       loadChangeFile(e.dataTransfer.files?.[0]);
     },
   };
-
-  function removeChangeSubject(id) {
-    if (changeSubjects.length === 1) return;
-    setChangeSubjects(prev => prev.filter(sub => sub.id !== id));
-  }
 
   const lastSub = subjects[subjects.length - 1];
 
@@ -251,8 +226,8 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
       {/* ── 검토 탭 ── */}
       {!isTutoring && subTab === '검토' && <TuitionCheckTab />}
 
-      {/* ── 신설 탭 / 과외 모드 ── */}
-      {(isTutoring || subTab === '신설') && (
+      {/* ── 과외 모드: 과목 카드 ── */}
+      {isTutoring && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {subjects.map((sub, idx) => (
             <SubjectCard
@@ -266,12 +241,20 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
               onAdd={addSubject}
             />
           ))}
-          {!isTutoring && (
-            <PrintBar
-              onPrint={() => printRegistrationForm({ regType: '신규등록', subjects })}
-            />
-          )}
         </div>
+      )}
+
+      {/* ── 신설 탭: 등록신청서 서식 그대로 입력 ── */}
+      {!isTutoring && subTab === '신설' && (
+        <RegistrationSheet
+          info={newInfo}
+          onInfoChange={setNewInfo}
+          regType="신규등록"
+          regTypeOptions={['신규등록']}
+          subjects={newSheetSubjects}
+          onSubjectsChange={setNewSheetSubjects}
+          onPrint={() => printRegistrationForm({ ...newInfo, regType: '신규등록', subjects: newSheetSubjects })}
+        />
       )}
 
       {/* ── 변경 탭 — 게시표 출력 탭과 같은 ①②단계 카드 ── */}
@@ -299,59 +282,30 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
             <AcademyPickList academies={changeAcademies} onSelect={selectChangeAcademy} label="변경할" />
           )}
 
-          {/* 선택된 학원 — 편집 가능한 과목 카드 */}
+          {/* 선택된 학원 — 등록신청서 서식 그대로 수정 */}
           {changeSelected && (
-            <div className="animate-enter" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '16px 18px', boxShadow: 'var(--shadow-sm)' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '4px', wordBreak: 'keep-all' }}>
-                      {changeSelected.name}
-                    </div>
-                    {changeSelected.address && <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>{changeSelected.address}</div>}
-                    <div style={{ display: 'inline-block', marginTop: '6px', fontSize: '0.85rem', color: '#6366f1', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', padding: '2px 8px', fontWeight: '600' }}>
-                      교습과정 {changeSubjects.length}개
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { setChangeSelected(null); setChangeSubjects([]); setChangeAcademies([]); }}
-                    style={{ flexShrink: 0, padding: '8px 12px', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#334155', fontSize: '0.92rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'inherit' }}
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    다시 선택
-                  </button>
+            <div className="animate-enter" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-main)', wordBreak: 'keep-all' }}>
+                  나이스 엑셀에서 <b>{changeSelected.name}</b>의 교습과정 {changeSubjects.length}개를 불러왔습니다. 바꿀 칸만 고치세요.
                 </div>
+                <button
+                  onClick={() => { setChangeSelected(null); setChangeSubjects([]); setChangeAcademies([]); }}
+                  style={{ flexShrink: 0, padding: '8px 12px', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#334155', fontSize: '0.95rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'inherit' }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  다른 파일·학원 선택
+                </button>
               </div>
-              <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontWeight: '600', marginTop: '-4px' }}>
-                바꿀 교습시간·교습비를 수정한 뒤 아래에서 등록신청서를 출력하세요.
-              </div>
-              {changeSubjects.map((sub, idx) => (
-                <SubjectCard
-                  key={sub.id}
-                  index={idx}
-                  sub={sub}
-                  mode={mode}
-                  onUpdate={(id, k, v) => setChangeSubjects(prev => {
-                    const next = [...prev];
-                    next[idx] = { ...next[idx], [k]: v };
-                    return next;
-                  })}
-                  onRemove={removeChangeSubject}
-                  isLast={false}
-                  onAdd={() => {}}
-                />
-              ))}
-              <PrintBar
+              <RegistrationSheet
+                info={changeInfo}
+                onInfoChange={setChangeInfo}
                 regType={changeRegType}
+                regTypeOptions={['일부변경', '전체변경']}
                 onRegTypeChange={setChangeRegType}
-                showRegTypeSelector
-                onPrint={() => printRegistrationForm({
-                  academyName: changeSelected.name,
-                  operator: changeSelected.founder?.name || '',
-                  address: changeSelected.address || '',
-                  regType: changeRegType,
-                  subjects: changeSubjects,
-                })}
+                subjects={changeSubjects}
+                onSubjectsChange={setChangeSubjects}
+                onPrint={() => printRegistrationForm({ ...changeInfo, regType: changeRegType, subjects: changeSubjects })}
               />
             </div>
           )}
@@ -423,107 +377,6 @@ function UnderlineInput({ value, onChange, placeholder, width = '60px', unit, ty
         }}
       />
       {unit && <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: '500' }}>{unit}</span>}
-    </span>
-  );
-}
-
-// ─── 드롭다운 + 직접 입력 ────────────────────────────────────
-function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidth = '60px' }) {
-  const CUSTOM = '__custom__';
-  const initialIsCustom = value !== '' && !options.includes(String(value));
-  const [isCustomMode, setIsCustomMode] = useState(initialIsCustom);
-  const inputRef = React.useRef(null);
-
-  React.useEffect(() => {
-    if (value !== '') {
-      const isValInOptions = options.includes(String(value));
-      setIsCustomMode(!isValInOptions);
-    }
-  }, [value, options]);
-
-  React.useEffect(() => {
-    if (isCustomMode && inputRef.current) {
-      // autoFocus가 일부 모바일에서 동작 안 하는 경우를 대비해 ref로 직접 포커스
-      const timer = setTimeout(() => {
-        try { inputRef.current && inputRef.current.focus(); } catch (_) {}
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isCustomMode]);
-
-  function handleChange(e) {
-    if (e.target.value === CUSTOM) {
-      setIsCustomMode(true);
-      onChange('');
-    } else {
-      setIsCustomMode(false);
-      onChange(e.target.value);
-    }
-  }
-
-  const selectVal = isCustomMode ? CUSTOM : (value === '' ? '' : String(value));
-
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-      {!isCustomMode ? (
-        <select
-          value={selectVal}
-          onChange={handleChange}
-          style={{
-            padding: '6px 4px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '1.1rem',
-            color: value === '' ? '#9ca3af' : '#111827',
-            fontWeight: value === '' ? '400' : '600',
-            background: '#fff',
-            outline: 'none',
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-            appearance: 'auto',
-            WebkitAppearance: 'auto',
-            maxWidth: '86px',
-            minHeight: '42px',
-            touchAction: 'manipulation',
-          }}
-        >
-          <option value="">선택</option>
-          {options.map(opt => (
-            <option key={opt} value={opt}>{opt}{unit}</option>
-          ))}
-          <option value={CUSTOM}>입력</option>
-        </select>
-      ) : (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '1px' }}>
-          <input
-            ref={inputRef}
-            type="number"
-            inputMode="numeric"
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            autoFocus
-            onClick={() => { try { inputRef.current && inputRef.current.focus(); } catch (_) {} }}
-            onBlur={() => {
-              if (value === '') setIsCustomMode(false);
-            }}
-            style={{
-              width: (parseFloat(inputWidth) + 4) + 'px',
-              textAlign: 'center',
-              padding: '3px 0px',
-              border: 'none',
-              borderBottom: '1.5px solid #9ca3af',
-              background: 'transparent',
-              fontSize: '1.1rem',
-              fontWeight: '600',
-              color: '#111827',
-              outline: 'none',
-              fontFamily: 'inherit',
-            }}
-          />
-          {unit && <span style={{ fontSize: '1rem', color: '#374151', fontWeight: '500', marginLeft: '1px' }}>{unit}</span>}
-        </span>
-      )}
     </span>
   );
 }
@@ -875,71 +728,6 @@ function SubjectCard({ index, sub, mode, onUpdate, onRemove, isLast, onAdd }) {
           </button>
         )}
       </div>
-    </div>
-  );
-}
-
-// ─── 등록신청서 출력 바 ─────────────────────────────────────────
-function PrintBar({ onPrint, showRegTypeSelector = false, regType, onRegTypeChange }) {
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '14px',
-      padding: '18px',
-      backgroundColor: '#eff6ff',
-      border: '2px solid #bfdbfe',
-      borderRadius: '14px',
-      marginTop: '4px',
-    }}>
-      <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#1e3a8a', borderBottom: '1px solid #bfdbfe', paddingBottom: '10px', wordBreak: 'keep-all' }}>
-        학원(교습소) 교습비등 등록신청서
-      </div>
-      {showRegTypeSelector && (
-        <div style={{ display: 'flex', gap: '10px', fontSize: '1.05rem' }}>
-          {['일부변경', '전체변경'].map(t => (
-            <label key={t} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 8px', borderRadius: '10px', backgroundColor: '#fff', border: `2px solid ${regType === t ? '#2563eb' : '#dbeafe'}`, cursor: 'pointer', fontWeight: regType === t ? '700' : '500', color: regType === t ? '#1d4ed8' : '#6b7280' }}>
-              <input
-                type="radio"
-                name="regType"
-                value={t}
-                checked={regType === t}
-                onChange={() => onRegTypeChange(t)}
-                style={{ accentColor: '#2563eb', width: '18px', height: '18px', margin: 0 }}
-              />
-              {t}
-            </label>
-          ))}
-        </div>
-      )}
-      <button
-        onClick={onPrint}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '15px 16px',
-          backgroundColor: '#1d4ed8',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '10px',
-          fontSize: '1.1rem',
-          fontWeight: '800',
-          boxShadow: '0 3px 10px rgba(29,78,216,0.3)',
-          cursor: 'pointer',
-          letterSpacing: '0.02em',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#1e40af'; }}
-        onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="6 9 6 2 18 2 18 9"/>
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-          <rect x="6" y="14" width="12" height="8"/>
-        </svg>
-        등록신청서 출력 (PDF)
-      </button>
     </div>
   );
 }
