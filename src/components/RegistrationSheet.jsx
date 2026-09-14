@@ -199,7 +199,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                         const guessed = isTutoring ? '' : guessRateIdx(name);
                         updateSub(sub.id, guessed !== '' ? { subjectName: name, rateIdx: guessed } : { subjectName: name });
                       }}
-                      placeholder={isTutoring ? '예) 수학' : '예) 초등반'}
+                      placeholder="예) 초등수학A"
                     />
                   </td>
                   <td className="col-period" data-label="교습기간">
