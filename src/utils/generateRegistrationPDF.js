@@ -504,7 +504,10 @@ export function printTutoringForm(data) {
         phone = '',
         officeName = '',
         subjects = [],
+        discount = '',
     } = data;
+
+    const discountHtml = escHtml(String(discount).trim()).replace(/\n/g, '<br>');
 
     // 교습과목·교습시간·교습비를 하나도 적지 않은 줄은 출력하지 않음
     const hasCourseContent = (sub) => sub && (String(sub.subjectName || '').trim() || parseInt(String(sub.fee || '').replace(/,/g, ''), 10) > 0 || sub.dm || sub.wc);
@@ -621,13 +624,18 @@ ${FORM_STYLE}</style>
     </tbody>
   </table>
 
-  <!-- 4. 유의사항 -->
+  <!-- 4. 기타 할인사항 -->
+  <div class="discount-container">
+    <strong>기타 할인사항</strong>${discountHtml ? `<span class="discount-text">${discountHtml}</span>` : ''}
+  </div>
+
+  <!-- 5. 유의사항 -->
   <div class="notice-box">
     <strong>❏ 작성 시 유의사항</strong> : 개인과외교습자의 교습비는 시간당 20,000원 이하로 신고하여야 하며,
     신고한 교습비를 초과하여 징수하거나 거짓으로 표시·게시·고지한 경우 <strong>과태료 부과 대상</strong>이 될 수 있습니다.
   </div>
 
-  <!-- 5. 확인서 -->
+  <!-- 6. 확인서 -->
   <div class="confirm-box">
     <div class="confirm-title">확 인 서</div>
     학원의 설립·운영 및 과외교습에 관한 법률에 따라 위와 같이 개인과외교습자의 교습비를 (변경)신고하며,
@@ -641,7 +649,7 @@ ${FORM_STYLE}</style>
     </div>
   </div>
 
-  <!-- 6. 하단 수신처 & 결재란 -->
+  <!-- 7. 하단 수신처 & 결재란 -->
   <div class="bottom-container">
     <div class="recipient-box">
       ${officeText(officeName)}교육장 귀하

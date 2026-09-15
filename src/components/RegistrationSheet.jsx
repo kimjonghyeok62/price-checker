@@ -327,9 +327,8 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
 
         <button type="button" className="reg-add" onClick={addFiveRows}>+ 과목 다섯 줄 추가</button>
 
-        {showExtra && (
-        <>
-          {/* 기타 할인사항 — 신청서처럼 제목 옆에 바로 적음 */}
+        {/* 기타 할인사항 — 신청서처럼 제목 옆에 바로 적음 (학원·교습소, 개인과외 공통) */}
+        {onDiscountChange && (
           <div className="reg-discount">
             <label className="reg-discount-label" htmlFor="reg-discount-input">기타 할인사항</label>
             <textarea
@@ -341,6 +340,10 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
               placeholder="예) 형제·자매 동시 수강 시 교습비 10% 할인 / 없으면 비워 두세요"
             />
           </div>
+        )}
+
+        {showExtra && (
+        <>
 
           <div className="reg-section-title">기 타 경 비</div>
 
