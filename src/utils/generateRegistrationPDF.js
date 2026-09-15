@@ -13,6 +13,8 @@
  * @param {Array}  data.subjects      과목 배열
  */
 
+import { OTHER_FEE_ITEMS } from './tuitionFormCommon';
+
 // 교육지원청명·교습과정은 주무관이 시트에 적은 글자라 HTML로 해석되지 않게 바꿔 넣는다
 function escHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -155,7 +157,12 @@ const FORM_STYLE = `
     border-top: none;
     padding: 2mm 3mm;
     font-size: 9.5pt;
+    display: flex;
+    gap: 5mm;
+    line-height: 1.5;
   }
+  .discount-container strong { flex-shrink: 0; }
+  .discount-text { word-break: keep-all; }
 
   /* 기타경비 테이블 */
   table.other-table {
@@ -256,7 +263,21 @@ export function printRegistrationForm(data) {
         regType = '신규등록',
         officeName = '',
         subjects = [],
+        discount = '',
+        extraFees = [],
     } = data;
+
+    // 기타경비: 과목명이나 금액이 하나라도 있는 줄만, 최소 2줄(서식 기본 줄 수)
+    const EXTRA_KEYS = OTHER_FEE_ITEMS.map(it => it.key);
+    const feeNumOf = (v) => parseInt(String(v || '').replace(/,/g, ''), 10) || 0;
+    const extraRows = extraFees.filter(r => r && (String(r.subjectName || '').trim() || EXTRA_KEYS.some(k => feeNumOf(r[k]) > 0)));
+    while (extraRows.length < 2) extraRows.push(null);
+    const extraRowsHtml = extraRows.map(r => {
+        if (!r) return '<tr class="other-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+        const total = EXTRA_KEYS.reduce((sum, k) => sum + feeNumOf(r[k]), 0);
+        return `<tr class="other-row"><td>${escHtml(r.subjectName)}</td>${EXTRA_KEYS.map(k => `<td class="num-cell">${fmtNum(r[k])}</td>`).join('')}<td class="num-cell">${total > 0 ? total.toLocaleString('ko-KR') : ''}</td></tr>`;
+    }).join('');
+    const discountHtml = escHtml(String(discount).trim()).replace(/\n/g, '<br>');
 
     // 교습과목·교습시간·교습비를 하나도 적지 않은 줄(교습과정·정원만 따라 들어간 줄)은 출력하지 않음
     const hasCourseContent = (sub) => sub && (String(sub.subjectName || '').trim() || parseInt(String(sub.fee || '').replace(/,/g, ''), 10) > 0 || sub.dm || sub.wc);
@@ -392,7 +413,7 @@ ${FORM_STYLE}</style>
 
   <!-- 5. 기타 할인사항 -->
   <div class="discount-container">
-    <strong>기타 할인사항</strong>
+    <strong>기타 할인사항</strong>${discountHtml ? `<span class="discount-text">${discountHtml}</span>` : ''}
   </div>
 
   <!-- 6. 기타경비 섹션 타이틀 -->
@@ -413,8 +434,7 @@ ${FORM_STYLE}</style>
       </tr>
     </thead>
     <tbody>
-      <tr class="other-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
-      <tr class="other-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      ${extraRowsHtml}
     </tbody>
   </table>
 
