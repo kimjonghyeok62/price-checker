@@ -214,7 +214,9 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           onInfoChange={setNewInfo}
           subjects={newSheetSubjects}
           onSubjectsChange={setNewSheetSubjects}
-          onPrint={() => printTutoringForm({ ...newInfo, officeName, subjects: newSheetSubjects })}
+          discount={newDiscount}
+          onDiscountChange={setNewDiscount}
+          onPrint={() => printTutoringForm({ ...newInfo, officeName, subjects: newSheetSubjects, discount: newDiscount })}
         />
       )}
 

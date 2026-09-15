@@ -169,39 +169,21 @@ export default function App() {
           </div>
           <h1 className="app-title">교습비 계산·게시표</h1>
         </div>
-        <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
-          <label className={`app-subtitle app-region${region ? '' : ' is-empty'}`} title={effectiveDate ? `교습비등 조정위원회 개최일 ${effectiveDate}` : undefined}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 6L9 17l-5-5"/>
+        <div className="app-region-bar">
+          <label className={`app-region${region ? '' : ' is-empty'}`} title={effectiveDate ? `교습비등 조정위원회 개최일 ${effectiveDate}` : undefined}>
+            <svg className="app-region-pin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/>
+              <circle cx="12" cy="10" r="2.5"/>
             </svg>
-            경기도
+            <span className="app-region-text">경기도</span>
             <select className="app-region-select" value={region} onChange={e => setRegion(e.target.value)} aria-label="교육지원청 선택">
               <option value="">지역 선택</option>
               {REGION_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
             </select>
-            교육지원청 교습비 기준
+            <span className="app-region-text">교육지원청 교습비 기준</span>
           </label>
-          <button
-            onClick={() => setShowStandardPrices(true)}
-            style={{
-              padding: '3px 10px',
-              backgroundColor: '#0f172a',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-              border: '1px solid #1e293b',
-              borderRadius: '20px',
-              color: '#f8fafc',
-              fontSize: '0.76rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-            onMouseOver={e => { e.currentTarget.style.backgroundColor = '#1e293b'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-            onMouseOut={e => { e.currentTarget.style.backgroundColor = '#0f172a'; e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <button type="button" className="app-std-btn" onClick={() => setShowStandardPrices(true)}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               <line x1="11" y1="8" x2="11" y2="14"></line>
