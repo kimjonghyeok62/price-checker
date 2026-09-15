@@ -9,12 +9,17 @@ import { getRegNoText } from './utils/tuitionFormCommon';
 import { parseExcelTuition } from './utils/parseExcelTuition';
 import { fetchGoogleSheetData, transformAcademyData, attachRegNo, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
 import StandardPriceTable from './components/StandardPriceTable';
+import RegionAdmin from './components/RegionAdmin';
+import { useRegion } from './RegionContext';
+import { REGION_NAMES } from './utils/regionRates';
 import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall, isAndroid, isInstalledApp } from './utils/pwa';
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './components/NeisExcelSteps';
 
 export default function App() {
   const [tab, setTab] = useState('excel'); // 'review' | 'tutoring' | 'excel'
   const [showStandardPrices, setShowStandardPrices] = useState(false);
+  const [showRegionAdmin, setShowRegionAdmin] = useState(false);
+  const { region, setRegion, effectiveDate } = useRegion();
 
   // 학원 검색 탭
   const [academies, setAcademies] = useState([]);
@@ -147,6 +152,9 @@ export default function App() {
   if (showStandardPrices) {
     return <StandardPriceTable onBack={() => setShowStandardPrices(false)} />;
   }
+  if (showRegionAdmin) {
+    return <RegionAdmin onBack={() => setShowRegionAdmin(false)} />;
+  }
 
   return (
     <div className="container">
@@ -162,12 +170,17 @@ export default function App() {
           <h1 className="app-title">교습비 계산·게시표</h1>
         </div>
         <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
-          <div className="app-subtitle">
+          <label className={`app-subtitle app-region${region ? '' : ' is-empty'}`} title={effectiveDate ? `교습비등 조정위원회 개최일 ${effectiveDate}` : undefined}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 6L9 17l-5-5"/>
             </svg>
-            경기도광주하남교육지원청 교습비 기준
-          </div>
+            경기도
+            <select className="app-region-select" value={region} onChange={e => setRegion(e.target.value)} aria-label="교육지원청 선택">
+              <option value="">지역 선택</option>
+              {REGION_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+            교육지원청 교습비 기준
+          </label>
           <button
             onClick={() => setShowStandardPrices(true)}
             style={{
@@ -344,6 +357,10 @@ export default function App() {
           <div>실제 신청은 관할 교육지원청에 문의하시기 바랍니다.</div>
         </footer>
       )}
+
+      <div className="app-admin-link-wrap">
+        <button type="button" className="app-admin-link" onClick={() => setShowRegionAdmin(true)}>교육지원청 담당자 기준단가 입력</button>
+      </div>
     </div>
   );
 }
