@@ -253,6 +253,44 @@
 }
 .reg-add:hover { background: #eef2ff; border-color: #6366f1; color: #4338ca; }
 
+/* ── 기타 할인사항 ── */
+.reg-discount {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  margin-top: 14px;
+  border: 1px solid var(--reg-line);
+}
+.reg-discount-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--reg-head);
+  border-right: 1px solid var(--reg-line);
+  font-weight: 800;
+  font-size: 1.05rem;
+  padding: 8px 4px;
+  text-align: center;
+  word-break: keep-all;
+}
+.reg-discount .reg-textarea { margin: 4px; width: calc(100% - 8px); }
+.reg-textarea { resize: vertical; line-height: 1.45; min-height: 58px; }
+
+/* ── 기타경비 표 ── */
+.reg-extra .col-extra-subject { width: 17%; }
+.reg-extra .col-extra-fee { width: 11%; }
+.reg-extra .col-extra-total { width: 13%; }
+.reg-extra-sum { display: block; text-align: right; padding-right: 6px; font-size: 1.1rem; font-weight: 900; color: #1d4ed8; white-space: nowrap; }
+.reg-extra-notice {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #334155;
+  word-break: keep-all;
+}
+
 .reg-print {
   width: 100%;
   margin-top: 16px;
@@ -334,4 +372,9 @@
   .reg-subjects td.col-fee .reg-unit-field { max-width: 220px; }
   .reg-rate { text-align: left; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
   .reg-rate-empty { text-align: left; }
+
+  .reg-discount { grid-template-columns: 96px minmax(0, 1fr); }
+  .reg-discount-label { font-size: 0.95rem; }
+  .reg-subjects td.col-extra-fee .reg-unit-field { max-width: 220px; }
+  .reg-extra-sum { text-align: left; }
 }

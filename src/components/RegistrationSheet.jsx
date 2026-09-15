@@ -3,6 +3,7 @@ import './RegistrationSheet.css';
 import { DropdownSelect } from './tuitionInputs';
 import { guessRateId, rowLabel } from '../utils/regionRates';
 import { useRegion } from '../RegionContext';
+import { OTHER_FEE_ITEMS } from '../utils/tuitionFormCommon';
 
 // 학원(교습소) 교습비등 등록신청서 — 제출 서식과 같은 모양으로 바로 적어 넣는 입력 화면
 // PC: 서식처럼 한 과목 한 줄 표 / 휴대폰: 과목마다 같은 칸을 세로로 쌓음 (RegistrationSheet.css)
@@ -23,6 +24,24 @@ export function padSheetSubjects(subjects) {
   while (rows.length < SHEET_ROWS_STEP) rows.push(newSheetSubject(first ? { rateId: first.rateId, processLabel: first.processLabel, capacity: first.capacity } : {}));
   return rows;
 }
+
+// ── 기타경비 (교습과목(반)별 6개 항목 + 계) ──
+export const EXTRA_FEE_ROWS_MIN = 2; // 신청서 서식의 기본 줄 수
+
+export function newExtraFee(patch = {}) {
+  const row = { id: Date.now() + Math.random(), subjectName: '' };
+  for (const it of OTHER_FEE_ITEMS) row[it.key] = '';
+  return { ...row, ...patch };
+}
+
+/** 기타경비 줄이 EXTRA_FEE_ROWS_MIN 줄보다 적으면 빈 줄로 채움 */
+export function padExtraFees(rows) {
+  const next = [...rows];
+  while (next.length < EXTRA_FEE_ROWS_MIN) next.push(newExtraFee());
+  return next;
+}
+
+export const extraFeeTotal = (row) => OTHER_FEE_ITEMS.reduce((sum, it) => sum + (parseInt(row[it.key], 10) || 0), 0);
 
 /** 지역 줄 id로 교습과정 칸 값 만들기 (신청서에 적힐 이름도 같이 저장) */
 export function rateFields(rows, rateId) {
@@ -62,7 +81,7 @@ function judge(sub, isTutoring, standardRate) {
   };
 }
 
-export default function RegistrationSheet({ mode = 'academy', info, onInfoChange, regType, regTypeOptions = [], onRegTypeChange, subjects, onSubjectsChange, onPrint }) {
+export default function RegistrationSheet({ mode = 'academy', info, onInfoChange, regType, regTypeOptions = [], onRegTypeChange, subjects, onSubjectsChange, discount = '', onDiscountChange, extraFees = [], onExtraFeesChange, onPrint }) {
   const isTutoring = mode === 'tutoring';
   const setInfo = (key, value) => onInfoChange({ ...info, [key]: value });
   const { region, officeName, rows: rateRows, tutoringHourlyRate, ratesReady } = useRegion();
@@ -115,6 +134,13 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
     }));
     onSubjectsChange([...subjects, ...added]);
   };
+
+  const showExtra = !isTutoring && !!onExtraFeesChange;
+  const updateExtra = (id, patch) => onExtraFeesChange(extraFees.map(r => (r.id === id ? { ...r, ...patch } : r)));
+  const removeExtra = (id) => onExtraFeesChange(padExtraFees(extraFees.filter(r => r.id !== id)));
+  const addExtra = () => onExtraFeesChange([...extraFees, newExtraFee()]);
+  // 기타경비 교습과목(반) 칸에서 고를 수 있게 위 표에 적은 과목 이름을 모아 둠
+  const subjectNames = [...new Set(subjects.map(s => String(s.subjectName || '').trim()).filter(Boolean))];
 
   return (
     <div className="reg-sheet-wrap">
@@ -300,6 +326,84 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
         </table>
 
         <button type="button" className="reg-add" onClick={addFiveRows}>+ 과목 다섯 줄 추가</button>
+
+        {showExtra && (
+        <>
+          {/* 기타 할인사항 — 신청서처럼 제목 옆에 바로 적음 */}
+          <div className="reg-discount">
+            <label className="reg-discount-label" htmlFor="reg-discount-input">기타 할인사항</label>
+            <textarea
+              id="reg-discount-input"
+              className="reg-input reg-textarea"
+              rows={2}
+              value={discount}
+              onChange={e => onDiscountChange?.(e.target.value)}
+              placeholder="예) 형제·자매 동시 수강 시 교습비 10% 할인 / 없으면 비워 두세요"
+            />
+          </div>
+
+          <div className="reg-section-title">기 타 경 비</div>
+
+          <table className="reg-subjects reg-extra">
+            <thead>
+              <tr>
+                <th className="col-extra-subject">교습과목(반)</th>
+                {OTHER_FEE_ITEMS.map(it => <th key={it.key} className="col-extra-fee">{it.label}</th>)}
+                <th className="col-extra-total">계</th>
+                <th className="col-del" aria-label="삭제" />
+              </tr>
+            </thead>
+            <tbody>
+              {extraFees.map((row, idx) => {
+                const total = extraFeeTotal(row);
+                return (
+                  <tr key={row.id}>
+                    <td className="col-extra-subject" data-label={`${idx + 1}. 교습과목(반)`}>
+                      <input
+                        className="reg-input"
+                        list="reg-extra-subject-list"
+                        title={row.subjectName}
+                        value={row.subjectName}
+                        onChange={e => updateExtra(row.id, { subjectName: e.target.value })}
+                        placeholder="예) 전과목"
+                      />
+                    </td>
+                    {OTHER_FEE_ITEMS.map(it => (
+                      <td key={it.key} className="col-extra-fee" data-label={it.label}>
+                        <span className="reg-unit-field">
+                          <input
+                            className="reg-input reg-input-money"
+                            inputMode="numeric"
+                            aria-label={`${idx + 1}번째 줄 ${it.label}`}
+                            value={row[it.key] === '' ? '' : Number(row[it.key]).toLocaleString()}
+                            onChange={e => updateExtra(row.id, { [it.key]: e.target.value.replace(/[^0-9]/g, '') })}
+                            placeholder="0"
+                          />
+                        </span>
+                      </td>
+                    ))}
+                    <td className="col-extra-total" data-label="계">
+                      <span className="reg-extra-sum">{total > 0 ? `${total.toLocaleString()}원` : '자동 합계'}</span>
+                    </td>
+                    <td className="col-del">
+                      <button type="button" className="reg-del" onClick={() => removeExtra(row.id)} title="이 줄 지우기">✕<span className="reg-del-text"> 이 줄 지우기</span></button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <datalist id="reg-extra-subject-list">
+            {subjectNames.map(n => <option key={n} value={n} />)}
+          </datalist>
+
+          <button type="button" className="reg-add" onClick={addExtra}>+ 기타경비 한 줄 추가</button>
+
+          <div className="reg-extra-notice">
+            <b>❏ 작성 시 유의사항</b> : 기타경비는 모의고사비·재료비·피복비·급식비·기숙사비·차량비 <b>6개 항목만</b> 인정되며, 실비임을 증명할 수 있는 경우에만 받을 수 있습니다. 받지 않는 항목은 비워 두세요.
+          </div>
+        </>
+        )}
       </div>
 
       {onPrint && (

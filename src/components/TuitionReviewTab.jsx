@@ -2,8 +2,9 @@ import React, { useState, useRef } from 'react';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm, printTutoringForm } from '../utils/generateRegistrationPDF';
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './NeisExcelSteps';
-import RegistrationSheet, { newSheetSubject, padSheetSubjects, rateFields } from './RegistrationSheet';
+import RegistrationSheet, { newSheetSubject, padSheetSubjects, rateFields, newExtraFee, padExtraFees } from './RegistrationSheet';
 import { guessRateId } from '../utils/regionRates';
+import { OTHER_FEE_ITEMS } from '../utils/tuitionFormCommon';
 import { useRegion } from '../RegionContext';
 
 const EMPTY_INFO = { academyName: '', operator: '', regNumber: '', phone: '', address: '' };
@@ -18,6 +19,8 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   // ── 신규 탭 등록신청서(학원·교습소) / 개인과외 신고 내용 ──
   const [newInfo, setNewInfo] = useState(EMPTY_INFO);
   const [newSheetSubjects, setNewSheetSubjects] = useState(() => padSheetSubjects([]));
+  const [newDiscount, setNewDiscount] = useState('');
+  const [newExtraFees, setNewExtraFees] = useState(() => padExtraFees([]));
 
   // ── 변경 탭 상태 ──
   const [changeInfo, setChangeInfo] = useState(EMPTY_INFO);
@@ -29,6 +32,8 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
   const [changeAcademies, setChangeAcademies] = useState([]);
   const [changeSelected, setChangeSelected] = useState(null);
   const [changeSubjects, setChangeSubjects] = useState([]);
+  const [changeDiscount, setChangeDiscount] = useState('');
+  const [changeExtraFees, setChangeExtraFees] = useState(() => padExtraFees([]));
 
   function parseFeeStr(str) {
     if (!str) return '';
@@ -81,6 +86,16 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
       return newSheetSubject({ id: i + 1, subjectName: label || '', ...rate, dm, wc, wk, period: c.period || '1개월', fee: parseFeeStr(c.tuitionFee) });
     });
     setChangeSubjects(padSheetSubjects(subs));
+    // 나이스 엑셀에 적힌 기타경비가 있는 과정만 기타경비 표로 옮김
+    const extras = academy.courses
+      .filter(c => OTHER_FEE_ITEMS.some(it => parseFeeStr(c[it.key])))
+      .map(c => {
+        const fees = {};
+        for (const it of OTHER_FEE_ITEMS) fees[it.key] = parseFeeStr(c[it.key]);
+        return newExtraFee({ subjectName: c.subject || c.process || '', ...fees });
+      });
+    setChangeExtraFees(padExtraFees(extras));
+    setChangeDiscount('');
     setChangeInfo({
       ...EMPTY_INFO,
       academyName: academy.name || '',
@@ -212,7 +227,11 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           regTypeOptions={['신규등록']}
           subjects={newSheetSubjects}
           onSubjectsChange={setNewSheetSubjects}
-          onPrint={() => printRegistrationForm({ ...newInfo, officeName, regType: '신규등록', subjects: newSheetSubjects })}
+          discount={newDiscount}
+          onDiscountChange={setNewDiscount}
+          extraFees={newExtraFees}
+          onExtraFeesChange={setNewExtraFees}
+          onPrint={() => printRegistrationForm({ ...newInfo, officeName, regType: '신규등록', subjects: newSheetSubjects, discount: newDiscount, extraFees: newExtraFees })}
         />
       )}
 
@@ -264,7 +283,11 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
                 onRegTypeChange={setChangeRegType}
                 subjects={changeSubjects}
                 onSubjectsChange={setChangeSubjects}
-                onPrint={() => printRegistrationForm({ ...changeInfo, officeName, regType: changeRegType, subjects: changeSubjects })}
+                discount={changeDiscount}
+                onDiscountChange={setChangeDiscount}
+                extraFees={changeExtraFees}
+                onExtraFeesChange={setChangeExtraFees}
+                onPrint={() => printRegistrationForm({ ...changeInfo, officeName, regType: changeRegType, subjects: changeSubjects, discount: changeDiscount, extraFees: changeExtraFees })}
               />
             </div>
           )}
