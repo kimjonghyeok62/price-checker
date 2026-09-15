@@ -2,20 +2,15 @@ import React, { useState, useRef } from 'react';
 import { parseExcelTuition } from '../utils/parseExcelTuition';
 import { printRegistrationForm, printTutoringForm } from '../utils/generateRegistrationPDF';
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './NeisExcelSteps';
-import { guessRateIdx } from './tuitionInputs';
-import RegistrationSheet, { newSheetSubject, padSheetSubjects } from './RegistrationSheet';
+import RegistrationSheet, { newSheetSubject, padSheetSubjects, rateFields } from './RegistrationSheet';
+import { guessRateId } from '../utils/regionRates';
+import { useRegion } from '../RegionContext';
 
 const EMPTY_INFO = { academyName: '', operator: '', regNumber: '', phone: '', address: '' };
 
-// 같은 분야의 입시/비입시 쌍인지 확인 (자동 전환 허용 범위)
-function isSameCategoryPair(a, b) {
-  const pairs = [[5, 6], [7, 8], [9, 10]];
-  const na = Number(a); const nb = Number(b);
-  return pairs.some(p => p.includes(na) && p.includes(nb));
-}
-
 export default function TuitionReviewTab({ mode = 'academy' }) {
   const isTutoring = mode === 'tutoring';
+  const { rows: rateRows, officeName } = useRegion();
 
   // ── 신규/변경 서브탭 ──
   const [subTab, setSubTab] = useState('신규');
@@ -81,9 +76,9 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     setChangeSelected(academy);
     const subs = academy.courses.map((c, i) => {
       const label = c.subject || c.process;
-      const rateIdx = guessRateIdx(`${c.process} ${c.subject || ''}`);
+      const rate = rateFields(rateRows, guessRateId(`${c.process} ${c.subject || ''}`, rateRows));
       const { dm, wc, wk } = reverseCalcTime(c.totalTime);
-      return newSheetSubject({ id: i + 1, subjectName: label || '', rateIdx, dm, wc, wk, period: c.period || '1개월', fee: parseFeeStr(c.tuitionFee) });
+      return newSheetSubject({ id: i + 1, subjectName: label || '', ...rate, dm, wc, wk, period: c.period || '1개월', fee: parseFeeStr(c.tuitionFee) });
     });
     setChangeSubjects(padSheetSubjects(subs));
     setChangeInfo({
@@ -204,7 +199,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           onInfoChange={setNewInfo}
           subjects={newSheetSubjects}
           onSubjectsChange={setNewSheetSubjects}
-          onPrint={() => printTutoringForm({ ...newInfo, subjects: newSheetSubjects })}
+          onPrint={() => printTutoringForm({ ...newInfo, officeName, subjects: newSheetSubjects })}
         />
       )}
 
@@ -217,7 +212,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
           regTypeOptions={['신규등록']}
           subjects={newSheetSubjects}
           onSubjectsChange={setNewSheetSubjects}
-          onPrint={() => printRegistrationForm({ ...newInfo, regType: '신규등록', subjects: newSheetSubjects })}
+          onPrint={() => printRegistrationForm({ ...newInfo, officeName, regType: '신규등록', subjects: newSheetSubjects })}
         />
       )}
 
@@ -269,7 +264,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
                 onRegTypeChange={setChangeRegType}
                 subjects={changeSubjects}
                 onSubjectsChange={setChangeSubjects}
-                onPrint={() => printRegistrationForm({ ...changeInfo, regType: changeRegType, subjects: changeSubjects })}
+                onPrint={() => printRegistrationForm({ ...changeInfo, officeName, regType: changeRegType, subjects: changeSubjects })}
               />
             </div>
           )}

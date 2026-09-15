@@ -1,43 +1,6 @@
 import React, { useState } from 'react';
 
-// 교습비 입력 화면(과목 카드·등록신청서 표)이 함께 쓰는 기준단가·분야 추정·드롭다운
-
-// ─── 교습과정/과목명에서 분야 인덱스 추정 ────────────────────
-export function guessRateIdx(text) {
-  if (!text) return '';
-  const p = text.toLowerCase();
-  if (p.includes('어학') || p.includes('외국어')) return 4;
-  if (p.includes('음악')) return p.includes('입시') ? 6 : 5;
-  if (p.includes('미술')) return p.includes('입시') ? 8 : 7;
-  if (p.includes('무용') || p.includes('댄스') || p.includes('체육')) return p.includes('입시') ? 10 : 9;
-  if (p.includes('정보') || p.includes('컴퓨터') || p.includes('코딩')) return 11;
-  if (p.includes('진학') || p.includes('상담')) return 3;
-  const isHabeop = p.includes('보습') || p.includes('단과') || p.includes('보통교과');
-  if (isHabeop || p.includes('고등') || p.includes('고교') || p.includes('수능') ||
-      p.includes('중등') || p.includes('중학') || p.includes('초등')) {
-    if (p.includes('고등') || p.includes('고교') || p.includes('수능')) return 2;
-    if (p.includes('중등') || p.includes('중학')) return 1;
-    if (isHabeop) return 0;
-  }
-  return '';
-}
-
-// ─── 기준단가 옵션 ───────────────────────────────────────────
-export const STANDARD_RATE_OPTIONS = [
-  { label: '보습 — 단과(초등)', rate: 210 },
-  { label: '보습 — 단과(중등)', rate: 222 },
-  { label: '보습 — 단과(고등)', rate: 234 },
-  { label: '진학상담, 지도', rate: 234 },
-  { label: '어학 (실용외국어 포함)', rate: 259 },
-  { label: '음악 — 유,초,중,고', rate: 224 },
-  { label: '음악 — 입시', rate: 336 },
-  { label: '미술 — 유,초,중,고', rate: 212 },
-  { label: '미술 — 입시', rate: 255 },
-  { label: '무용 — 유,초,중,고', rate: 212 },
-  { label: '무용 — 입시', rate: 255 },
-  { label: '정보 — 일반', rate: 230 },
-  { label: '기타 — 일반', rate: 230 },
-];
+// 교습비 입력 화면(등록신청서 표)이 쓰는 드롭다운 — 기준단가·분야 추정은 utils/regionRates.js
 
 // ─── 드롭다운 + 직접 입력 ────────────────────────────────────
 export function DropdownSelect({ options, value, onChange, unit, placeholder, inputWidth = '60px' }) {

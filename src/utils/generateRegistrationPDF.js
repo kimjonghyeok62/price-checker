@@ -9,14 +9,19 @@
  * @param {string} data.address       위치
  * @param {string} data.phone         전화번호
  * @param {'신규등록'|'일부변경'|'전체변경'} data.regType
+ * @param {string} data.officeName    선택한 교육지원청명 (예: 경기도광주하남교육지원청)
  * @param {Array}  data.subjects      과목 배열
  */
 
-export const PROCESS_LABELS = [
-    '보습(초등)', '보습(중등)', '보습(고등)', '진학상담·지도',
-    '어학', '음악', '음악(입시)', '미술', '미술(입시)',
-    '무용', '무용(입시)', '정보', '기타',
-];
+// 교육지원청명·교습과정은 주무관이 시트에 적은 글자라 HTML로 해석되지 않게 바꿔 넣는다
+function escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// 지역을 고르지 않았으면 손으로 적을 수 있게 빈칸으로 둔다
+function officeText(officeName) {
+    return officeName ? escHtml(officeName) : '&emsp;&emsp;&emsp;&emsp;&emsp;교육지원청';
+}
 
 function fmtNum(val) {
     if (val === '' || val === null || val === undefined) return '';
@@ -249,6 +254,7 @@ export function printRegistrationForm(data) {
         address = '',
         phone = '',
         regType = '신규등록',
+        officeName = '',
         subjects = [],
     } = data;
 
@@ -271,9 +277,7 @@ export function printRegistrationForm(data) {
         <td></td><td></td><td></td>
       </tr>`;
         }
-        const processLabel = sub.rateIdx !== '' && sub.rateIdx !== undefined
-            ? (PROCESS_LABELS[sub.rateIdx] || '')
-            : '';
+        const processLabel = escHtml(sub.processLabel || '');
         const subjectName = sub.subjectName || '';
         const dm = val(sub.dm);
         const wc = val(sub.wc);
@@ -426,7 +430,7 @@ ${FORM_STYLE}</style>
     (변경)등록·신고한 교습비등이 과다하다고 인정되어 차후 교습비등조정위원회의 심의 대상이
     될 수 있으며, 조정심의 대상 통보시 같은법 시행령 제17조의2 제1항 각호의 서류를 제출하고
     기한 내에 서류를 미제출한 경우 교습비등이 과다하다고 인정되어 같은법 제15조 제6항에 따라
-    경기도광주하남교육지원청에서 명하는 교습비등 조정에 이의없이 따를 것을 확인합니다.
+    ${officeText(officeName)}에서 명하는 교습비등 조정에 이의없이 따를 것을 확인합니다.
 
     <div class="sign-date">년 &nbsp;&nbsp;&nbsp;&nbsp; 월 &nbsp;&nbsp;&nbsp;&nbsp; 일</div>
     <div class="sign-line">
@@ -439,7 +443,7 @@ ${FORM_STYLE}</style>
   <!-- 10. 하단 수신처 & 결재란 병렬 배치 -->
   <div class="bottom-container">
     <div class="recipient-box">
-      경기도광주하남교육지원청교육장 귀하
+      ${officeText(officeName)}교육장 귀하
     </div>
     <table class="approval-table">
       <tr>
@@ -478,6 +482,7 @@ export function printTutoringForm(data) {
         regNumber = '',
         address = '',
         phone = '',
+        officeName = '',
         subjects = [],
     } = data;
 
@@ -619,7 +624,7 @@ ${FORM_STYLE}</style>
   <!-- 6. 하단 수신처 & 결재란 -->
   <div class="bottom-container">
     <div class="recipient-box">
-      경기도광주하남교육지원청교육장 귀하
+      ${officeText(officeName)}교육장 귀하
     </div>
     <table class="approval-table">
       <tr>

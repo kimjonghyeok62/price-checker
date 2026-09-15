@@ -174,6 +174,42 @@ h1, h2, h3 {
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
+/* 헤더 지역(교육지원청) 선택 */
+.app-region { cursor: pointer; }
+.app-region.is-empty {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #b45309;
+  animation: region-pulse 1.8s ease-in-out infinite;
+}
+@keyframes region-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
+  50% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0); }
+}
+.app-region-select {
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+/* 담당자 기준단가 입력 링크 */
+.app-admin-link-wrap { margin-top: 18px; text-align: center; }
+.app-admin-link {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* 기록 행 */
 .record-row-inner {
   display: flex;

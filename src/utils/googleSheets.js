@@ -2,10 +2,10 @@ export const SHEET_ID = '158ZNBb88raJ1kzBL3eFcgPZS9CGs5in0YtPtiPWfdic';
 export const DATA_GID = '1863320151';
 export const GYOSEUPSO_GID = '1929773080';
 
-function fetchWithTimeout(url, timeoutMs = 15000) {
+export function fetchWithTimeout(url, timeoutMs = 15000, options = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+    return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
 function parseCSVRaw(text) {
