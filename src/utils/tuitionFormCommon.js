@@ -1,5 +1,5 @@
 /**
- * 교습비등 게시표 출력(PDF / DOCX / JPG / HWPX) 공통 헬퍼
+ * 교습비등 게시표 출력(PDF / JPG / HWPX / TEXT) 공통 헬퍼
  */
 
 /**
