@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 import TuitionReviewTab from './components/TuitionReviewTab';
 import { printTuitionForm, printTuitionFormExternal } from './utils/generateTuitionPDF';
-import { downloadTuitionInternalDOCX, downloadTuitionExternalDOCX } from './utils/generateTuitionDOCX';
+import { buildTuitionPlaceText } from './utils/generateTuitionText';
 import { downloadTuitionInternalJPG, downloadTuitionExternalJPG } from './utils/generateTuitionJPG';
 import { downloadTuitionInternalHWPX, downloadTuitionExternalHWPX } from './utils/generateTuitionHWPX';
 import { getRegNoText } from './utils/tuitionFormCommon';
@@ -14,6 +14,7 @@ import { useRegion } from './RegionContext';
 import { REGION_NAMES } from './utils/regionRates';
 import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall, isAndroid, isInstalledApp } from './utils/pwa';
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './components/NeisExcelSteps';
+import TuitionTextModal from './components/TuitionTextModal';
 
 export default function App() {
   const [tab, setTab] = useState('excel'); // 'review' | 'tutoring' | 'excel'
@@ -457,6 +458,7 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
 
 function PrintButtons({ academy }) {
   const [downloading, setDownloading] = useState('');
+  const [placeText, setPlaceText] = useState(null);
 
   async function withLoading(key, fn) {
     setDownloading(key);
@@ -464,13 +466,13 @@ function PrintButtons({ academy }) {
     finally { setDownloading(''); }
   }
 
-  function BtnPDF({ onClick, label, size = 'normal' }) {
+  function BtnPDF({ onClick, label, sub, size = 'normal' }) {
     const isLarge = size === 'large';
     return (
       <button
         onClick={onClick}
         style={{
-          padding: isLarge ? '14px 10px' : '12px 8px',
+          padding: isLarge ? '12px 10px' : '10px 8px',
           backgroundColor: 'var(--primary)',
           color: '#fff',
           border: 'none',
@@ -479,35 +481,43 @@ function PrintButtons({ academy }) {
           fontWeight: '700',
           cursor: 'pointer',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '6px',
+          gap: '2px',
           boxShadow: '0 2px 6px rgba(99,102,241,0.25)',
           transition: 'filter 0.15s',
         }}
         onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
         onMouseLeave={e => e.currentTarget.style.filter = ''}
       >
-        <PrintIcon size={isLarge ? 16 : 14} /> {label}
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <PrintIcon size={isLarge ? 16 : 14} /> {label}
+        </span>
+        {sub && <span style={{ fontSize: '0.72rem', fontWeight: '600', letterSpacing: '-0.01em', color: 'rgba(255,255,255,0.82)' }}>{sub}</span>}
       </button>
     );
   }
 
   const SAVE_THEMES = {
     jpg: { bg: '#ecfdf5', busyBg: '#d1fae5', color: '#047857', border: '#6ee7b7' },
-    docx: { bg: '#eff6ff', busyBg: '#dbeafe', color: '#1d4ed8', border: '#93c5fd' },
     hwpx: { bg: '#f0f9ff', busyBg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc' },
+    text: { bg: '#fff7ed', busyBg: '#ffedd5', color: '#c2410c', border: '#fdba74' },
   };
 
-  function BtnSave({ onClick, label, busy, theme = 'docx', size = 'normal' }) {
+  function BtnSave({ onClick, label, sub, busy, theme = 'hwpx', size = 'normal' }) {
     const isLarge = size === 'large';
     const t = SAVE_THEMES[theme];
+    const iconSize = isLarge ? 16 : 14;
+    const icon = theme === 'jpg' ? <ImageIcon busy={busy} size={iconSize} />
+      : theme === 'text' ? <TextIcon size={iconSize} />
+      : <DocxIcon busy={busy} size={iconSize} />;
     return (
       <button
         onClick={onClick}
         disabled={!!downloading}
         style={{
-          padding: isLarge ? '14px 10px' : '12px 8px',
+          padding: isLarge ? '12px 10px' : '10px 8px',
           backgroundColor: busy ? t.busyBg : t.bg,
           color: t.color,
           border: `2px solid ${t.border}`,
@@ -516,18 +526,20 @@ function PrintButtons({ academy }) {
           fontWeight: '700',
           cursor: downloading ? 'not-allowed' : 'pointer',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '6px',
+          gap: '2px',
           opacity: downloading && !busy ? 0.55 : 1,
           transition: 'filter 0.15s',
         }}
         onMouseEnter={e => { if (!downloading) e.currentTarget.style.filter = 'brightness(0.95)'; }}
         onMouseLeave={e => e.currentTarget.style.filter = ''}
       >
-        {theme === 'jpg'
-          ? <ImageIcon busy={busy} size={isLarge ? 16 : 14} />
-          : <DocxIcon busy={busy} size={isLarge ? 16 : 14} />} {busy ? '생성중...' : label}
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {icon} {busy ? '생성중...' : label}
+        </span>
+        {sub && <span style={{ fontSize: '0.72rem', fontWeight: '600', letterSpacing: '-0.01em', opacity: 0.72 }}>{sub}</span>}
       </button>
     );
   }
@@ -570,10 +582,10 @@ function PrintButtons({ academy }) {
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <BtnPDF onClick={() => printTuitionForm(academy)} label="PDF 출력" size="large" />
-          <BtnSave theme="jpg" onClick={() => withLoading('int-jpg', () => downloadTuitionInternalJPG(academy))} label="JPG 저장" busy={downloading === 'int-jpg'} size="large" />
-          <BtnSave theme="docx" onClick={() => withLoading('int-docx', () => downloadTuitionInternalDOCX(academy))} label="DOCX 저장" busy={downloading === 'int-docx'} size="large" />
-          <BtnSave theme="hwpx" onClick={() => withLoading('int-hwpx', () => downloadTuitionInternalHWPX(academy))} label="HWPX 저장" busy={downloading === 'int-hwpx'} size="large" />
+          <BtnPDF onClick={() => printTuitionForm(academy)} label="PDF 출력" sub="인쇄용" size="large" />
+          <BtnSave theme="jpg" onClick={() => withLoading('int-jpg', () => downloadTuitionInternalJPG(academy))} label="JPG 저장" sub="블로그용" busy={downloading === 'int-jpg'} size="large" />
+          <BtnSave theme="hwpx" onClick={() => withLoading('int-hwpx', () => downloadTuitionInternalHWPX(academy))} label="HWPX 저장" sub="편집용" busy={downloading === 'int-hwpx'} size="large" />
+          <BtnSave theme="text" onClick={() => setPlaceText(buildTuitionPlaceText(academy))} label="TEXT 복사" sub="네이버 플레이스용" size="large" />
         </div>
       </div>
 
@@ -589,12 +601,16 @@ function PrintButtons({ academy }) {
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <BtnPDF onClick={() => printTuitionFormExternal(academy)} label="PDF 출력" size="large" />
-          <BtnSave theme="jpg" onClick={() => withLoading('ext-jpg', () => downloadTuitionExternalJPG(academy))} label="JPG 저장" busy={downloading === 'ext-jpg'} size="large" />
-          <BtnSave theme="docx" onClick={() => withLoading('ext-docx', () => downloadTuitionExternalDOCX(academy))} label="DOCX 저장" busy={downloading === 'ext-docx'} size="large" />
-          <BtnSave theme="hwpx" onClick={() => withLoading('ext-hwpx', () => downloadTuitionExternalHWPX(academy))} label="HWPX 저장" busy={downloading === 'ext-hwpx'} size="large" />
+          <BtnPDF onClick={() => printTuitionFormExternal(academy)} label="PDF 출력" sub="인쇄용" size="large" />
+          <BtnSave theme="jpg" onClick={() => withLoading('ext-jpg', () => downloadTuitionExternalJPG(academy))} label="JPG 저장" sub="블로그용" busy={downloading === 'ext-jpg'} size="large" />
+          <BtnSave theme="hwpx" onClick={() => withLoading('ext-hwpx', () => downloadTuitionExternalHWPX(academy))} label="HWPX 저장" sub="편집용" busy={downloading === 'ext-hwpx'} size="large" />
+          <BtnSave theme="text" onClick={() => setPlaceText(buildTuitionPlaceText(academy))} label="TEXT 복사" sub="네이버 플레이스용" size="large" />
         </div>
       </div>
+
+      {placeText !== null && (
+        <TuitionTextModal text={placeText} academyName={academy.name} onClose={() => setPlaceText(null)} />
+      )}
     </div>
   );
 }
@@ -617,4 +633,12 @@ function DocxIcon({ busy, size = 13 }) {
   return busy
     ? <span style={{ fontSize: '0.9rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
     : <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>;
+}
+function TextIcon({ size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="12" height="12" rx="2"/>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </svg>
+  );
 }
