@@ -8,26 +8,30 @@ export const ACADEMY_API_URL = 'https://script.google.com/macros/s/AKfycbx6HzWxI
 export const isAcademyLookupReady = () => !!ACADEMY_API_URL;
 
 // ─── 검색 목록 ────────────────────────────────────────────────
-let listPromise = null;
+const listPromises = new Map();
 
-/** { region, syncedAt, items: [{ id, kind, name, sigun, dong, key, bareKey, cho }] } — 한 번 받아서 재사용 */
-export function loadAcademyList() {
-  if (!listPromise) {
-    listPromise = (async () => {
-      const res = await fetchWithTimeout(ACADEMY_API_URL, 20000);
+/**
+ * 교육지원청 하나의 추천 목록 — 한 번 받아서 재사용
+ * { region, syncedAt, items: [{ id, kind, name, sigun, dong, check, key, bareKey, cho }] }
+ * check: 'N' 등록(신고)번호, 'P' 설립·운영자 이름, 'NP' 둘 중 하나, '' 확인 자료 없음
+ */
+export function loadAcademyList(region) {
+  if (!listPromises.has(region)) {
+    listPromises.set(region, (async () => {
+      const res = await fetchWithTimeout(`${ACADEMY_API_URL}?region=${encodeURIComponent(region)}`, 20000);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || '목록을 불러오지 못했습니다.');
-      const items = (json.items || []).map(([id, kind, name, sigun, dong]) => ({
-        id, kind, name, sigun, dong,
+      const items = (json.items || []).map(([id, kind, name, sigun, dong, check = '']) => ({
+        id, kind, name, sigun, dong, check,
         key: nameKey(name),
         bareKey: nameKey(String(name).replace(/\([^)]*\)/g, '')),
         cho: toChosung(nameKey(name)),
       }));
-      return { region: json.region || '', syncedAt: json.syncedAt || '', items };
-    })().catch(err => { listPromise = null; throw err; });
+      return { region: json.region || region, syncedAt: json.syncedAt || '', items };
+    })().catch(err => { listPromises.delete(region); throw err; }));
   }
-  return listPromise;
+  return listPromises.get(region);
 }
 
 const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
@@ -96,26 +100,37 @@ async function postApi(body) {
   return json;
 }
 
-/** { academy, source: 'neis' | 'sheet', basis } — source가 sheet면 나이스가 응답하지 않아 마지막 동기화 자료를 쓴 것 */
-export const lookupAcademy = (id, regNo) => postApi({ action: 'lookup', id, regNo });
+/**
+ * { academy, source: 'neis' | 'sheet', verified, basis }
+ *  - answer: 등록(신고)번호 또는 설립·운영자 이름 (확인 자료가 없는 곳은 비워도 된다)
+ *  - source가 sheet면 나이스가 응답하지 않아 마지막 동기화 자료를 쓴 것
+ */
+export const lookupAcademy = (id, answer) => postApi({ action: 'lookup', id, answer });
 
 /** 나이스 엑셀로 올린 학원에 게시표용 등록번호를 붙일 때 — { regNo, category, kind } */
-export const verifyAcademyRegNo = (name, regNo) => postApi({ action: 'verify', name, regNo });
+export const verifyAcademyRegNo = (name, answer) => postApi({ action: 'verify', name, answer });
 
 // ─── 이 기기에서 확인한 학원 (다음부터 번호 없이 바로) ───────────
 const MINE_KEY = 'academyLookup:mine:v1';
 const MINE_MAX = 5;
 
+/**
+ * [{ id?, name, answer, regNo, category? }]
+ *  - answer: 조회할 때 넣은 본인 확인 값(번호·이름, 확인이 없던 곳은 '')
+ *  - regNo: 게시표에 찍는 등록(신고)번호 — 명단에 번호가 없는 곳은 ''
+ */
 export function readMyAcademies() {
   try {
     const list = JSON.parse(localStorage.getItem(MINE_KEY) || '[]');
-    return Array.isArray(list) ? list.filter(x => x && x.name && x.regNo) : [];
+    return Array.isArray(list)
+      ? list.filter(x => x && x.name).map(x => ({ ...x, answer: x.answer ?? x.regNo ?? '', regNo: x.regNo || '' }))
+      : [];
   } catch {
     return [];
   }
 }
 
-/** { id?, name, regNo, category?, kind? } — 같은 이름은 최신 것으로 바꿔 맨 앞에 */
+/** 같은 이름은 최신 것으로 바꿔 맨 앞에 */
 export function rememberAcademy(entry) {
   try {
     const rest = readMyAcademies().filter(x => nameKey(x.name) !== nameKey(entry.name));
@@ -131,7 +146,7 @@ export function forgetAcademy(name) {
 
 /** 나이스 엑셀로 올린 학원 중 이 기기에서 확인했던 학원에 등록번호를 붙인다 */
 export function attachRememberedRegNo(academies) {
-  const mine = new Map(readMyAcademies().map(x => [nameKey(x.name), x]));
+  const mine = new Map(readMyAcademies().filter(x => x.regNo).map(x => [nameKey(x.name), x]));
   return academies.map(a => {
     const m = mine.get(nameKey(a.name));
     return m ? { ...a, regNo: m.regNo, category: a.category || m.category || '' } : a;

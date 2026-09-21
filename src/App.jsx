@@ -352,7 +352,7 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
 
 // 학원명 찾기 결과가 어디 기준인지 — 나이스 실시간 / (나이스 무응답 시) 교육지원청 명단 동기화본
 function LookupBasisNote({ result }) {
-  const { source, basis, academy } = result;
+  const { source, basis, academy, verified } = result;
   const live = source === 'neis';
   return (
     <div style={{
@@ -363,6 +363,8 @@ function LookupBasisNote({ result }) {
         ? <>✔ 나이스 학원서비스에서 방금 가져온 교습비입니다{basis && ` (${basis})`}.</>
         : <>⚠ 나이스가 응답하지 않아 교육지원청 명단{basis && `(${basis} 동기화)`}의 교습비로 표시합니다. 최근에 교습비를 바꿨다면 잠시 후 다시 불러오세요.</>}
       {academy.changeDate && <> 교습비 적용일 {academy.changeDate}.</>}
+      {!academy.regNo && <> 명단에 등록(신고)번호가 없어 게시표에는 번호 없이 나옵니다.</>}
+      {verified === false && <> (본인 확인 자료가 없어 확인 없이 불러왔습니다)</>}
     </div>
   );
 }
@@ -380,7 +382,7 @@ function RegNoAttach({ academy, onDone }) {
     setError('');
     try {
       const info = await verifyAcademyRegNo(academy.name, value.trim());
-      rememberAcademy({ name: academy.name, regNo: value.trim(), category: info.category || '' });
+      rememberAcademy({ name: academy.name, answer: value.trim(), regNo: info.regNo, category: info.category || '' });
       onDone(info);
     } catch (err) {
       setError(err.message || '확인하지 못했습니다.');
