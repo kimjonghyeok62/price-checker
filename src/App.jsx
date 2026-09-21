@@ -7,7 +7,8 @@ import { downloadTuitionInternalJPG, downloadTuitionExternalJPG } from './utils/
 import { downloadTuitionInternalHWPX, downloadTuitionExternalHWPX } from './utils/generateTuitionHWPX';
 import { getRegNoText } from './utils/tuitionFormCommon';
 import { parseExcelTuition } from './utils/parseExcelTuition';
-import { fetchGoogleSheetData, transformAcademyData, attachRegNo, DATA_GID, GYOSEUPSO_GID } from './utils/googleSheets';
+import { isAcademyLookupReady, attachRememberedRegNo, verifyAcademyRegNo, rememberAcademy } from './utils/academyLookup';
+import AcademyLookupCard from './components/AcademyLookupCard';
 import StandardPriceTable from './components/StandardPriceTable';
 import RegionAdmin from './components/RegionAdmin';
 import { useRegion } from './RegionContext';
@@ -22,15 +23,8 @@ export default function App() {
   const [showRegionAdmin, setShowRegionAdmin] = useState(false);
   const { region, setRegion, effectiveDate } = useRegion();
 
-  // 학원 검색 탭
-  const [academies, setAcademies] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchLoaded, setSearchLoaded] = useState(false);
-  const [searchError, setSearchError] = useState('');
-  const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchInputRef = useRef(null);
+  // 학원명으로 찾기 (나이스 실시간) — { academy, source, basis }
+  const [lookupResult, setLookupResult] = useState(null);
 
   // 업로드 탭
   const [excelAcademies, setExcelAcademies] = useState([]);
@@ -38,54 +32,21 @@ export default function App() {
   const [excelError, setExcelError] = useState('');
   const [excelLoading, setExcelLoading] = useState(false);
   const fileInputRef = useRef(null);
-  const uploadSeqRef = useRef(0);
 
-  // 구글시트 학원·교습소 목록 (한 번만 받아서 재사용, 실패 시 다음에 다시 시도)
-  const masterAcademiesRef = useRef(null);
-  function loadMasterAcademies() {
-    if (!masterAcademiesRef.current) {
-      masterAcademiesRef.current = Promise.all([
-        fetchGoogleSheetData(DATA_GID),
-        fetchGoogleSheetData(GYOSEUPSO_GID),
-      ])
-        .then(([academyData, gyoseupsoData]) => transformAcademyData([...academyData, ...gyoseupsoData]))
-        .catch(err => { masterAcademiesRef.current = null; throw err; });
-    }
-    return masterAcademiesRef.current;
-  }
-
-  async function loadAcademyData() {
-    if (searchLoaded || searchLoading) return;
-    setSearchLoading(true);
-    setSearchError('');
-    try {
-      setAcademies(await loadMasterAcademies());
-      setSearchLoaded(true);
-    } catch (err) {
-      setSearchError('데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setSearchLoading(false);
+  function handleLookupResult(result) {
+    setLookupResult(result);
+    if (result) {
+      setExcelAcademies([]);
+      setExcelSelected(null);
+      setExcelError('');
     }
   }
 
-  function handleTabChange(newTab) {
-    setTab(newTab);
-    if (newTab === 'search') loadAcademyData();
-  }
-
-  const suggestions = query.trim()
-    ? academies
-        .filter(a =>
-          ['개원', '신고'].includes(a.status) &&
-          (a.name?.includes(query) || a.founder?.name?.includes(query) || a.address?.includes(query))
-        )
-        .slice(0, 20)
-    : [];
-
-  function handleSelect(academy) {
-    setSelected(academy);
-    setQuery(academy.name || '');
-    setShowSuggestions(false);
+  // 나이스 엑셀로 올린 학원에 등록번호를 붙인다 (번호 확인을 거친 경우만)
+  function handleExcelRegNo(name, info) {
+    const patch = a => (a.name === name ? { ...a, regNo: info.regNo, category: a.category || info.category || '' } : a);
+    setExcelAcademies(list => list.map(patch));
+    setExcelSelected(prev => (prev ? patch(prev) : prev));
   }
 
   async function handleFile(e) {
@@ -95,23 +56,15 @@ export default function App() {
     setExcelLoading(true);
     setExcelAcademies([]);
     setExcelSelected(null);
-    const seq = ++uploadSeqRef.current;
+    setLookupResult(null);
     try {
-      const result = await parseExcelTuition(file);
+      // 나이스 엑셀엔 등록번호가 없다 → 이 기기에서 번호를 확인했던 학원이면 붙이고, 아니면 게시표 위에서 입력받는다
+      const result = attachRememberedRegNo(await parseExcelTuition(file));
       if (!result.length) {
         setExcelError('파싱된 학원 데이터가 없습니다. 파일 형식을 확인하세요.');
       } else {
         setExcelAcademies(result);
         if (result.length === 1) setExcelSelected(result[0]);
-        // 나이스 엑셀엔 등록번호가 없어 구글시트에서 찾아 붙인다 (실패하면 등록번호 없이 출력)
-        loadMasterAcademies()
-          .then(master => {
-            if (seq !== uploadSeqRef.current) return;
-            const enriched = attachRegNo(result, master);
-            setExcelAcademies(enriched);
-            setExcelSelected(prev => (prev ? enriched.find(a => a.name === prev.name) || prev : prev));
-          })
-          .catch(() => {});
       }
     } catch (err) {
       setExcelError('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
@@ -240,87 +193,6 @@ export default function App() {
       {/* ── 탭: 교습비 변경(과외) ── */}
       {tab === 'tutoring' && <TuitionReviewTab mode="tutoring" />}
 
-      {/* ── 탭: 학원 검색 ── */}
-      {tab === 'search' && (
-        <>
-          {searchLoading && (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              <div style={{ width: '32px', height: '32px', border: '3px solid var(--primary-glow)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-              학원 데이터를 불러오는 중...
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            </div>
-          )}
-
-          {searchError && (
-            <div style={{ color: '#dc2626', fontSize: '0.85rem', padding: '12px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca', marginBottom: '16px' }}>
-              {searchError}
-              <button onClick={loadAcademyData} style={{ display: 'block', marginTop: '8px', padding: '6px 14px', backgroundColor: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.82rem', cursor: 'pointer' }}>
-                다시 시도
-              </button>
-            </div>
-          )}
-
-          {!searchLoading && searchLoaded && (
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>학원 선택</label>
-              <div style={{ position: 'relative' }}>
-                <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '10px 14px', gap: '8px' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  </svg>
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={query}
-                    onChange={e => { setQuery(e.target.value); setSelected(null); setShowSuggestions(true); }}
-                    onFocus={() => query && setShowSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    placeholder="학원명, 운영자, 주소 입력..."
-                    style={{ flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: '0.95rem', color: 'var(--text-main)' }}
-                  />
-                  {query && (
-                    <button type="button" onClick={() => { setQuery(''); setSelected(null); setShowSuggestions(false); searchInputRef.current?.focus(); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.1rem', padding: 0, lineHeight: 1 }}>×</button>
-                  )}
-                </div>
-
-                {showSuggestions && suggestions.length > 0 && (
-                  <ul style={{
-                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-                    backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)',
-                    borderRadius: '10px', boxShadow: 'var(--shadow-md)',
-                    margin: 0, padding: '4px 0', listStyle: 'none', zIndex: 100,
-                    maxHeight: '260px', overflowY: 'auto'
-                  }}>
-                    {suggestions.map(a => (
-                      <li key={a.id || a.name} onMouseDown={() => handleSelect(a)}
-                        style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '0.9rem' }}
-                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                        onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}>
-                        <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{a.name}</div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {a.founder?.name && <span style={{ marginRight: '8px' }}>{a.founder.name}</span>}
-                          {a.address && <span>{a.address}</span>}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
-
-          {selected && <PrintButtons academy={selected} />}
-
-          {!selected && !searchLoading && searchLoaded && (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '40px', lineHeight: '1.6' }}>
-              학원을 검색하여 선택하면<br />교습비등 게시표를 출력할 수 있습니다.
-            </div>
-          )}
-        </>
-      )}
-
       {/* ── 탭: 업로드 ── */}
       {tab === 'excel' && (
         <ExcelUploadTab
@@ -331,6 +203,9 @@ export default function App() {
           setExcelSelected={setExcelSelected}
           fileInputRef={fileInputRef}
           handleFile={handleFile}
+          lookupResult={lookupResult}
+          onLookupResult={handleLookupResult}
+          onExcelRegNo={handleExcelRegNo}
         />
       )}
 
@@ -348,7 +223,7 @@ export default function App() {
   );
 }
 
-function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelected, setExcelSelected, fileInputRef, handleFile }) {
+function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelected, setExcelSelected, fileInputRef, handleFile, lookupResult, onLookupResult, onExcelRegNo }) {
   const [dragOver, setDragOver] = React.useState(false);
   const dragDepthRef = useRef(0);
   const [installable, setInstallable] = useState(canPromptInstall());
@@ -373,6 +248,22 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
 
   return (
     <div {...dropHandlers}>
+      {isAcademyLookupReady() && (
+        <>
+          <AcademyLookupCard onResult={onLookupResult} />
+          {lookupResult && (
+            <div className="animate-enter" style={{ marginBottom: '20px' }}>
+              <LookupBasisNote result={lookupResult} />
+              <PrintButtons academy={lookupResult.academy} />
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '18px 0 14px', color: 'var(--text-muted)', fontSize: '0.88rem', fontWeight: '700' }}>
+            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+            또는 나이스에서 엑셀을 받아 올리기
+            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
+          </div>
+        </>
+      )}
       <NeisHakwonCard />
       <ExcelUploadCard loading={excelLoading} dragOver={dragOver} fileInputRef={fileInputRef} onFile={loadFile} />
 
@@ -407,6 +298,9 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               목록으로 돌아가기
             </button>
+          )}
+          {isAcademyLookupReady() && !excelSelected.regNo && (
+            <RegNoAttach key={excelSelected.name} academy={excelSelected} onDone={info => onExcelRegNo(excelSelected.name, info)} />
           )}
           <PrintButtons academy={excelSelected} />
         </div>
@@ -453,6 +347,70 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
         </a>
       </div>
     </div>
+  );
+}
+
+// 학원명 찾기 결과가 어디 기준인지 — 나이스 실시간 / (나이스 무응답 시) 교육지원청 명단 동기화본
+function LookupBasisNote({ result }) {
+  const { source, basis, academy } = result;
+  const live = source === 'neis';
+  return (
+    <div style={{
+      marginBottom: '12px', padding: '10px 14px', borderRadius: '10px', fontSize: '0.88rem', lineHeight: 1.55, wordBreak: 'keep-all',
+      backgroundColor: live ? '#f0fdf4' : '#fffbeb', border: `1.5px solid ${live ? '#86efac' : '#fcd34d'}`, color: live ? '#166534' : '#92400e',
+    }}>
+      {live
+        ? <>✔ 나이스 학원서비스에서 방금 가져온 교습비입니다{basis && ` (${basis})`}.</>
+        : <>⚠ 나이스가 응답하지 않아 교육지원청 명단{basis && `(${basis} 동기화)`}의 교습비로 표시합니다. 최근에 교습비를 바꿨다면 잠시 후 다시 불러오세요.</>}
+      {academy.changeDate && <> 교습비 적용일 {academy.changeDate}.</>}
+    </div>
+  );
+}
+
+// 나이스 엑셀엔 등록번호가 없다 — 학원장이 번호를 넣고 확인되면 게시표에 "[등록번호: 제 ○○호]"를 넣는다
+function RegNoAttach({ academy, onDone }) {
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!value.trim() || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const info = await verifyAcademyRegNo(academy.name, value.trim());
+      rememberAcademy({ name: academy.name, regNo: value.trim(), category: info.category || '' });
+      onDone(info);
+    } catch (err) {
+      setError(err.message || '확인하지 못했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} style={{ marginBottom: '12px', padding: '12px 14px', borderRadius: '10px', backgroundColor: '#f8fafc', border: '1.5px dashed #cbd5e1' }}>
+      <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '8px', wordBreak: 'keep-all' }}>
+        게시표에 등록(신고)번호를 넣으려면 번호를 입력하세요. (넣지 않으면 번호 없이 출력됩니다)
+      </div>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <input
+          type="text"
+          value={value}
+          onChange={e => { setValue(e.target.value); setError(''); }}
+          placeholder="예) 하남159"
+          aria-label="등록(신고)번호"
+          autoComplete="off"
+          style={{ flex: 1, minWidth: 0, padding: '9px 12px', borderRadius: '8px', border: '1.5px solid var(--border-color)', fontSize: '0.95rem' }}
+        />
+        <button type="submit" disabled={busy || !value.trim()}
+          style={{ flexShrink: 0, padding: '0 16px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary)', color: '#fff', fontWeight: '700', cursor: busy ? 'wait' : 'pointer', opacity: busy || !value.trim() ? 0.6 : 1 }}>
+          {busy ? '확인 중…' : '번호 넣기'}
+        </button>
+      </div>
+      {error && <div style={{ marginTop: '8px', color: '#b91c1c', fontSize: '0.85rem' }}>{error}</div>}
+    </form>
   );
 }
 
