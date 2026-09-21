@@ -63,6 +63,8 @@ var ZONE_CODES = {
 // 과목 칸은 이름 없이 이 순서의 배열로 저장한다 (셀 하나 50,000자 제한 — 과목이 수백 개인 곳이 있다)
 var COURSE_FIELDS = ['process', 'subject', 'period', 'totalTime', 'tuitionFee', 'mockExamFee', 'materialFee', 'mealFee', 'dormitoryFee', 'clothingFee', 'vehicleFee'];
 var MAX_CELL_CHARS = 49000;
+var OPEN_PAGE_SIZE = 1000;
+var OPEN_PARALLEL = 10;
 
 var MAX_FAILS = 5;
 var BLOCK_SECONDS = 600;
@@ -121,9 +123,18 @@ function syncAcademyList() {
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
+    var t0 = Date.now();
+    var took = function (label) { Logger.log(label + ' ' + Math.round((Date.now() - t0) / 1000) + '초'); };
     var local = readLocalSources_();
+    took('명단 시트');
     var key = PropertiesService.getScriptProperties().getProperty('NEIS_API_KEY');
-    var items = key ? mergeWithOpenList_(local, fetchOpenList_(key), readFounders_()) : local;
+    var items = local;
+    if (key) {
+      var open = fetchOpenList_(key);
+      took('나이스 목록 ' + open.length + '곳');
+      items = mergeWithOpenList_(local, open, readFounders_());
+      took('설립자 붙이기');
+    }
     if (!items.length) throw new Error('검색목록에 넣을 학원·교습소가 없습니다.');
 
     var rows = items.map(function (x) {
@@ -139,8 +150,10 @@ function syncAcademyList() {
     index.getRange(1, 1, 1, INDEX_HEADERS.length).setValues([INDEX_HEADERS]).setFontWeight('bold').setBackground('#eef2ff');
     index.setFrozenRows(1);
     index.getRange(2, 1, rows.length, INDEX_HEADERS.length).setNumberFormat('@').setValues(rows);
+    took('검색목록 쓰기');
 
     writeRegionLists_(ss, rows);
+    took('지역별목록 쓰기');
 
     var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
     PropertiesService.getScriptProperties().setProperty('LAST_SYNC', now);
@@ -246,12 +259,27 @@ function buildLocalItems_(src, values) {
 }
 
 /** 나이스 개방 포털 — 경기도 운영 중인 학원·교습소 전체 (1,000곳씩) */
+/** 경기도 학원·교습소 전체(약 4만 곳) — 1,000곳씩 여러 쪽을 한꺼번에 받는다 (차례로 받으면 6분 실행 한도를 넘는다) */
 function fetchOpenList_(key) {
+  var first = fetchOpenPage_(key, 1, OPEN_PAGE_SIZE);
+  var pages = Math.ceil(first.total / OPEN_PAGE_SIZE);
+  var all = [first.rows];
+  for (var start = 2; start <= pages; start += OPEN_PARALLEL) {
+    var nums = [];
+    for (var p = start; p < start + OPEN_PARALLEL && p <= pages; p++) nums.push(p);
+    var res = UrlFetchApp.fetchAll(nums.map(function (n) {
+      return { url: openPageUrl_(key, n, OPEN_PAGE_SIZE), muteHttpExceptions: true };
+    }));
+    res.forEach(function (r, i) {
+      // 한꺼번에 받다 한 쪽이 실패하면 그 쪽만 다시 받는다
+      all.push(r.getResponseCode() === 200 ? parseOpenPage_(r).rows : fetchOpenPage_(key, nums[i], OPEN_PAGE_SIZE).rows);
+    });
+  }
+
   var out = [];
   var seen = {};
-  for (var page = 1; page < 200; page++) {
-    var res = fetchOpenPage_(key, page, 1000);
-    res.rows.forEach(function (r) {
+  all.forEach(function (rows) {
+    rows.forEach(function (r) {
       if (String(r.REG_STTUS_NM || '').trim() !== '개원') return;
       var asnum = String(r.ACA_ASNUM || '').trim();
       if (asnum && seen[asnum]) return;
@@ -259,20 +287,26 @@ function fetchOpenList_(key) {
       var addr = [String(r.FA_RDNMA || '').trim(), String(r.FA_RDNDA || '').trim()].filter(Boolean).join(' ');
       var kind = String(r.ACA_INSTI_SC_NM || '').indexOf('교습소') >= 0 ? '교습소' : '학원';
       out.push({
-        kind: kind, no: '', asnum: String(r.ACA_ASNUM || '').trim(), name: String(r.ACA_NM || '').trim(),
+        kind: kind, no: '', asnum: asnum, name: String(r.ACA_NM || '').trim(),
         addr: addr, sigun: String(r.ADMST_ZONE_NM || '').trim() || sigunOf_(addr), dong: dongOf_(addr),
         type: kind, founder: '', changed: '', courses: null
       });
     });
-    if (page * 1000 >= res.total || !res.rows.length) break;
-  }
+  });
   return out;
 }
 
+function openPageUrl_(key, page, size) {
+  return NEIS_OPEN_URL + '?KEY=' + encodeURIComponent(key) + '&Type=json&ATPT_OFCDC_SC_CODE=' + NEIS_OFFICE + '&pIndex=' + page + '&pSize=' + size;
+}
+
 function fetchOpenPage_(key, page, size) {
-  var url = NEIS_OPEN_URL + '?KEY=' + encodeURIComponent(key) + '&Type=json&ATPT_OFCDC_SC_CODE=' + NEIS_OFFICE + '&pIndex=' + page + '&pSize=' + size;
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  var res = UrlFetchApp.fetch(openPageUrl_(key, page, size), { muteHttpExceptions: true });
   if (res.getResponseCode() !== 200) throw new Error('나이스 개방 포털 HTTP ' + res.getResponseCode());
+  return parseOpenPage_(res);
+}
+
+function parseOpenPage_(res) {
   var json = JSON.parse(res.getContentText('UTF-8'));
   var body = json.acaInsTiInfo;
   if (!body) {
