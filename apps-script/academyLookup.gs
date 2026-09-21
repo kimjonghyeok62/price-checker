@@ -149,6 +149,7 @@ function syncAcademyList() {
     index.clearContents();
     index.getRange(1, 1, 1, INDEX_HEADERS.length).setValues([INDEX_HEADERS]).setFontWeight('bold').setBackground('#eef2ff');
     index.setFrozenRows(1);
+    took('ID 만들기');
     index.getRange(2, 1, rows.length, INDEX_HEADERS.length).setNumberFormat('@').setValues(rows);
     took('검색목록 쓰기');
 
@@ -664,8 +665,12 @@ function sheetByGid_(ss, gid) {
   return ss.getSheets().filter(function (s) { return s.getSheetId() === gid; })[0] || null;
 }
 
+// 동기화 때 4만 번 불리므로 SALT는 한 번만 읽는다
+var salt_ = null;
+
 function idOf_(kind, no) {
-  var salt = PropertiesService.getScriptProperties().getProperty('SALT') || '';
+  if (salt_ === null) salt_ = PropertiesService.getScriptProperties().getProperty('SALT') || '';
+  var salt = salt_;
   var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + '|' + kind + '|' + no, Utilities.Charset.UTF_8);
   return Utilities.base64EncodeWebSafe(bytes).slice(0, 12);
 }
