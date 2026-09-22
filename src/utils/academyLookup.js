@@ -7,8 +7,67 @@ export const ACADEMY_API_URL = 'https://script.google.com/macros/s/AKfycbx6HzWxI
 
 export const isAcademyLookupReady = () => !!ACADEMY_API_URL;
 
+// ─── 서버 호출 ────────────────────────────────────────────────
+// Apps Script 웹앱은 한동안 안 쓰다 처음 부르면 수십 초 걸릴 때가 있다 — 한 번 늦으면 한 번 더 부른다(두 번째는 대개 빠르다)
+const SLOW_MESSAGE = '서버 응답이 늦습니다. 잠시 후 다시 시도하세요.';
+
+async function callApi(url, timeoutMs, options) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url, timeoutMs, options);
+      if (!res.ok) throw new Error(`서버 오류 (HTTP ${res.status})`);
+      return await res.json();
+    } catch (err) {
+      const slow = err.name === 'AbortError' || err.name === 'TypeError'; // 시간 초과·연결 끊김
+      if (!slow) throw err;
+      if (attempt >= 1) throw new Error(SLOW_MESSAGE);
+    }
+  }
+}
+
 // ─── 검색 목록 ────────────────────────────────────────────────
 const listPromises = new Map();
+
+// 받은 목록은 이 기기에 보관 — 하루 한 번(새벽 4시) 바뀌므로 6시간 안이면 서버에 묻지 않는다
+const LIST_KEY = 'academyLookup:list:v1:';
+const LIST_FRESH_MS = 6 * 60 * 60 * 1000;
+const LIST_KEEP = 3;
+
+function readSavedList(region) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LIST_KEY + region) || 'null');
+    return saved && Array.isArray(saved.items) ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveList(region, json) {
+  try {
+    localStorage.setItem(LIST_KEY + region, JSON.stringify({ at: Date.now(), region: json.region, syncedAt: json.syncedAt, items: json.items }));
+    // 최근 지역 몇 개만 남긴다 (수원 목록 하나가 300KB쯤)
+    const keys = Object.keys(localStorage).filter(k => k.startsWith(LIST_KEY));
+    keys
+      .map(k => [k, readSavedList(k.slice(LIST_KEY.length))?.at || 0])
+      .sort((a, b) => b[1] - a[1])
+      .slice(LIST_KEEP)
+      .forEach(([k]) => localStorage.removeItem(k));
+  } catch { /* 저장 못 해도 동작 */ }
+}
+
+async function fetchList(region) {
+  const saved = readSavedList(region);
+  if (saved && Date.now() - saved.at < LIST_FRESH_MS) return saved;
+  try {
+    const json = await callApi(`${ACADEMY_API_URL}?region=${encodeURIComponent(region)}`, 20000);
+    if (!json.ok) throw new Error(json.error || '목록을 불러오지 못했습니다.');
+    saveList(region, json);
+    return json;
+  } catch (err) {
+    if (saved) return saved; // 서버가 늦으면 전에 받아 둔 목록이라도
+    throw err;
+  }
+}
 
 /**
  * 교육지원청 하나의 추천 목록 — 한 번 받아서 재사용
@@ -18,10 +77,7 @@ const listPromises = new Map();
 export function loadAcademyList(region) {
   if (!listPromises.has(region)) {
     listPromises.set(region, (async () => {
-      const res = await fetchWithTimeout(`${ACADEMY_API_URL}?region=${encodeURIComponent(region)}`, 20000);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || '목록을 불러오지 못했습니다.');
+      const json = await fetchList(region);
       const items = (json.items || []).map(([id, kind, name, sigun, dong, check = '']) => ({
         id, kind, name, sigun, dong, check,
         key: nameKey(name),
@@ -89,13 +145,11 @@ export function searchAcademyList(items, query, limit = 20) {
 // ─── 조회 ─────────────────────────────────────────────────────
 async function postApi(body) {
   // text/plain으로 보내야 Apps Script 웹앱이 브라우저 사전 요청(CORS preflight) 없이 받는다
-  const res = await fetchWithTimeout(ACADEMY_API_URL, 30000, {
+  const json = await callApi(ACADEMY_API_URL, 30000, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`서버 오류 (HTTP ${res.status})`);
-  const json = await res.json();
   if (!json.ok) throw new Error(json.error || '처리하지 못했습니다.');
   return json;
 }
@@ -104,8 +158,9 @@ async function postApi(body) {
  * { academy, source: 'neis' | 'sheet', verified, basis }
  *  - answer: 등록(신고)번호 또는 설립·운영자 이름 (확인 자료가 없는 곳은 비워도 된다)
  *  - source가 sheet면 나이스가 응답하지 않아 마지막 동기화 자료를 쓴 것
+ *  - region: 고를 때의 교육지원청 — 서버가 시트 대신 그 지역 캐시에서 학원을 찾는다
  */
-export const lookupAcademy = (id, answer) => postApi({ action: 'lookup', id, answer });
+export const lookupAcademy = (id, answer, region) => postApi({ action: 'lookup', id, answer, region });
 
 /** 나이스 엑셀로 올린 학원에 게시표용 등록번호를 붙일 때 — { regNo, category, kind } */
 export const verifyAcademyRegNo = (name, answer) => postApi({ action: 'verify', name, answer });

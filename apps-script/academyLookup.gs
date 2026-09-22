@@ -16,6 +16,7 @@
  * 3. 위쪽 함수 선택에서 setup 실행 → 권한 허용. (검색목록 탭이 만들어지고, 매일 04시 자동 동기화가 켜진다)
  * 4. 배포 › 새 배포 › 유형: 웹 앱 / 실행: 나 / 액세스 권한: 모든 사용자 → 배포 → 웹 앱 URL을 앱(src/utils/academyLookup.js ACADEMY_API_URL)에 넣는다.
  *    코드를 고친 뒤에는 배포 › 배포 관리 › 수정 › 버전: 새 버전 으로 다시 배포해야 반영된다.
+ *    (캐시 기능을 처음 넣을 때는 편집기에서 warmCache를 한 번 실행 — 캐시를 채우고 4시간마다 다시 채우는 트리거를 켠다)
  * 5. 앱이 새 주소로 동작하는 것을 확인한 뒤, 원본 명단 시트의 공유를 "제한됨"으로 바꾼다.
  *
  * [경기도 전체로 넓히기] 시트를 새로고침하면 메뉴 "교습비 조회 관리"가 생긴다.
@@ -71,6 +72,11 @@ var BLOCK_SECONDS = 600;
 var LOOKUP_CACHE_SECONDS = 600;
 var SYNC_HOUR = 4;
 
+// 웹앱이 시트를 열지 않고 캐시(메모리)에서 바로 답하도록 — 캐시는 최대 6시간이라 4시간마다 다시 채운다
+var CACHE_SECONDS = 21600;
+var CACHE_CHUNK_CHARS = 30000; // 캐시 값 하나 100KB 제한 (한글 3바이트 기준)
+var WARM_EVERY_HOURS = 4;
+
 // ─── 설치·관리 (시트 편집기에서 실행) ─────────────────────────
 
 function setup() {
@@ -83,6 +89,7 @@ function setup() {
   ScriptApp.newTrigger('syncAcademyList').timeBased().atHour(SYNC_HOUR).nearMinute(0).everyDays(1).inTimezone('Asia/Seoul').create();
 
   syncAcademyList();
+  ensureWarmTrigger_();
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet1 = ss.getSheetByName('시트1') || ss.getSheetByName('Sheet1');
@@ -153,11 +160,14 @@ function syncAcademyList() {
     index.getRange(2, 1, rows.length, INDEX_HEADERS.length).setNumberFormat('@').setValues(rows);
     took('검색목록 쓰기');
 
-    writeRegionLists_(ss, rows);
+    var lists = regionListsOf_(rows);
+    writeRegionLists_(ss, lists);
     took('지역별목록 쓰기');
 
     var now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
     PropertiesService.getScriptProperties().setProperty('LAST_SYNC', now);
+    fillCache_(rows, lists, now);
+    took('캐시 채우기');
     Logger.log('검색목록 ' + rows.length + '곳 동기화 (' + now + ')');
     return rows.length;
   } finally {
@@ -166,15 +176,9 @@ function syncAcademyList() {
 }
 
 /** 교육지원청별 추천 목록(JSON)을 미리 만들어 둔다 — 앱 요청마다 수만 줄을 읽지 않도록 */
-function writeRegionLists_(ss, rows) {
-  var byOffice = {};
-  rows.forEach(function (r) {
-    if (!r[1]) return;
-    // [ID, 구분, 명칭, 시군, 동, 확인방법(N: 번호, P: 이름)]
-    (byOffice[r[1]] = byOffice[r[1]] || []).push([r[0], r[2], r[4], r[5], r[6], (r[3] ? 'N' : '') + (r[9] ? 'P' : '')]);
-  });
-  var out = Object.keys(byOffice).map(function (office) {
-    var json = JSON.stringify(byOffice[office]);
+function writeRegionLists_(ss, lists) {
+  var out = Object.keys(lists).map(function (office) {
+    var json = lists[office];
     var cells = [office];
     for (var i = 0; i < json.length; i += MAX_CELL_CHARS) cells.push(json.slice(i, i + MAX_CELL_CHARS));
     return cells;
@@ -185,6 +189,19 @@ function writeRegionLists_(ss, rows) {
   var sheet = ss.getSheetByName(SHEET_REGION_LISTS) || ss.insertSheet(SHEET_REGION_LISTS);
   sheet.clearContents();
   if (out.length) sheet.getRange(1, 1, out.length, width).setNumberFormat('@').setValues(out);
+}
+
+/** 검색목록 행 → { 교육지원청: 추천 목록 JSON } */
+function regionListsOf_(rows) {
+  var byOffice = {};
+  rows.forEach(function (r) {
+    if (!r[1]) return;
+    // [ID, 구분, 명칭, 시군, 동, 확인방법(N: 번호, P: 이름)]
+    (byOffice[r[1]] = byOffice[r[1]] || []).push([r[0], r[2], r[4], r[5], r[6], (r[3] ? 'N' : '') + (r[9] ? 'P' : '')]);
+  });
+  var lists = {};
+  Object.keys(byOffice).forEach(function (office) { lists[office] = JSON.stringify(byOffice[office]); });
+  return lists;
 }
 
 function readLocalSources_() {
@@ -409,14 +426,17 @@ var FOUNDER_UPLOAD_HTML =
 function doGet(e) {
   try {
     var office = String((e && e.parameter && e.parameter.region) || DEFAULT_OFFICE);
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_REGION_LISTS);
-    if (!sheet || sheet.getLastRow() < 1) throw new Error('검색목록이 비어 있습니다. 편집기에서 setup을 실행하세요.');
-    var hit = sheet.getRange(1, 1, sheet.getLastRow(), 1).createTextFinder(office).matchEntireCell(true).findNext();
-    var items = '[]';
-    if (hit) {
-      items = sheet.getRange(hit.getRow(), 2, 1, sheet.getLastColumn() - 1).getDisplayValues()[0].join('') || '[]';
+    var cache = CacheService.getScriptCache();
+    var items = getBig_(cache, 'L|' + office);
+    if (items === null) {
+      items = readRegionListFromSheet_(office);
+      putBig_(cache, 'L|' + office, items);
     }
-    var synced = PropertiesService.getScriptProperties().getProperty('LAST_SYNC') || '';
+    var synced = cache.get('SYNC');
+    if (synced === null) {
+      synced = PropertiesService.getScriptProperties().getProperty('LAST_SYNC') || '';
+      cache.put('SYNC', synced, CACHE_SECONDS);
+    }
     return textJson_('{"ok":true,"region":' + JSON.stringify(office) + ',"syncedAt":' + JSON.stringify(synced) + ',"items":' + items + '}');
   } catch (err) {
     return json_({ ok: false, error: '학원 목록을 읽지 못했습니다: ' + err.message });
@@ -427,7 +447,7 @@ function doPost(e) {
   try {
     var req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     var answer = String(req.answer != null ? req.answer : (req.regNo || ''));
-    if (req.action === 'lookup') return json_(lookup_(String(req.id || ''), answer));
+    if (req.action === 'lookup') return json_(lookup_(String(req.id || ''), answer, String(req.region || '')));
     if (req.action === 'verify') return json_(verifyByName_(String(req.name || ''), answer));
     return json_({ ok: false, error: '알 수 없는 요청입니다.' });
   } catch (err) {
@@ -438,8 +458,8 @@ function doPost(e) {
 // ─── 내부 함수 ───────────────────────────────────────────────
 
 /** 학원 하나 — 본인 확인이 맞으면(확인 자료가 없으면 바로) 나이스 실시간 교습비, 안 되면 명단 보관본 */
-function lookup_(id, answer) {
-  var item = findById_(id);
+function lookup_(id, answer, office) {
+  var item = cachedItem_(id, office) || findById_(id);
   if (!item) return { ok: false, error: '학원을 찾지 못했습니다. 목록을 새로 불러와 다시 선택하세요.' };
 
   var verified = !!(item.no || item.founder);
@@ -460,6 +480,8 @@ function lookup_(id, answer) {
   } catch (err) {
     Logger.log('나이스 조회 실패 (' + item.name + '): ' + err.message);
   }
+  // 캐시에는 과목 보관본이 있는지만 들어 있다 — 나이스가 안 될 때만 시트에서 다시 읽는다
+  if (!result && item.fromCache && item.courses) item = findById_(id) || item;
   if (!result && !item.courses) {
     return { ok: false, error: '나이스가 응답하지 않습니다. 잠시 후 다시 시도하거나, 아래 "나이스에서 엑셀을 받아 올리기"를 이용하세요.' };
   }
@@ -655,10 +677,95 @@ function findById_(id) {
   return hit ? rowToItem_(sheet.getRange(hit.getRow(), 1, 1, INDEX_HEADERS.length).getDisplayValues()[0]) : null;
 }
 
-function readIndex_() {
+/** 캐시에 있는 그 교육지원청 학원 정보 — 없으면 null (그러면 시트에서 찾는다) */
+function cachedItem_(id, office) {
+  if (!id || !office) return null;
+  var text = getBig_(CacheService.getScriptCache(), 'D|' + office);
+  if (!text) return null;
+  var row = JSON.parse(text)[id];
+  if (!row) return null;
+  var item = rowToItem_(row);
+  item.fromCache = true;
+  return item;
+}
+
+function readRegionListFromSheet_(office) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_REGION_LISTS);
+  if (!sheet || sheet.getLastRow() < 1) throw new Error('검색목록이 비어 있습니다. 편집기에서 setup을 실행하세요.');
+  var hit = sheet.getRange(1, 1, sheet.getLastRow(), 1).createTextFinder(office).matchEntireCell(true).findNext();
+  if (!hit) return '[]';
+  return sheet.getRange(hit.getRow(), 2, 1, sheet.getLastColumn() - 1).getDisplayValues()[0].join('') || '[]';
+}
+
+function readIndexRows_() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_INDEX);
   if (!sheet || sheet.getLastRow() < 2) throw new Error('검색목록이 비어 있습니다. 편집기에서 setup을 실행하세요.');
-  return sheet.getRange(2, 1, sheet.getLastRow() - 1, INDEX_HEADERS.length).getDisplayValues().map(rowToItem_);
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, INDEX_HEADERS.length).getDisplayValues();
+}
+
+function readIndex_() {
+  return readIndexRows_().map(rowToItem_);
+}
+
+// ─── 캐시 ───────────────────────────────────────────────────
+
+/** 4시간마다 자동 실행 — 캐시 기능을 처음 넣을 때 편집기에서 한 번 실행하면 트리거도 켜진다 */
+function warmCache() {
+  ensureWarmTrigger_();
+  var rows = readIndexRows_();
+  fillCache_(rows, regionListsOf_(rows), PropertiesService.getScriptProperties().getProperty('LAST_SYNC') || '');
+  Logger.log('캐시 채움: ' + rows.length + '곳');
+}
+
+function ensureWarmTrigger_() {
+  var has = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'warmCache'; });
+  if (!has) ScriptApp.newTrigger('warmCache').timeBased().everyHours(WARM_EVERY_HOURS).create();
+}
+
+/** 교육지원청마다 추천 목록(L|)과 조회용 학원 정보(D|, 과목 칸은 보관본이 있으면 '1'만)를 캐시에 넣는다 */
+function fillCache_(rows, lists, synced) {
+  var cache = CacheService.getScriptCache();
+  var detail = {};
+  rows.forEach(function (r) {
+    if (!r[1]) return;
+    var row = r.slice(0, INDEX_HEADERS.length);
+    row[11] = row[11] ? '1' : '';
+    (detail[r[1]] = detail[r[1]] || {})[r[0]] = row;
+  });
+  Object.keys(lists).forEach(function (office) {
+    try {
+      putBig_(cache, 'L|' + office, lists[office]);
+      if (detail[office]) putBig_(cache, 'D|' + office, JSON.stringify(detail[office]));
+    } catch (err) {
+      Logger.log('캐시 넣기 실패 (' + office + '): ' + err.message);
+    }
+  });
+  cache.put('SYNC', synced || '', CACHE_SECONDS);
+}
+
+// 긴 글은 여러 조각으로 나눠 넣고, 한 조각이라도 빠지면 없는 것으로 본다
+function putBig_(cache, key, text) {
+  var k = encodeURIComponent(key);
+  var map = {};
+  var n = 0;
+  for (var i = 0; i < text.length; i += CACHE_CHUNK_CHARS) map[k + '#' + (n++)] = text.slice(i, i + CACHE_CHUNK_CHARS);
+  map[k + '#n'] = String(n);
+  cache.putAll(map, CACHE_SECONDS);
+}
+
+function getBig_(cache, key) {
+  var k = encodeURIComponent(key);
+  var n = Number(cache.get(k + '#n'));
+  if (!n) return null;
+  var keys = [];
+  for (var i = 0; i < n; i++) keys.push(k + '#' + i);
+  var got = cache.getAll(keys);
+  var parts = [];
+  for (var j = 0; j < n; j++) {
+    if (got[keys[j]] == null) return null;
+    parts.push(got[keys[j]]);
+  }
+  return parts.join('');
 }
 
 function sheetByGid_(ss, gid) {
