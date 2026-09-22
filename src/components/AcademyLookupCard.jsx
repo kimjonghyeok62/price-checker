@@ -48,7 +48,7 @@ export default function AcademyLookupCard({ onResult }) {
     if (!region) return;
     loadAcademyList(region)
       .then(setList)
-      .catch(() => setListError('학원 목록을 불러오지 못했습니다.'));
+      .catch(e => setListError(`학원 목록을 불러오지 못했습니다. ${e.message || ''}`.trim()));
   }
   // 교육지원청을 바꾸면 그 지역 목록으로
   useEffect(() => {
@@ -94,7 +94,7 @@ export default function AcademyLookupCard({ onResult }) {
     setError('');
     onResult(null);
     try {
-      const res = await lookupAcademy(id, value);
+      const res = await lookupAcademy(id, value, region);
       rememberAcademy({ id, name, answer: value, regNo: res.academy.regNo || '', category: res.academy.category || '' });
       setMine(readMyAcademies());
       if (seq === runSeqRef.current) onResult(res);
