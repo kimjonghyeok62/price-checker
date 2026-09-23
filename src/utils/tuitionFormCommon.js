@@ -100,12 +100,24 @@ export function sheetChanges(sub) {
 }
 
 /** 불러올 때 값 기억 — sheetChanges 비교 기준 */
-export function sheetOrig(sub) {
+export function sheetOrig(sub, extras) {
     return {
         processLabel: sub.processLabel, subjectName: sub.subjectName, period: sub.period,
         dm: sub.dm, wc: sub.wc, wk: sub.wk, total: sheetTotalMinutes(sub),
         capacity: sub.capacity, fee: sub.fee,
+        extras, // 이 과정의 나이스 기타경비 { mockExamFee: 0, … } — 엑셀에서 기타경비 칸 비교용
     };
+}
+
+/** 기타경비 줄: 불러올 때 값(row.orig)과 칸별 비교 — orig가 없으면 새로 더한 줄 */
+export function extraFeeChanges(row) {
+    const o = row?.orig;
+    if (!o) return { isNew: true, any: false };
+    const n = (v) => parseInt(String(v ?? '').replace(/[^0-9]/g, ''), 10) || 0;
+    const ch = { isNew: false, subjectName: String(row.subjectName ?? '').trim() !== String(o.subjectName ?? '').trim() };
+    for (const it of OTHER_FEE_ITEMS) ch[it.key] = n(row[it.key]) !== n(o[it.key]);
+    ch.any = ch.subjectName || OTHER_FEE_ITEMS.some(it => ch[it.key]);
+    return ch;
 }
 
 export function getWeeklyTotalMinutes(weeklyStr) {

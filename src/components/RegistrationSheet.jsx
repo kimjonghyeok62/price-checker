@@ -3,7 +3,7 @@ import './RegistrationSheet.css';
 import { DropdownSelect } from './tuitionInputs';
 import { guessRateId, rowLabel } from '../utils/regionRates';
 import { useRegion } from '../RegionContext';
-import { OTHER_FEE_ITEMS, sheetTotalMinutes, sheetChanges } from '../utils/tuitionFormCommon';
+import { OTHER_FEE_ITEMS, sheetTotalMinutes, sheetChanges, extraFeeChanges } from '../utils/tuitionFormCommon';
 import AcademyNameField from './AcademyNameField';
 
 // 학원(교습소) 교습비등 등록신청서 — 제출 서식과 같은 모양으로 바로 적어 넣는 입력 화면
@@ -432,10 +432,20 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
             <tbody>
               {extraFees.map((row, idx) => {
                 const total = extraFeeTotal(row);
+                // 변경신청: 불러온 기타경비와 달라진 칸 / 새로 적은 줄
+                const ch = tracking ? extraFeeChanges(row) : { any: false, isNew: false };
+                const o = row.orig;
+                const isAdded = tracking && ch.isNew && !!(String(row.subjectName || '').trim() || total > 0);
+                const origTotal = o ? extraFeeTotal(o) : 0;
                 return (
                   <tr key={row.id}>
-                    <td className="col-no">{idx + 1}</td>
+                    <td className="col-no">
+                      {idx + 1}
+                      {ch.any && <span className="reg-no-tag is-changed">변경</span>}
+                      {isAdded && <span className="reg-no-tag is-added">추가</span>}
+                    </td>
                     <td className="col-extra-subject" data-label={`${idx + 1}. 교습과목(반)`}>
+                      <Changed on={ch.subjectName} was={o?.subjectName || '(없음)'}>
                       <input
                         className="reg-input"
                         list={`${uid}-extra-subjects`}
@@ -444,9 +454,11 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                         onChange={e => updateExtra(row.id, { subjectName: e.target.value })}
                         placeholder="예) 전과목"
                       />
+                      </Changed>
                     </td>
                     {OTHER_FEE_ITEMS.map(it => (
                       <td key={it.key} className="col-extra-fee" data-label={it.label}>
+                        <Changed on={ch[it.key]} was={won(o?.[it.key])}>
                         <span className="reg-unit-field">
                           <input
                             className="reg-input reg-input-money"
@@ -457,10 +469,13 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                             placeholder="0"
                           />
                         </span>
+                        </Changed>
                       </td>
                     ))}
                     <td className="col-extra-total" data-label="계">
+                      <Changed on={!!o && total !== origTotal} was={won(origTotal)}>
                       <span className="reg-extra-sum">{total > 0 ? `${total.toLocaleString()}원` : '자동 합계'}</span>
+                      </Changed>
                     </td>
                     <td className="col-del">
                       <button type="button" className="reg-del" onClick={() => removeExtra(row.id)} title="이 줄 지우기">✕<span className="reg-del-text"> 이 줄 지우기</span></button>

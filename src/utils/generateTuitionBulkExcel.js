@@ -248,6 +248,10 @@ export function buildBulkRows({ isTeaching, academyName, kind, subjects, extraFe
       for (const [what, keys] of Object.entries(CHANGE_KEYS)) {
         if (ch.isNew || ch[what]) keys.forEach(k => mark.add(bulkCol(k, isTeaching)));
       }
+      // 기타경비: 이 과정에 들어간 값이 나이스 원래 값과 다르면 (새 줄은 전부)
+      for (const k of EXTRA_KEYS) {
+        if (ch.isNew || (sub.orig.extras && extras[k] !== num(sub.orig.extras[k]))) mark.add(bulkCol(k, isTeaching));
+      }
     }
     marks.push(mark);
   }
