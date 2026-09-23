@@ -3,7 +3,7 @@ import './RegistrationSheet.css';
 import { DropdownSelect } from './tuitionInputs';
 import { guessRateId, rowLabel } from '../utils/regionRates';
 import { useRegion } from '../RegionContext';
-import { OTHER_FEE_ITEMS } from '../utils/tuitionFormCommon';
+import { OTHER_FEE_ITEMS, sheetTotalMinutes } from '../utils/tuitionFormCommon';
 import AcademyNameField from './AcademyNameField';
 
 // 학원(교습소) 교습비등 등록신청서 — 제출 서식과 같은 모양으로 바로 적어 넣는 입력 화면
@@ -55,7 +55,7 @@ const FOLLOW_FIRST_ROW_KEYS = ['rateId', 'processLabel', 'capacity'];
 
 // standardRate: 학원·교습소는 분당단가, 개인과외는 시간당 기준 — 0이면 지역 기준이 없어 판정하지 않음
 function judge(sub, isTutoring, standardRate) {
-  const total = Math.round((parseFloat(sub.dm) || 0) * (parseFloat(sub.wc) || 0) * (parseFloat(sub.wk) || 0));
+  const total = sheetTotalMinutes(sub);
   const fee = parseFloat(sub.fee) || 0;
   const hasValue = total > 0 && fee > 0;
   if (isTutoring) {
@@ -130,7 +130,15 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
       return { ...s, ...follow };
     }));
   }
-  const removeSub = (id) => onSubjectsChange(subjects.length === 1 ? padSheetSubjects([]).slice(0, 1) : subjects.filter(s => s.id !== id));
+  // 과목을 지우면 같은 과목명의 기타경비 줄도 지움 (같은 이름의 과목이 아직 남아 있으면 그대로 둠)
+  function removeSub(id) {
+    const left = subjects.filter(s => s.id !== id);
+    onSubjectsChange(left.length ? left : padSheetSubjects([]).slice(0, 1));
+    const name = String(subjects.find(s => s.id === id)?.subjectName || '').trim();
+    if (!showExtra || !name || left.some(s => String(s.subjectName || '').trim() === name)) return;
+    const extraLeft = extraFees.filter(r => String(r.subjectName || '').trim() !== name);
+    if (extraLeft.length !== extraFees.length) onExtraFeesChange(padExtraFees(extraLeft));
+  }
   const addFiveRows = () => {
     const first = subjects[0];
     const last = subjects[subjects.length - 1];
@@ -240,6 +248,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
         <table className="reg-subjects">
           <thead>
             <tr>
+              <th className="col-no">연번</th>
               {!isTutoring && <th className="col-process">교습<br />과정</th>}
               <th className="col-subject">교습과목<br />(반)</th>
               <th className="col-period">교습<br />기간</th>
@@ -256,6 +265,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
               const rowClass = j.canJudge ? (j.isCompliant ? 'is-ok' : 'is-over') : '';
               return (
                 <tr key={sub.id} className={rowClass}>
+                  <td className="col-no">{idx + 1}</td>
                   {!isTutoring && (
                   <td className="col-process" data-label={`${idx + 1}. 교습과정`}>
                     <select
@@ -294,7 +304,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                       <span className="reg-op">×</span>
                       <span className="reg-time-part"><DropdownSelect options={['4', '4.1', '4.2', '4.3']} value={sub.wk} onChange={v => updateSub(sub.id, { wk: v })} unit="주" placeholder="4.3" inputWidth="46px" /></span>
                       <span className="reg-op">=</span>
-                      <span className="reg-time-total"><strong>{j.total > 0 ? j.total.toLocaleString() : '—'}</strong>분</span>
+                      <span className="reg-time-total" title={j.total > 0 && !(parseFloat(sub.dm) && parseFloat(sub.wc)) ? '나이스 총교습시간 (일·주 횟수로 나눠지지 않는 값)' : undefined}><strong>{j.total > 0 ? j.total.toLocaleString() : '—'}</strong>분</span>
                     </span>
                   </td>
                   {!isTutoring && (
@@ -370,6 +380,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
           <table className="reg-subjects reg-extra">
             <thead>
               <tr>
+                <th className="col-no">연번</th>
                 <th className="col-extra-subject">교습과목(반)</th>
                 {OTHER_FEE_ITEMS.map(it => <th key={it.key} className="col-extra-fee">{it.label}</th>)}
                 <th className="col-extra-total">계</th>
@@ -381,6 +392,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                 const total = extraFeeTotal(row);
                 return (
                   <tr key={row.id}>
+                    <td className="col-no">{idx + 1}</td>
                     <td className="col-extra-subject" data-label={`${idx + 1}. 교습과목(반)`}>
                       <input
                         className="reg-input"

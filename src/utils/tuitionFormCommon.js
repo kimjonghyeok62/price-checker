@@ -66,6 +66,16 @@ export const OTHER_FEE_ITEMS = [
     { label: '차량비', key: 'vehicleFee' },
 ];
 
+/**
+ * 신청서 과목 줄의 총교습시간(분) = 일 분 × 주 회 × 주
+ * 나이스에서 불러온 값이 일·주 횟수로 나눠지지 않아 칸이 비어 있으면 나이스 총교습시간(neisTotal)을 그대로 씀
+ */
+export function sheetTotalMinutes(sub) {
+    const num = (v) => parseFloat(String(v ?? '').replace(/[^0-9.]/g, '')) || 0;
+    const t = Math.round(num(sub?.dm) * num(sub?.wc) * num(sub?.wk));
+    return t > 0 ? t : Math.round(num(sub?.neisTotal));
+}
+
 export function getWeeklyTotalMinutes(weeklyStr) {
     if (!weeklyStr) return null;
     const sessionsMatch = weeklyStr.match(/주(\d+)회/);

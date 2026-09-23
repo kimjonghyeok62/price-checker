@@ -155,10 +155,13 @@
 .reg-th-sub { font-size: 0.85rem; font-weight: 400; color: #444; margin-top: 3px; white-space: nowrap; }
 .reg-subjects td { padding: 5px 4px; }
 
-.reg-subjects .col-process { width: 11.5%; }
+.reg-subjects .col-no { width: 30px; }
+.reg-subjects th.col-no { font-size: 0.75rem; font-weight: 600; color: #475569; padding: 4px 0; }
+.reg-subjects td.col-no { text-align: center; font-size: 0.8rem; font-weight: 600; color: #64748b; padding: 0; }
+.reg-subjects .col-process { width: 11%; }
 .reg-subjects .col-subject { width: 11%; }
-.reg-subjects .col-period { width: 7%; }
-.reg-subjects .col-time { width: 40%; }
+.reg-subjects .col-period { width: 6.5%; }
+.reg-subjects .col-time { width: 39.5%; }
 .reg-subjects .col-capacity { width: 6.5%; }
 .reg-subjects .col-fee { width: 11%; }
 .reg-subjects .col-rate { width: 9.5%; }
@@ -473,7 +476,9 @@
     border-top: 1px solid #cbd5e1;
     padding: 0 6px 0 0;
   }
-  .reg-subjects td:first-child { border-top: none; }
+  .reg-subjects td.col-no { display: none; } /* 세로 쌓기는 칸 이름에 번호가 붙음 */
+  .reg-subjects td:first-child,
+  .reg-subjects td.col-no + td { border-top: none; }
   .reg-subjects td::before {
     content: attr(data-label);
     align-self: stretch;

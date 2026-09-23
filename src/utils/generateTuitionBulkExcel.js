@@ -11,6 +11,7 @@
  * 신규 등록이거나 다른 엑셀로 불러온 경우에는 비워 둔다.
  */
 import * as XLSX from 'xlsx';
+import { sheetTotalMinutes } from './tuitionFormCommon';
 
 // 학원 기준 열 번호 (0부터). 교습소는 TEACHING_EXTRA_COL 이상이 +1
 const COL = {
@@ -114,10 +115,7 @@ const num = (v) => {
 };
 
 /** 과목 줄의 총교습시간(분) — 화면 판정과 같은 계산, 역산에 실패한 나이스 줄은 원래 값 */
-function totalTimeOf(sub) {
-  const t = Math.round(num(sub.dm) * num(sub.wc) * num(sub.wk));
-  return t > 0 ? t : num(sub.neisTotal);
-}
+const totalTimeOf = sheetTotalMinutes;
 
 /** 이 과목에 붙는 기타경비 줄 — 과목명이 같은 줄, 없으면 '전과목·전체·공통' 줄 */
 function extraFeeOf(sub, extraFees) {

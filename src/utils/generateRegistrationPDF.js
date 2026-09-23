@@ -13,7 +13,7 @@
  * @param {Array}  data.subjects      과목 배열
  */
 
-import { OTHER_FEE_ITEMS } from './tuitionFormCommon';
+import { OTHER_FEE_ITEMS, sheetTotalMinutes } from './tuitionFormCommon';
 
 // 교육지원청명·교습과정은 주무관이 시트에 적은 글자라 HTML로 해석되지 않게 바꿔 넣는다
 function escHtml(s) {
@@ -303,9 +303,7 @@ export function printRegistrationForm(data) {
         const dm = val(sub.dm);
         const wc = val(sub.wc);
         const wk = val(sub.wk, '4.3');
-        const totalMinutes = (dm && wc && wk)
-            ? Math.round(parseFloat(dm) * parseFloat(wc) * parseFloat(wk))
-            : 0;
+        const totalMinutes = sheetTotalMinutes(sub);
         const feeNum = parseInt(String(sub.fee || '').replace(/,/g, ''), 10) || 0;
         const feeStr = feeNum > 0 ? feeNum.toLocaleString('ko-KR') : '';
         // 입력 화면과 같은 1원 단위 올림
@@ -530,9 +528,7 @@ export function printTutoringForm(data) {
         const dm = val(sub.dm);
         const wc = val(sub.wc);
         const wk = val(sub.wk, '4.3');
-        const totalMinutes = (dm && wc && wk)
-            ? Math.round(parseFloat(dm) * parseFloat(wc) * parseFloat(wk))
-            : 0;
+        const totalMinutes = sheetTotalMinutes(sub);
         const feeNum = parseInt(String(sub.fee || '').replace(/,/g, ''), 10) || 0;
         const feeStr = feeNum > 0 ? feeNum.toLocaleString('ko-KR') : '';
         // 입력 화면과 같은 1원 단위 올림

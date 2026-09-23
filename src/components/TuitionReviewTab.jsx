@@ -127,8 +127,9 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
       const label = c.subject || c.process;
       const rate = rateFields(rateRows, guessRateId(`${c.process} ${c.subject || ''}`, rateRows));
       const { dm, wc, wk } = reverseCalcTime(c.totalTime);
+      // neisTotal: 일·주 횟수로 나눠지지 않아도 총교습시간은 나이스 값 그대로 보여 줌
       // neisRow: 나이스 일괄등록 엑셀에서 온 줄 — 교습비일괄등록 엑셀을 받을 때 등록번호·분류를 그대로 둠
-      const neis = c.neisRow ? { neisRow: c.neisRow, neisRateId: rate.rateId, neisTotal: c.totalTime } : {};
+      const neis = { neisTotal: c.totalTime, ...(c.neisRow ? { neisRow: c.neisRow, neisRateId: rate.rateId } : {}) };
       return newSheetSubject({ id: i + 1, subjectName: label || '', ...rate, dm, wc, wk, period: periodText(c.period), capacity: c.capacity || '', fee: parseFeeStr(c.tuitionFee), ...neis });
     });
     setChangeSubjects(padSheetSubjects(subs));
