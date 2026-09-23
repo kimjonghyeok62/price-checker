@@ -4,6 +4,7 @@ import { DropdownSelect } from './tuitionInputs';
 import { guessRateId, rowLabel } from '../utils/regionRates';
 import { useRegion } from '../RegionContext';
 import { OTHER_FEE_ITEMS } from '../utils/tuitionFormCommon';
+import AcademyNameField from './AcademyNameField';
 
 // 학원(교습소) 교습비등 등록신청서 — 제출 서식과 같은 모양으로 바로 적어 넣는 입력 화면
 // PC: 서식처럼 한 과목 한 줄 표 / 휴대폰: 과목마다 같은 칸을 세로로 쌓음 (RegistrationSheet.css)
@@ -81,10 +82,17 @@ function judge(sub, isTutoring, standardRate) {
   };
 }
 
-export default function RegistrationSheet({ mode = 'academy', info, onInfoChange, regType, regTypeOptions = [], onRegTypeChange, subjects, onSubjectsChange, discount = '', onDiscountChange, extraFees = [], onExtraFeesChange, onPrint }) {
+export default function RegistrationSheet({ mode = 'academy', info, onInfoChange, regType, regTypeOptions = [], onRegTypeChange, subjects, onSubjectsChange, discount = '', onDiscountChange, extraFees = [], onExtraFeesChange, onPrint, lookup }) {
   const isTutoring = mode === 'tutoring';
   const setInfo = (key, value) => onInfoChange({ ...info, [key]: value });
   const { region, officeName, rows: rateRows, tutoringHourlyRate, ratesReady } = useRegion();
+
+  // 변경신청: 학원명을 고른 뒤 운영자 성명·등록번호 칸에서 Enter → 나이스에서 불러오기
+  const askFields = lookup?.askFields || [];
+  const askProps = (key) => (lookup ? {
+    className: `reg-input${askFields.includes(key) ? ' is-ask' : ''}`,
+    onKeyDown: e => { if (e.key === 'Enter' && lookup.canLoad) { e.preventDefault(); lookup.onLoad(); } },
+  } : { className: 'reg-input' });
 
   // 지역을 바꾸거나 주무관이 줄을 고치면: 없어진 교습과정은 같은 이름 → 이름 추정 순으로 다시 맞추고, 못 찾으면 비움
   // (기준이 아직 없는 지역으로 바꿨을 때는 지우지 않음 → 다시 돌아오면 그대로)
@@ -180,13 +188,19 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
           <tbody>
             <tr>
               <th>학원(교습소)명</th>
-              <td><input className="reg-input" value={info.academyName} onChange={e => setInfo('academyName', e.target.value)} placeholder="예) 하남미술학원" /></td>
+              <td>
+                {lookup ? (
+                  <AcademyNameField value={info.academyName} onChange={v => setInfo('academyName', v)} list={lookup.list} onPick={lookup.onPick} placeholder="예) 하남미술학원" />
+                ) : (
+                  <input className="reg-input" value={info.academyName} onChange={e => setInfo('academyName', e.target.value)} placeholder="예) 하남미술학원" />
+                )}
+              </td>
               <th>운영자</th>
-              <td><input className="reg-input" value={info.operator} onChange={e => setInfo('operator', e.target.value)} placeholder="예) 홍길동" /></td>
+              <td><input {...askProps('operator')} value={info.operator} onChange={e => setInfo('operator', e.target.value)} placeholder="예) 홍길동" /></td>
             </tr>
             <tr>
               <th>등록(신고)번호</th>
-              <td><input className="reg-input" value={info.regNumber} onChange={e => setInfo('regNumber', e.target.value)} placeholder="예) 제 하남675호" /></td>
+              <td><input {...askProps('regNumber')} value={info.regNumber} onChange={e => setInfo('regNumber', e.target.value)} placeholder="예) 제 하남675호" /></td>
               <th>전화번호</th>
               <td><input className="reg-input" inputMode="tel" value={info.phone} onChange={e => setInfo('phone', e.target.value)} placeholder="예) 031-000-0000" /></td>
             </tr>
@@ -196,6 +210,15 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
             </tr>
           </tbody>
         </table>
+        )}
+
+        {lookup?.notice && (
+          <div className={`reg-lookup is-${lookup.notice.tone}`} role="status">
+            <div className="reg-lookup-text">{lookup.notice.content}</div>
+            {lookup.canLoad && (
+              <button type="button" className="reg-lookup-btn" onClick={lookup.onLoad}>나이스에서 교습비 불러오기</button>
+            )}
+          </div>
         )}
 
         <div className="reg-section-title">{isTutoring ? '교 습 비  (변경)  신 고 내 용' : '교 습 비 등  (변경)  등 록 내 용'}</div>

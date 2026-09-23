@@ -311,6 +311,147 @@
 }
 .reg-print:hover { background: #1e40af; }
 
+/* ── 변경신청: 학원명 찾기 ── */
+.reg-name-field { position: relative; width: 100%; }
+.reg-suggest {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: max(100%, 320px);
+  z-index: 50;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  font-family: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+}
+.reg-suggest li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+.reg-suggest li:last-child { border-bottom: none; }
+.reg-suggest li.is-active { background: #eff6ff; }
+.reg-suggest-name { font-size: 1.05rem; font-weight: 700; color: #0f172a; }
+.reg-suggest-sub { font-size: 0.88rem; color: #64748b; }
+.reg-suggest .reg-suggest-empty { cursor: default; font-size: 0.92rem; color: #64748b; }
+
+.reg-input.is-ask { border: 2px solid #2563eb; background: #fff; }
+
+.reg-lookup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--reg-line);
+  border-top: none;
+  font-size: 1rem;
+  line-height: 1.5;
+  word-break: keep-all;
+  background: #f8fafc;
+  color: #1e293b;
+}
+.reg-lookup-text { flex: 1 1 320px; }
+.reg-lookup.is-busy { background: #eff6ff; color: #1e3a8a; }
+.reg-lookup.is-ok { background: #f0fdf4; color: #166534; }
+.reg-lookup.is-warn { background: #fffbeb; color: #92400e; }
+.reg-lookup.is-error { background: #fef2f2; color: #b91c1c; }
+.reg-lookup-btn {
+  flex: 0 0 auto;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #1d4ed8;
+  color: #fff;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: none;
+}
+.reg-lookup-btn:hover { background: #1e40af; transform: none; }
+.reg-lookup-link {
+  border: none;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: #1d4ed8;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.reg-lookup-link:hover { background: none; transform: none; }
+
+/* 서식 위: 최근 불러온 학원 · 새로 작성 */
+.reg-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.reg-toolbar-label { font-size: 0.95rem; font-weight: 700; color: #475569; }
+.reg-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.reg-chip button {
+  border: none;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.reg-chip button:hover { background: #f1f5f9; transform: none; }
+.reg-chip-open { padding: 6px 4px 6px 12px; font-size: 0.95rem; font-weight: 700; color: #1d4ed8; }
+.reg-chip-del { padding: 6px 10px 6px 4px; font-size: 1rem; color: #94a3b8; line-height: 1; }
+.reg-reset {
+  margin-left: auto;
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+}
+.reg-reset:hover { background: #f1f5f9; transform: none; }
+
+/* 서식 아래: 나이스 엑셀 파일로 불러오기 (비상구) */
+.reg-fallback {
+  margin-top: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+.reg-fallback > summary {
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+.reg-fallback[open] > summary { border-bottom: 1px solid #e2e8f0; }
+.reg-fallback-body { padding: 16px; }
+
 /* ── 좁은 화면: 표 머리글을 숨기고 과목마다 칸을 세로로 쌓음 ── */
 @media (max-width: 959px) {
   .reg-sheet { padding: 18px 12px 16px; }
@@ -377,4 +518,7 @@
   .reg-discount-label { font-size: 0.95rem; }
   .reg-subjects td.col-extra-fee .reg-unit-field { max-width: 220px; }
   .reg-extra-sum { text-align: left; }
+  .reg-suggest { width: 100%; }
+  .reg-toolbar { padding: 0 12px; }
+  .reg-lookup-btn { width: 100%; }
 }
