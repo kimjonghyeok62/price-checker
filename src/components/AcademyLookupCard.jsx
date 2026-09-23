@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRegion } from '../RegionContext';
 import {
-  loadAcademyList, searchAcademyList, lookupAcademy, readMyAcademies, rememberAcademy, forgetAcademy,
+  searchAcademyList, lookupAcademy, readMyAcademies, rememberAcademy, forgetAcademy,
 } from '../utils/academyLookup';
+import { useAcademyList } from '../utils/useAcademyList';
 
 // 게시표 출력 탭 맨 위 "학원명으로 바로 찾기" — 학원 고르기 → 본인 확인(번호·이름, 자료가 없으면 생략) → 나이스 실시간 교습비
 
@@ -29,8 +30,7 @@ function answerPrompt(item) {
 
 export default function AcademyLookupCard({ onResult }) {
   const { region } = useRegion();
-  const [list, setList] = useState(null);
-  const [listError, setListError] = useState('');
+  const { list, error: listError, reload: fetchList } = useAcademyList(region);
   const [query, setQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [picked, setPicked] = useState(null);
@@ -42,17 +42,8 @@ export default function AcademyLookupCard({ onResult }) {
   const queryRef = useRef(null);
   const runSeqRef = useRef(0); // 지역을 바꾸거나 다시 조회하면 늦게 도착한 이전 결과는 버린다
 
-  function fetchList() {
-    setList(null);
-    setListError('');
-    if (!region) return;
-    loadAcademyList(region)
-      .then(setList)
-      .catch(e => setListError(`학원 목록을 불러오지 못했습니다. ${e.message || ''}`.trim()));
-  }
-  // 교육지원청을 바꾸면 그 지역 목록으로
+  // 교육지원청을 바꾸면 그 지역 목록으로 (목록은 useAcademyList가 다시 불러옴)
   useEffect(() => {
-    fetchList();
     setPicked(null);
     setQuery('');
     setAnswer('');
