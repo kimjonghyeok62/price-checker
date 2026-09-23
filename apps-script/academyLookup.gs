@@ -502,11 +502,18 @@ function lookup_(id, answer, office) {
 function verifyByName_(name, answer) {
   var key = nameKey_(name);
   if (!key) return { ok: false, error: '학원명이 없습니다.' };
-  var items = readIndex_().filter(function (x) { return x.no && nameKey_(x.name) === key; });
+  var items = numberedByName_(key);
   if (!items.length) return { ok: false, error: '등록(신고)번호가 있는 명단에서 이 학원을 찾지 못했습니다.' };
   var check = checkAnswer_('name_' + key, items, answer);
   if (!check.ok) return check;
   return { ok: true, regNo: check.item.no, category: check.item.type, kind: check.item.kind };
+}
+
+/** 등록(신고)번호가 있는 같은 이름의 학원들 — 캐시(N|)에서, 없으면 검색목록 시트 전체에서 */
+function numberedByName_(key) {
+  var text = getBig_(CacheService.getScriptCache(), 'N|');
+  if (text !== null) return (JSON.parse(text)[key] || []).map(rowToItem_);
+  return readIndex_().filter(function (x) { return x.no && nameKey_(x.name) === key; });
 }
 
 function checkAnswer_(failId, items, answer) {
@@ -722,15 +729,16 @@ function ensureWarmTrigger_() {
   if (!has) ScriptApp.newTrigger('warmCache').timeBased().everyHours(WARM_EVERY_HOURS).create();
 }
 
-/** 교육지원청마다 추천 목록(L|)과 조회용 학원 정보(D|, 과목 칸은 보관본이 있으면 '1'만)를 캐시에 넣는다 */
+/** 교육지원청마다 추천 목록(L|)과 조회용 학원 정보(D|, 과목 칸은 보관본이 있으면 '1'만), 번호 확인용 명단(N|)을 캐시에 넣는다 */
 function fillCache_(rows, lists, synced) {
   var cache = CacheService.getScriptCache();
   var detail = {};
+  var numbered = {}; // 엑셀 올리기 번호 확인용 — 번호가 있는 곳(명단 시트)만, 이름별로
   rows.forEach(function (r) {
-    if (!r[1]) return;
     var row = r.slice(0, INDEX_HEADERS.length);
     row[11] = row[11] ? '1' : '';
-    (detail[r[1]] = detail[r[1]] || {})[r[0]] = row;
+    if (r[3]) (numbered[nameKey_(r[4])] = numbered[nameKey_(r[4])] || []).push(row);
+    if (r[1]) (detail[r[1]] = detail[r[1]] || {})[r[0]] = row;
   });
   Object.keys(lists).forEach(function (office) {
     try {
@@ -740,6 +748,11 @@ function fillCache_(rows, lists, synced) {
       Logger.log('캐시 넣기 실패 (' + office + '): ' + err.message);
     }
   });
+  try {
+    putBig_(cache, 'N|', JSON.stringify(numbered));
+  } catch (err) {
+    Logger.log('캐시 넣기 실패 (번호 명단): ' + err.message);
+  }
   cache.put('SYNC', synced || '', CACHE_SECONDS);
 }
 
