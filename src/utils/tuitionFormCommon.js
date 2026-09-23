@@ -76,6 +76,38 @@ export function sheetTotalMinutes(sub) {
     return t > 0 ? t : Math.round(num(sub?.neisTotal));
 }
 
+/**
+ * 변경신청: 나이스에서 불러온 줄(sub.orig = 불러올 때 값)과 지금 값을 칸별로 비교
+ * - orig가 없는 줄은 새로 더한 줄(isNew)
+ * - 총교습시간은 분·회·주가 아니라 합계(분)가 달라졌을 때만 변경
+ */
+export function sheetChanges(sub) {
+    const o = sub?.orig;
+    if (!o) return { isNew: true, any: false };
+    const str = (v) => String(v ?? '').trim();
+    const n = (v) => parseInt(String(v ?? '').replace(/[^0-9]/g, ''), 10) || 0;
+    const ch = {
+        isNew: false,
+        process: str(sub.processLabel) !== str(o.processLabel),
+        subject: str(sub.subjectName) !== str(o.subjectName),
+        period: str(sub.period) !== str(o.period),
+        time: sheetTotalMinutes(sub) !== o.total,
+        capacity: n(sub.capacity) !== n(o.capacity),
+        fee: n(sub.fee) !== n(o.fee),
+    };
+    ch.any = ch.process || ch.subject || ch.period || ch.time || ch.capacity || ch.fee;
+    return ch;
+}
+
+/** 불러올 때 값 기억 — sheetChanges 비교 기준 */
+export function sheetOrig(sub) {
+    return {
+        processLabel: sub.processLabel, subjectName: sub.subjectName, period: sub.period,
+        dm: sub.dm, wc: sub.wc, wk: sub.wk, total: sheetTotalMinutes(sub),
+        capacity: sub.capacity, fee: sub.fee,
+    };
+}
+
 export function getWeeklyTotalMinutes(weeklyStr) {
     if (!weeklyStr) return null;
     const sessionsMatch = weeklyStr.match(/주(\d+)회/);

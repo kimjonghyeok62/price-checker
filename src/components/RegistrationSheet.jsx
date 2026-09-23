@@ -3,7 +3,7 @@ import './RegistrationSheet.css';
 import { DropdownSelect } from './tuitionInputs';
 import { guessRateId, rowLabel } from '../utils/regionRates';
 import { useRegion } from '../RegionContext';
-import { OTHER_FEE_ITEMS, sheetTotalMinutes } from '../utils/tuitionFormCommon';
+import { OTHER_FEE_ITEMS, sheetTotalMinutes, sheetChanges } from '../utils/tuitionFormCommon';
 import AcademyNameField from './AcademyNameField';
 
 // 학원(교습소) 교습비등 등록신청서 — 제출 서식과 같은 모양으로 바로 적어 넣는 입력 화면
@@ -82,6 +82,24 @@ function judge(sub, isTutoring, standardRate) {
   };
 }
 
+const won = (v) => `${(parseInt(v, 10) || 0).toLocaleString()}원`;
+
+/** 고친 칸: 위에 고치기 전 값을 작게(취소선) 얹음 — 안 고친 칸은 그대로 */
+function Changed({ on, was, children }) {
+  if (!on) return children;
+  return (
+    <div className="reg-cell is-changed">
+      <div className="reg-was" title={`고치기 전: ${was}`}><span className="reg-was-tag">전</span><s>{was}</s></div>
+      {children}
+    </div>
+  );
+}
+
+function wasTime(o) {
+  const total = `${o.total > 0 ? o.total.toLocaleString() : '—'}분`;
+  return o.dm && o.wc ? `${o.dm}분×${o.wc}회×${o.wk}주=${total}` : total;
+}
+
 export default function RegistrationSheet({ mode = 'academy', info, onInfoChange, regType, regTypeOptions = [], onRegTypeChange, subjects, onSubjectsChange, discount = '', onDiscountChange, extraFees = [], onExtraFeesChange, onPrint, onBulkExcel, lookup }) {
   const isTutoring = mode === 'tutoring';
   const uid = useId(); // 화면에 서식이 둘 있어도 id·radio 이름이 겹치지 않게
@@ -114,6 +132,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
   }, [rateRows, subjects, isTutoring, onSubjectsChange]);
 
   const standardRateOf = (sub) => (isTutoring ? tutoringHourlyRate : rateRows.find(r => r.id === sub.rateId)?.rate || 0);
+  const tracking = subjects.some(s => s.orig); // 변경신청에서 나이스 교습비를 불러온 서식
   const regionReady = isTutoring ? tutoringHourlyRate > 0 : ratesReady;
 
   function updateSub(id, patch) {
@@ -263,11 +282,21 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
             {subjects.map((sub, idx) => {
               const j = judge(sub, isTutoring, standardRateOf(sub));
               const rowClass = j.canJudge ? (j.isCompliant ? 'is-ok' : 'is-over') : '';
+              // 변경신청(나이스에서 불러온 줄이 있을 때)만 고친 칸·추가한 줄을 표시
+              const ch = tracking ? sheetChanges(sub) : { any: false, isNew: false };
+              const o = sub.orig;
+              const isAdded = tracking && ch.isNew && !!(String(sub.subjectName || '').trim() || parseInt(sub.fee, 10) > 0);
+              const prevRate = o && o.total > 0 && parseInt(o.fee, 10) > 0 ? Math.ceil(isTutoring ? (o.fee / o.total) * 60 : o.fee / o.total) : 0;
               return (
                 <tr key={sub.id} className={rowClass}>
-                  <td className="col-no">{idx + 1}</td>
+                  <td className="col-no">
+                    {idx + 1}
+                    {ch.any && <span className="reg-no-tag is-changed">변경</span>}
+                    {isAdded && <span className="reg-no-tag is-added">추가</span>}
+                  </td>
                   {!isTutoring && (
                   <td className="col-process" data-label={`${idx + 1}. 교습과정`}>
+                    <Changed on={ch.process} was={o?.processLabel || '(없음)'}>
                     <select
                       className="reg-input reg-select"
                       value={sub.rateId}
@@ -278,9 +307,11 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                         <option key={r.id} value={r.id}>{rowLabel(r)}</option>
                       ))}
                     </select>
+                    </Changed>
                   </td>
                   )}
                   <td className="col-subject" data-label={isTutoring ? `${idx + 1}. 교습과목` : '교습과목(반)'}>
+                    <Changed on={ch.subject} was={o?.subjectName || '(없음)'}>
                     <input
                       className="reg-input"
                       title={sub.subjectName}
@@ -292,11 +323,15 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                       }}
                       placeholder="예) 초등수학A"
                     />
+                    </Changed>
                   </td>
                   <td className="col-period" data-label="교습기간">
+                    <Changed on={ch.period} was={o?.period || '(없음)'}>
                     <input className="reg-input reg-input-center" value={sub.period} onChange={e => updateSub(sub.id, { period: e.target.value })} placeholder={DEFAULT_PERIOD} />
+                    </Changed>
                   </td>
                   <td className="col-time" data-label="총 교습시간(A)">
+                    <Changed on={ch.time} was={o ? wasTime(o) : ''}>
                     <span className="reg-time">
                       <span className="reg-time-part">일 <DropdownSelect options={Array.from({ length: 34 }, (_, i) => String(30 + i * 10))} value={sub.dm} onChange={v => updateSub(sub.id, { dm: v })} unit="분" placeholder="0" inputWidth="52px" /></span>
                       <span className="reg-op">×</span>
@@ -306,16 +341,20 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                       <span className="reg-op">=</span>
                       <span className="reg-time-total" title={j.total > 0 && !(parseFloat(sub.dm) && parseFloat(sub.wc)) ? '나이스 총교습시간 (일·주 횟수로 나눠지지 않는 값)' : undefined}><strong>{j.total > 0 ? j.total.toLocaleString() : '—'}</strong>분</span>
                     </span>
+                    </Changed>
                   </td>
                   {!isTutoring && (
                   <td className="col-capacity" data-label="정원(반별)">
+                    <Changed on={ch.capacity} was={`${parseInt(o?.capacity, 10) || 0}명`}>
                     <span className="reg-unit-field">
                       <input className="reg-input reg-input-num" inputMode="numeric" value={sub.capacity} onChange={e => updateSub(sub.id, { capacity: e.target.value.replace(/[^0-9]/g, '') })} placeholder="0" />
                       <span className="reg-unit">명</span>
                     </span>
+                    </Changed>
                   </td>
                   )}
                   <td className="col-fee" data-label="교습비(B)">
+                    <Changed on={ch.fee} was={won(o?.fee)}>
                     <span className="reg-unit-field">
                       <input
                         className="reg-input reg-input-money"
@@ -329,8 +368,10 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                       />
                       <span className="reg-unit">원</span>
                     </span>
+                    </Changed>
                   </td>
                   <td className="col-rate" data-label={isTutoring ? '시간당단가' : '분당단가(B÷A)'}>
+                    <Changed on={(ch.time || ch.fee) && prevRate > 0 && prevRate !== j.rateCeil} was={won(prevRate)}>
                     {j.canJudge ? (
                       <div className="reg-rate">
                         <div className={`reg-rate-value ${j.isCompliant ? 'ok' : 'over'}`}>{j.rateCeil.toLocaleString()}원 {j.isCompliant ? '✓' : '✗'}</div>
@@ -345,6 +386,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                     ) : (
                       <span className="reg-rate-empty">{j.standardRate > 0 ? `기준 ${j.standardRate.toLocaleString()}원` : '자동 계산'}</span>
                     )}
+                    </Changed>
                   </td>
                   <td className="col-del">
                     <button type="button" className="reg-del" onClick={() => removeSub(sub.id)} title="이 과목 지우기">✕<span className="reg-del-text"> 이 과목 지우기</span></button>
