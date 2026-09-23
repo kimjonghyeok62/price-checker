@@ -10,7 +10,9 @@
  * 변경 탭에서 나이스 일괄등록 엑셀을 올렸으면 그 줄을 그대로 두고 고친 칸만 바꾼다(neisRow).
  * 신규 등록이거나 다른 엑셀로 불러온 경우에는 비워 둔다.
  */
-import * as XLSX from 'xlsx';
+// 고친 칸을 노란색·굵게 칠하려면 셀 서식을 쓸 수 있는 xlsx-js-style (SheetJS 무료판은 서식을 저장하지 않음)
+import * as XLSX from 'xlsx-js-style';
+import { sheetTotalMinutes, sheetChanges } from './tuitionFormCommon';
 
 // 학원 기준 열 번호 (0부터). 교습소는 TEACHING_EXTRA_COL 이상이 +1
 const COL = {
@@ -27,6 +29,17 @@ const ACADEMY_WIDTH = 34;
 // 나이스 엑셀의 기타경비 열 순서 (모의고사비·재료비·급식비·기숙사비·차량비·피복비)
 const EXTRA_KEYS = ['mockExamFee', 'materialFee', 'mealFee', 'dormitoryFee', 'vehicleFee', 'clothingFee'];
 const NUMBER_KEYS = ['months', 'days', 'totalTime', ...EXTRA_KEYS, 'fee', 'feeMonth', 'feeHour', 'feeMinute', 'extraTotal', 'grandTotal', 'grandTotalHour'];
+
+// 변경신청 서식에서 고친 칸 → 엑셀에서 칠할 열
+const CHANGE_KEYS = {
+  process: ['field', 'series', 'process', 'target'],
+  subject: ['subject'],
+  period: ['months', 'days'],
+  time: ['totalTime'],
+  capacity: ['capacity'],
+  fee: ['fee'],
+};
+const CHANGED_STYLE = { fill: { patternType: 'solid', fgColor: { rgb: 'FFFF00' } }, font: { bold: true } };
 
 const DEFAULT_KIND = '학교교과교습학원';
 const TEACHING_EXTRA_DEFAULT = '1';
@@ -114,10 +127,7 @@ const num = (v) => {
 };
 
 /** 과목 줄의 총교습시간(분) — 화면 판정과 같은 계산, 역산에 실패한 나이스 줄은 원래 값 */
-function totalTimeOf(sub) {
-  const t = Math.round(num(sub.dm) * num(sub.wc) * num(sub.wk));
-  return t > 0 ? t : num(sub.neisTotal);
-}
+const totalTimeOf = sheetTotalMinutes;
 
 /** 이 과목에 붙는 기타경비 줄 — 과목명이 같은 줄, 없으면 '전과목·전체·공통' 줄 */
 function extraFeeOf(sub, extraFees) {
@@ -171,6 +181,7 @@ export function bulkFileName(academyName, regType, now = new Date()) {
  * @param {object[]} p.subjects   RegistrationSheet 과목 줄 (neisRow·neisRateId·neisTotal 은 나이스 엑셀에서 온 줄)
  * @param {object[]} p.extraFees
  * @param {object[]} p.rateRows   지역 기준 줄 (교습과정 → 나이스 분류)
+ * @returns {{ rows: any[][], marks: Set<number>[] }} marks: 줄마다 노란색·굵게 칠할 열 (고친 칸)
  */
 export function buildBulkRows({ isTeaching, academyName, kind, subjects, extraFees, rateRows }, now = new Date()) {
   const width = bulkWidth(isTeaching);
@@ -179,6 +190,8 @@ export function buildBulkRows({ isTeaching, academyName, kind, subjects, extraFe
   const template = subjects.find(s => Array.isArray(s.neisRow))?.neisRow;
 
   const rows = [headerRow(isTeaching)];
+  const marks = [new Set()]; // 줄마다 칠할 열 번호 — 변경신청에서 나이스 값과 달라진 칸, 새로 더한 줄은 적은 칸 전부
+  const tracking = subjects.some(s => s.orig);
   for (const sub of subjects) {
     if (isBlankSub(sub)) continue;
     const fromNeis = Array.isArray(sub.neisRow);
@@ -228,12 +241,25 @@ export function buildBulkRows({ isTeaching, academyName, kind, subjects, extraFe
     set('grandTotalHour', totalTime > 0 ? (grandTotal / totalTime) * 60 : 0);
     set('applyDate', applyDate);
     rows.push(row);
+
+    const mark = new Set();
+    if (tracking) {
+      const ch = sheetChanges(sub);
+      for (const [what, keys] of Object.entries(CHANGE_KEYS)) {
+        if (ch.isNew || ch[what]) keys.forEach(k => mark.add(bulkCol(k, isTeaching)));
+      }
+      // 기타경비: 이 과정에 들어간 값이 나이스 원래 값과 다르면 (새 줄은 전부)
+      for (const k of EXTRA_KEYS) {
+        if (ch.isNew || (sub.orig.extras && extras[k] !== num(sub.orig.extras[k]))) mark.add(bulkCol(k, isTeaching));
+      }
+    }
+    marks.push(mark);
   }
-  return rows;
+  return { rows, marks };
 }
 
 /** 나이스 원본과 같은 모양의 시트 (문자 칸은 '@', 숫자 칸은 '#,##0', A~D 병합) */
-export function buildBulkSheet(rows, isTeaching) {
+export function buildBulkSheet(rows, isTeaching, marks = []) {
   const width = bulkWidth(isTeaching);
   const numberCols = new Set(NUMBER_KEYS.map(k => bulkCol(k, isTeaching)));
   const ws = {};
@@ -244,6 +270,7 @@ export function buildBulkSheet(rows, isTeaching) {
       const ref = XLSX.utils.encode_cell({ r, c });
       if (r > 0 && numberCols.has(c) && typeof v === 'number') ws[ref] = { t: 'n', v, z: '#,##0' };
       else ws[ref] = { t: 's', v: String(v), z: '@' };
+      if (marks[r]?.has(c)) ws[ref].s = { ...CHANGED_STYLE, numFmt: ws[ref].z };
     }
   });
   ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length - 1, c: width - 1 } });
@@ -258,10 +285,10 @@ export function buildBulkSheet(rows, isTeaching) {
 
 export function downloadTuitionBulkExcel(params) {
   const now = new Date();
-  const rows = buildBulkRows(params, now);
+  const { rows, marks } = buildBulkRows(params, now);
   const wb = XLSX.utils.book_new();
   // 나이스가 내려 주는 파일의 시트 이름과 같게
-  XLSX.utils.book_append_sheet(wb, buildBulkSheet(rows, params.isTeaching), 'empty0');
+  XLSX.utils.book_append_sheet(wb, buildBulkSheet(rows, params.isTeaching, marks), 'empty0');
   XLSX.writeFile(wb, bulkFileName(params.academyName, params.regType, now));
 }
 

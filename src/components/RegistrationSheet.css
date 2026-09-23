@@ -155,10 +155,13 @@
 .reg-th-sub { font-size: 0.85rem; font-weight: 400; color: #444; margin-top: 3px; white-space: nowrap; }
 .reg-subjects td { padding: 5px 4px; }
 
-.reg-subjects .col-process { width: 11.5%; }
+.reg-subjects .col-no { width: 30px; }
+.reg-subjects th.col-no { font-size: 0.75rem; font-weight: 600; color: #475569; padding: 4px 0; }
+.reg-subjects td.col-no { text-align: center; font-size: 0.8rem; font-weight: 600; color: #64748b; padding: 0; }
+.reg-subjects .col-process { width: 11%; }
 .reg-subjects .col-subject { width: 11%; }
-.reg-subjects .col-period { width: 7%; }
-.reg-subjects .col-time { width: 40%; }
+.reg-subjects .col-period { width: 6.5%; }
+.reg-subjects .col-time { width: 39.5%; }
 .reg-subjects .col-capacity { width: 6.5%; }
 .reg-subjects .col-fee { width: 11%; }
 .reg-subjects .col-rate { width: 9.5%; }
@@ -172,6 +175,48 @@
 .is-tutoring .reg-subjects .col-rate { width: 12%; }
 
 .reg-subjects tr.is-over td { background: #fff1f2; }
+
+/* 변경신청: 고친 칸은 위에 고치기 전 값을 작게(취소선), 고친 값은 주황 테두리 */
+.reg-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.reg-was {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #78716c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reg-was s { text-decoration-color: #dc2626; overflow: hidden; text-overflow: ellipsis; }
+.reg-was-tag {
+  flex-shrink: 0;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #e7e5e4;
+  color: #57534e;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.reg-cell.is-changed > .reg-input,
+.reg-cell.is-changed > .reg-unit-field .reg-input { border: 2px solid #f59e0b; }
+.reg-cell.is-changed .reg-time-total strong { color: #c2410c; }
+.reg-no-tag {
+  display: block;
+  margin: 3px auto 0;
+  width: fit-content;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+}
+.reg-no-tag.is-changed { background: #fef3c7; color: #b45309; }
+.reg-no-tag.is-added { background: #dcfce7; color: #15803d; }
 
 .reg-time {
   display: flex;
@@ -473,7 +518,9 @@
     border-top: 1px solid #cbd5e1;
     padding: 0 6px 0 0;
   }
-  .reg-subjects td:first-child { border-top: none; }
+  .reg-subjects td.col-no { display: none; } /* 세로 쌓기는 칸 이름에 번호가 붙음 */
+  .reg-subjects td:first-child,
+  .reg-subjects td.col-no + td { border-top: none; }
   .reg-subjects td::before {
     content: attr(data-label);
     align-self: stretch;

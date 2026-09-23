@@ -66,6 +66,60 @@ export const OTHER_FEE_ITEMS = [
     { label: '차량비', key: 'vehicleFee' },
 ];
 
+/**
+ * 신청서 과목 줄의 총교습시간(분) = 일 분 × 주 회 × 주
+ * 나이스에서 불러온 값이 일·주 횟수로 나눠지지 않아 칸이 비어 있으면 나이스 총교습시간(neisTotal)을 그대로 씀
+ */
+export function sheetTotalMinutes(sub) {
+    const num = (v) => parseFloat(String(v ?? '').replace(/[^0-9.]/g, '')) || 0;
+    const t = Math.round(num(sub?.dm) * num(sub?.wc) * num(sub?.wk));
+    return t > 0 ? t : Math.round(num(sub?.neisTotal));
+}
+
+/**
+ * 변경신청: 나이스에서 불러온 줄(sub.orig = 불러올 때 값)과 지금 값을 칸별로 비교
+ * - orig가 없는 줄은 새로 더한 줄(isNew)
+ * - 총교습시간은 분·회·주가 아니라 합계(분)가 달라졌을 때만 변경
+ */
+export function sheetChanges(sub) {
+    const o = sub?.orig;
+    if (!o) return { isNew: true, any: false };
+    const str = (v) => String(v ?? '').trim();
+    const n = (v) => parseInt(String(v ?? '').replace(/[^0-9]/g, ''), 10) || 0;
+    const ch = {
+        isNew: false,
+        process: str(sub.processLabel) !== str(o.processLabel),
+        subject: str(sub.subjectName) !== str(o.subjectName),
+        period: str(sub.period) !== str(o.period),
+        time: sheetTotalMinutes(sub) !== o.total,
+        capacity: n(sub.capacity) !== n(o.capacity),
+        fee: n(sub.fee) !== n(o.fee),
+    };
+    ch.any = ch.process || ch.subject || ch.period || ch.time || ch.capacity || ch.fee;
+    return ch;
+}
+
+/** 불러올 때 값 기억 — sheetChanges 비교 기준 */
+export function sheetOrig(sub, extras) {
+    return {
+        processLabel: sub.processLabel, subjectName: sub.subjectName, period: sub.period,
+        dm: sub.dm, wc: sub.wc, wk: sub.wk, total: sheetTotalMinutes(sub),
+        capacity: sub.capacity, fee: sub.fee,
+        extras, // 이 과정의 나이스 기타경비 { mockExamFee: 0, … } — 엑셀에서 기타경비 칸 비교용
+    };
+}
+
+/** 기타경비 줄: 불러올 때 값(row.orig)과 칸별 비교 — orig가 없으면 새로 더한 줄 */
+export function extraFeeChanges(row) {
+    const o = row?.orig;
+    if (!o) return { isNew: true, any: false };
+    const n = (v) => parseInt(String(v ?? '').replace(/[^0-9]/g, ''), 10) || 0;
+    const ch = { isNew: false, subjectName: String(row.subjectName ?? '').trim() !== String(o.subjectName ?? '').trim() };
+    for (const it of OTHER_FEE_ITEMS) ch[it.key] = n(row[it.key]) !== n(o[it.key]);
+    ch.any = ch.subjectName || OTHER_FEE_ITEMS.some(it => ch[it.key]);
+    return ch;
+}
+
 export function getWeeklyTotalMinutes(weeklyStr) {
     if (!weeklyStr) return null;
     const sessionsMatch = weeklyStr.match(/주(\d+)회/);

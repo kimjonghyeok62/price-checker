@@ -6,7 +6,7 @@ import { printRegistrationForm, printTutoringForm } from '../utils/generateRegis
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './NeisExcelSteps';
 import RegistrationSheet, { newSheetSubject, padSheetSubjects, rateFields, newExtraFee, padExtraFees } from './RegistrationSheet';
 import { guessRateId } from '../utils/regionRates';
-import { OTHER_FEE_ITEMS } from '../utils/tuitionFormCommon';
+import { OTHER_FEE_ITEMS, sheetOrig } from '../utils/tuitionFormCommon';
 import { useRegion } from '../RegionContext';
 import { downloadTuitionBulkExcel, checkBulkSubjects } from '../utils/generateTuitionBulkExcel';
 
@@ -127,9 +127,13 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
       const label = c.subject || c.process;
       const rate = rateFields(rateRows, guessRateId(`${c.process} ${c.subject || ''}`, rateRows));
       const { dm, wc, wk } = reverseCalcTime(c.totalTime);
+      // neisTotal: 일·주 횟수로 나눠지지 않아도 총교습시간은 나이스 값 그대로 보여 줌
       // neisRow: 나이스 일괄등록 엑셀에서 온 줄 — 교습비일괄등록 엑셀을 받을 때 등록번호·분류를 그대로 둠
-      const neis = c.neisRow ? { neisRow: c.neisRow, neisRateId: rate.rateId, neisTotal: c.totalTime } : {};
-      return newSheetSubject({ id: i + 1, subjectName: label || '', ...rate, dm, wc, wk, period: periodText(c.period), capacity: c.capacity || '', fee: parseFeeStr(c.tuitionFee), ...neis });
+      const neis = { neisTotal: c.totalTime, ...(c.neisRow ? { neisRow: c.neisRow, neisRateId: rate.rateId } : {}) };
+      const sub = newSheetSubject({ id: i + 1, subjectName: label || '', ...rate, dm, wc, wk, period: periodText(c.period), capacity: c.capacity || '', fee: parseFeeStr(c.tuitionFee), ...neis });
+      const extras = {};
+      for (const it of OTHER_FEE_ITEMS) extras[it.key] = parseInt(parseFeeStr(c[it.key]), 10) || 0;
+      return { ...sub, orig: sheetOrig(sub, extras) }; // 고치기 전 값 — 서식에 '전' 값으로 작게 보이고 엑셀에서 고친 칸을 칠함
     });
     setChangeSubjects(padSheetSubjects(subs));
     // 나이스에 적힌 기타경비가 있는 과정만 기타경비 표로 옮김
@@ -138,7 +142,8 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
       .map(c => {
         const fees = {};
         for (const it of OTHER_FEE_ITEMS) fees[it.key] = parseFeeStr(c[it.key]);
-        return newExtraFee({ subjectName: c.subject || c.process || '', ...fees });
+        const row = { subjectName: c.subject || c.process || '', ...fees };
+        return newExtraFee({ ...row, orig: row }); // 고치기 전 값 — 고친 칸 위에 작게 표시
       });
     setChangeExtraFees(padExtraFees(extras));
     setChangeDiscount('');

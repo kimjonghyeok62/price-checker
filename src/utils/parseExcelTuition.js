@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style'; // 교습비일괄등록 엑셀 쓰기와 같은 라이브러리 (SheetJS 0.18.5 기반)
 import { isBulkHeader, parseBulkRows } from './generateTuitionBulkExcel';
 
 /**
