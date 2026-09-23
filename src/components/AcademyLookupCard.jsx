@@ -8,11 +8,11 @@ import { useAcademyList } from '../utils/useAcademyList';
 // 게시표 출력 탭 맨 위 "학원명으로 바로 찾기" — 학원 고르기 → 본인 확인(번호·이름, 자료가 없으면 생략) → 나이스 실시간 교습비
 
 const cardStyle = {
-  backgroundColor: '#ecfdf5', border: '2px solid #6ee7b7', borderRadius: '14px', padding: '18px', marginBottom: '14px',
+  backgroundColor: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', marginBottom: '14px', boxShadow: 'var(--shadow-sm)',
 };
 const inputBoxStyle = {
   display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#fff',
-  border: '1.5px solid #a7f3d0', borderRadius: '10px', padding: '11px 14px',
+  border: '1px solid var(--border-strong)', borderRadius: '10px', padding: '11px 14px',
 };
 const inputStyle = {
   flex: 1, minWidth: 0, width: '100%', border: 'none', background: 'none', outline: 'none', fontSize: '1rem', color: 'var(--text-main)',
@@ -119,15 +119,15 @@ export default function AcademyLookupCard({ onResult }) {
   return (
     <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#047857" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1b2b4b" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#064e3b' }}>학원명으로 바로 찾기</span>
-        <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#047857', backgroundColor: '#d1fae5', border: '1.5px solid #6ee7b7', borderRadius: '20px', padding: '1px 9px' }}>
+        <span style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)' }}>학원명으로 바로 찾기</span>
+        <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)', backgroundColor: 'var(--primary-soft)', border: '1px solid #bfdbfe', borderRadius: '20px', padding: '1px 9px' }}>
           나이스 실시간
         </span>
       </div>
-      <div style={{ fontSize: '0.85rem', color: '#065f46', marginBottom: '12px', wordBreak: 'keep-all' }}>
+      <div style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '14px', wordBreak: 'keep-all' }}>
         엑셀을 받지 않아도 됩니다. 학원명을 고르고 본인 확인을 하면 나이스에 입력된 교습비로 게시표를 만듭니다.
         {list?.items.length > 0 && <> (현재 {sigunText} 학원·교습소)</>}
       </div>
@@ -135,9 +135,9 @@ export default function AcademyLookupCard({ onResult }) {
       {mine.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
           {mine.map(m => (
-            <span key={m.id || m.name} style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: '#fff', border: '1.5px solid #6ee7b7', borderRadius: '20px', overflow: 'hidden' }}>
+            <span key={m.id || m.name} style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: '#fff', border: '1px solid var(--border-strong)', borderRadius: '20px', overflow: 'hidden' }}>
               <button type="button" onClick={() => openMine(m)} disabled={busy || !m.id}
-                style={{ border: 'none', background: 'none', padding: '6px 4px 6px 12px', fontSize: '0.88rem', fontWeight: '700', color: '#047857', cursor: busy ? 'wait' : 'pointer' }}>
+                style={{ border: 'none', background: 'none', padding: '6px 4px 6px 12px', fontSize: '0.88rem', fontWeight: '700', color: 'var(--primary)', cursor: busy ? 'wait' : 'pointer' }}>
                 ★ {m.name}
               </button>
               <button type="button" onClick={() => removeMine(m)} aria-label={`${m.name} 기억 지우기`}
@@ -205,7 +205,7 @@ export default function AcademyLookupCard({ onResult }) {
                 {suggestions.map(a => (
                   <li key={a.id} onMouseDown={e => { e.preventDefault(); pick(a); }}
                     style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border-color)' }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f0fdf4'; }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--primary-soft)'; }}
                     onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; }}>
                     <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.95rem' }}>{a.name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
@@ -220,11 +220,11 @@ export default function AcademyLookupCard({ onResult }) {
           {picked && (
             <div className="animate-enter">
               {prompt ? (
-                <label htmlFor="academy-answer" style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: '#065f46', marginBottom: '6px' }}>
+                <label htmlFor="academy-answer" style={{ display: 'block', fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-body)', marginBottom: '6px' }}>
                   {prompt.label}
                 </label>
               ) : (
-                <div style={{ fontSize: '0.85rem', color: '#065f46', marginBottom: '8px', wordBreak: 'keep-all' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginBottom: '8px', wordBreak: 'keep-all' }}>
                   {picked.kind === '교습소' ? '이 교습소는' : '이 학원은'} 본인 확인 자료가 없어 확인 없이 불러옵니다.
                 </div>
               )}
@@ -246,8 +246,8 @@ export default function AcademyLookupCard({ onResult }) {
                 <button type="submit" disabled={busy}
                   style={{
                     flex: prompt ? '0 0 auto' : 1, padding: prompt ? '0 16px' : '13px 16px', borderRadius: '10px', whiteSpace: 'nowrap',
-                    border: 'none', backgroundColor: '#059669', color: '#fff',
-                    fontSize: '1rem', fontWeight: '800', cursor: busy ? 'wait' : 'pointer', boxShadow: '0 3px 10px rgba(5,150,105,0.3)',
+                    border: 'none', backgroundColor: 'var(--primary)', color: '#fff',
+                    fontSize: '1rem', fontWeight: '800', cursor: busy ? 'wait' : 'pointer', 
                     opacity: busy ? 0.7 : 1,
                   }}>
                   {busy ? '불러오는 중…' : '교습비 불러오기'}

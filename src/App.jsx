@@ -17,16 +17,88 @@ import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall,
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './components/NeisExcelSteps';
 import TuitionTextModal from './components/TuitionTextModal';
 
+// 왼쪽 메뉴 — 넓은 화면은 세로 메뉴, 좁은 화면은 머리띠 아래 가로 메뉴줄
+const NAV = [
+  {
+    group: '신청서 작성',
+    items: [
+      { id: 'change', label: '교습비 변경신청', icon: 'edit' },
+      { id: 'new', label: '신규 등록신청', icon: 'plus' },
+      { id: 'tutoring', label: '개인과외 교습비 신고', icon: 'user' },
+    ],
+  },
+  {
+    group: '게시표',
+    items: [
+      { id: 'poster', label: '교습비 게시표 출력', icon: 'print' },
+      { id: 'refund', label: '반환기준 게시표', icon: 'doc' },
+    ],
+  },
+  {
+    group: '참고',
+    items: [{ id: 'rates', label: '지역 기준단가', icon: 'table' }],
+  },
+];
+
+// 각 화면 머리 — 제목, 한 줄 설명, (있으면) 작성 순서 한 줄
+const PAGE_HEAD = {
+  change: {
+    title: '교습비 변경신청서',
+    desc: '나이스에 등록된 지금 교습비를 불러와서, 바꿀 칸만 고친 뒤 출력합니다.',
+    steps: ['학원(교습소)명 고르기', '운영자 성명 또는 등록번호 적고 불러오기', '바꿀 칸 고치고 출력'],
+  },
+  new: {
+    title: '교습비 등록신청서 (신규)',
+    desc: '학원·교습소를 새로 등록할 때 교습비등을 적는 서식입니다.',
+    steps: ['노란 칸 적기', '분당단가 적정 여부 확인', '등록신청서 출력'],
+  },
+  tutoring: {
+    title: '개인과외 교습비 신고',
+    desc: '개인과외교습자의 교습비 신고 내용을 적는 서식입니다.',
+    steps: ['노란 칸 적기', '시간당단가 확인', '신고서 출력'],
+  },
+  poster: {
+    title: '교습비 게시표 출력',
+    desc: '나이스에 등록된 교습비로 학원에 붙이는 교습비등 게시표를 만듭니다.',
+    steps: ['학원명 찾기', '본인 확인', 'PDF·JPG·HWPX로 출력'],
+  },
+  refund: {
+    title: '교습비등 반환기준 게시표',
+    desc: '학원·교습소에 함께 게시하는 반환기준 서식입니다.',
+  },
+  rates: {
+    title: '지역 기준단가',
+    desc: '교습비등 조정위원회에서 정한 교습과정별 분당 기준단가입니다.',
+  },
+};
+
+const PAGE_KEY = 'app:page:v1';
+const PAGE_IDS = NAV.flatMap(g => g.items.map(i => i.id));
+
+function readPage() {
+  try {
+    const saved = localStorage.getItem(PAGE_KEY);
+    return PAGE_IDS.includes(saved) ? saved : 'change';
+  } catch {
+    return 'change';
+  }
+}
+
 export default function App() {
-  const [tab, setTab] = useState('excel'); // 'review' | 'tutoring' | 'excel'
-  const [showStandardPrices, setShowStandardPrices] = useState(false);
+  const [page, setPageState] = useState(readPage);
   const [showRegionAdmin, setShowRegionAdmin] = useState(false);
-  const { region, setRegion, effectiveDate } = useRegion();
+  const { region, setRegion, effectiveDate, officeName } = useRegion();
+
+  function setPage(id) {
+    setPageState(id);
+    try { localStorage.setItem(PAGE_KEY, id); } catch { /* 저장 못 해도 동작 */ }
+    window.scrollTo({ top: 0 });
+  }
 
   // 학원명으로 찾기 (나이스 실시간) — { academy, source, basis }
   const [lookupResult, setLookupResult] = useState(null);
 
-  // 업로드 탭
+  // 게시표 엑셀 올리기
   const [excelAcademies, setExcelAcademies] = useState([]);
   const [excelSelected, setExcelSelected] = useState(null);
   const [excelError, setExcelError] = useState('');
@@ -78,147 +150,147 @@ export default function App() {
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has('shared')) return;
     window.history.replaceState(null, '', window.location.pathname);
-    setTab('excel');
+    setPage('poster');
     takeSharedFile()
       .then(file => { if (file) handleFile({ target: { files: [file], value: '' } }); })
       .catch(() => {});
   }, []);
 
-  const tabStyle = (active) => ({
-    flex: 1,
-    padding: '12px 4px',
-    border: '1px solid ' + (active ? 'rgba(79, 70, 229, 0.08)' : 'transparent'),
-    borderRadius: '10px',
-    cursor: 'pointer',
-    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-    backgroundColor: active ? '#ffffff' : 'transparent',
-    color: active ? 'var(--primary)' : 'var(--text-muted)',
-    boxShadow: active ? '0 4px 10px rgba(79, 70, 229, 0.12), 0 2px 4px rgba(0, 0, 0, 0.02)' : 'none',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '3px',
-    lineHeight: '1.25',
-    transform: active ? 'scale(1.02)' : 'scale(1)',
-  });
-
-  if (showStandardPrices) {
-    return <StandardPriceTable onBack={() => setShowStandardPrices(false)} />;
-  }
   if (showRegionAdmin) {
     return <RegionAdmin onBack={() => setShowRegionAdmin(false)} />;
   }
 
+  const head = PAGE_HEAD[page];
+  const isForm = page === 'new' || page === 'change' || page === 'tutoring';
+
   return (
-    <div className="container">
-      {/* 헤더 */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '22px', gap: '6px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div className="app-icon" style={{ width: '32px', height: '32px', borderRadius: '9px' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <path d="m9 11 2 2 4-4"/>
+    <div className="shell">
+      {/* 머리띠 */}
+      <header className="topbar">
+        <div className="topbar-brand">
+          <span className="topbar-logo" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 10 12 5 2 10l10 5 10-5z" /><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" />
             </svg>
-          </div>
-          <h1 className="app-title">교습비 계산·게시표</h1>
+          </span>
+          <span className="topbar-title">학원·교습소 교습비 도우미</span>
         </div>
-        <div className="app-region-bar">
+        <div className="topbar-actions">
           <label className={`app-region${region ? '' : ' is-empty'}`} title={effectiveDate ? `교습비등 조정위원회 개최일 ${effectiveDate}` : undefined}>
-            <svg className="app-region-pin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/>
-              <circle cx="12" cy="10" r="2.5"/>
+            <svg className="app-region-pin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" />
+              <circle cx="12" cy="10" r="2.5" />
             </svg>
             <span className="app-region-text">경기도</span>
             <select className="app-region-select" value={region} onChange={e => setRegion(e.target.value)} aria-label="교육지원청 선택">
               <option value="">지역 선택</option>
               {REGION_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
             </select>
-            <span className="app-region-text">교육지원청 교습비 기준</span>
+            <span className="app-region-text">교육지원청</span>
           </label>
-          <button type="button" className="app-std-btn" onClick={() => setShowStandardPrices(true)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              <line x1="11" y1="8" x2="11" y2="14"></line>
-              <line x1="8" y1="11" x2="14" y2="11"></line>
-            </svg>
-            기준단가 보기
-          </button>
         </div>
+      </header>
+
+      <div className="shell-body">
+        {/* 메뉴 */}
+        <nav className="sidenav" aria-label="메뉴">
+          {NAV.map(g => (
+            <div key={g.group} className="sidenav-group">
+              <div className="sidenav-label">{g.group}</div>
+              {g.items.map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`sidenav-item${page === item.id ? ' is-active' : ''}`}
+                  aria-current={page === item.id ? 'page' : undefined}
+                  onClick={() => setPage(item.id)}
+                >
+                  <NavIcon name={item.icon} />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        {/* 내용 */}
+        <main className={`page${isForm ? ' is-wide' : ''}`}>
+          <div className="page-head">
+            <h1 className="page-title">{page === 'rates' && region ? `${officeName} 기준단가` : head.title}</h1>
+            <p className="page-desc">{head.desc}</p>
+            {head.steps && (
+              <ol className="page-steps">
+                {head.steps.map((s, i) => <li key={s}><span className="page-step-no">{i + 1}</span>{s}</li>)}
+              </ol>
+            )}
+          </div>
+
+          {/* 학원·교습소 신규/변경은 한 화면이 두 서식을 들고 있다 — 메뉴를 오가도 적던 내용 유지 */}
+          <div hidden={page !== 'new' && page !== 'change'}>
+            <TuitionReviewTab mode="academy" subTab={page === 'new' ? '신규' : '변경'} />
+          </div>
+
+          {page === 'tutoring' && <TuitionReviewTab mode="tutoring" />}
+
+          {page === 'poster' && (
+            <ExcelUploadTab
+              excelLoading={excelLoading}
+              excelError={excelError}
+              excelAcademies={excelAcademies}
+              excelSelected={excelSelected}
+              setExcelSelected={setExcelSelected}
+              fileInputRef={fileInputRef}
+              handleFile={handleFile}
+              lookupResult={lookupResult}
+              onLookupResult={handleLookupResult}
+              onExcelRegNo={handleExcelRegNo}
+            />
+          )}
+
+          {page === 'refund' && <RefundPage />}
+
+          {page === 'rates' && <StandardPriceTable />}
+
+          <footer className="app-footer">
+            <div>본 화면은 교습비 신고·변경신청 전 자체 검토용입니다. 실제 신청은 관할 교육지원청에 문의하시기 바랍니다.</div>
+            <button type="button" className="app-admin-link" onClick={() => setShowRegionAdmin(true)}>교육지원청 담당자 기준단가 입력</button>
+          </footer>
+        </main>
       </div>
+    </div>
+  );
+}
 
-      {/* 탭 */}
-      <div style={{
-        display: 'flex',
-        backgroundColor: '#f8fafc',
-        padding: '5px',
-        borderRadius: '12px',
-        marginBottom: '26px',
-        gap: '6px',
-        alignItems: 'stretch',
-        border: '1px solid #e2e8f0',
-        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.03)'
-      }}>
-        <button className="tab-btn" style={tabStyle(tab === 'review')} onClick={() => setTab('review')}>
-          <svg className="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-          <span className="tab-maintext">학원·교습소</span>
-          <span className="tab-subtext">교습비 변경</span>
-        </button>
-        <button className="tab-btn" style={tabStyle(tab === 'tutoring')} onClick={() => setTab('tutoring')}>
-          <svg className="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/>
-            <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/>
-          </svg>
-          <span className="tab-maintext">개인과외</span>
-          <span className="tab-subtext">교습비 변경</span>
-        </button>
-        <button className="tab-btn" style={tabStyle(tab === 'excel')} onClick={() => setTab('excel')}>
-          <svg className="tab-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 6 2 18 2 18 9"/>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-            <rect x="6" y="14" width="12" height="8"/>
-          </svg>
-          <span className="tab-maintext">게시표 출력</span>
-          <span className="tab-subtext">(나이스자료 이용)</span>
-        </button>
+function NavIcon({ name }) {
+  const paths = {
+    edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>,
+    plus: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="12" y1="18" x2="12" y2="12" /><line x1="9" y1="15" x2="15" y2="15" /></>,
+    user: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>,
+    print: <><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></>,
+    doc: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="13" y2="17" /></>,
+    table: <><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="12" y1="3" x2="12" y2="21" /></>,
+  };
+  return (
+    <svg className="sidenav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
+
+// 교습비등 반환기준 게시표 [별지 제5호서식]
+function RefundPage() {
+  return (
+    <div className="card">
+      <div className="card-title">
+        반환기준 게시표 <span className="tag">[별지 제5호서식]</span>
       </div>
-
-      {/* ── 탭: 교습비 변경(학원,교습소) ── */}
-      {tab === 'review' && <TuitionReviewTab mode="academy" />}
-
-      {/* ── 탭: 교습비 변경(과외) ── */}
-      {tab === 'tutoring' && <TuitionReviewTab mode="tutoring" />}
-
-      {/* ── 탭: 업로드 ── */}
-      {tab === 'excel' && (
-        <ExcelUploadTab
-          excelLoading={excelLoading}
-          excelError={excelError}
-          excelAcademies={excelAcademies}
-          excelSelected={excelSelected}
-          setExcelSelected={setExcelSelected}
-          fileInputRef={fileInputRef}
-          handleFile={handleFile}
-          lookupResult={lookupResult}
-          onLookupResult={handleLookupResult}
-          onExcelRegNo={handleExcelRegNo}
-        />
-      )}
-
-      {tab !== 'excel' && (
-        <footer className="app-footer">
-          <div>본 계산기는 교습비 신고·변경신청 전 자체 검토 목적으로만 활용하세요.</div>
-          <div>실제 신청은 관할 교육지원청에 문의하시기 바랍니다.</div>
-        </footer>
-      )}
-
-      <div className="app-admin-link-wrap">
-        <button type="button" className="app-admin-link" onClick={() => setShowRegionAdmin(true)}>교육지원청 담당자 기준단가 입력</button>
-      </div>
+      <p className="card-desc">경기도 학원의 설립·운영 및 과외교습에 관한 조례 시행규칙 서식입니다. 교습비등 게시표와 함께 게시하세요.</p>
+      <a className="btn btn-primary btn-block" href="/refund-standard.pdf" target="_blank" rel="noopener noreferrer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
+        </svg>
+        반환기준 게시표 PDF 열기
+      </a>
     </div>
   );
 }
@@ -232,7 +304,7 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
 
   const loadFile = (file) => { if (file) handleFile({ target: { files: [file], value: '' } }); };
 
-  // 게시표 탭 어디에 끌어다 놓아도 업로드
+  // 게시표 화면 어디에 끌어다 놓아도 업로드
   const dropHandlers = {
     onDragEnter: e => { if (!hasDraggedFiles(e)) return; e.preventDefault(); dragDepthRef.current++; setDragOver(true); },
     onDragOver: e => { if (hasDraggedFiles(e)) e.preventDefault(); },
@@ -257,32 +329,20 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
               <PrintButtons academy={lookupResult.academy} />
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '18px 0 14px', color: 'var(--text-muted)', fontSize: '0.88rem', fontWeight: '700' }}>
-            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
-            또는 나이스에서 엑셀을 받아 올리기
-            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }} />
-          </div>
+          <div className="divider-text">또는 나이스에서 엑셀을 받아 올리기</div>
         </>
       )}
       <NeisHakwonCard />
       <ExcelUploadCard loading={excelLoading} dragOver={dragOver} fileInputRef={fileInputRef} onFile={loadFile} />
 
       {showAndroidTip && (
-        <div style={{ marginTop: '-10px', marginBottom: '20px', fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ marginTop: '-6px', marginBottom: '20px', fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span>📱 앱을 설치하면 받은 엑셀을 '공유 → 교습비 계산·게시표'로 바로 열 수 있어요</span>
-          {installable && (
-            <button onClick={promptInstall} style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', cursor: 'pointer' }}>
-              앱 설치
-            </button>
-          )}
+          {installable && <button type="button" className="btn btn-outline btn-sm" onClick={promptInstall}>앱 설치</button>}
         </div>
       )}
 
-      {excelError && (
-        <div style={{ color: '#dc2626', fontSize: '0.85rem', marginBottom: '16px', padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
-          {excelError}
-        </div>
-      )}
+      {excelError && <div className="alert is-error">{excelError}</div>}
 
       {excelAcademies.length > 1 && !excelSelected && (
         <AcademyPickList academies={excelAcademies} onSelect={setExcelSelected} />
@@ -291,12 +351,8 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
       {excelSelected && (
         <div className="animate-enter">
           {excelAcademies.length > 1 && (
-            <button
-              onClick={() => setExcelSelected(null)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.83rem', marginBottom: '12px', padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              목록으로 돌아가기
+            <button type="button" className="btn-link" onClick={() => setExcelSelected(null)} style={{ marginBottom: '12px' }}>
+              ‹ 목록으로 돌아가기
             </button>
           )}
           {isAcademyLookupReady() && !excelSelected.regNo && (
@@ -305,47 +361,6 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
           <PrintButtons academy={excelSelected} />
         </div>
       )}
-
-
-      {/* 교습비등 반환기준 게시표 — 위 게시표 카드와 같은 형식, 주황 계열로 구분 */}
-      <div style={{
-        marginTop: '20px', backgroundColor: '#fffbeb', border: '2px solid #fcd34d',
-        borderRadius: '14px', padding: '18px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-          <div style={{ width: '4px', height: '22px', backgroundColor: '#d97706', borderRadius: '2px', flexShrink: 0 }} />
-          <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#78350f', letterSpacing: '-0.01em' }}>
-            교습비등 반환기준 게시표
-          </div>
-          <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#b45309', backgroundColor: '#fef3c7', border: '1.5px solid #fcd34d', borderRadius: '20px', padding: '2px 10px' }}>
-            [별지 제5호서식]
-          </div>
-        </div>
-        <div style={{ fontSize: '0.8rem', color: '#92400e', marginBottom: '12px', paddingLeft: '12px', wordBreak: 'keep-all' }}>
-          경기도 학원의 설립·운영 및 과외교습에 관한 조례 시행규칙
-        </div>
-        <a
-          href="/refund-standard.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            padding: '14px 18px', borderRadius: '10px', backgroundColor: '#d97706', color: '#fff',
-            fontSize: '1rem', fontWeight: '800', textDecoration: 'none', boxShadow: '0 3px 10px rgba(217,119,6,0.3)',
-            transition: 'filter 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.08)'; }}
-          onMouseLeave={e => { e.currentTarget.style.filter = ''; }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="9" y1="13" x2="15" y2="13"/>
-            <line x1="9" y1="17" x2="13" y2="17"/>
-          </svg>
-          반환기준 게시표 PDF 보기
-        </a>
-      </div>
     </div>
   );
 }
@@ -355,10 +370,7 @@ function LookupBasisNote({ result }) {
   const { source, basis, academy, verified } = result;
   const live = source === 'neis';
   return (
-    <div style={{
-      marginBottom: '12px', padding: '10px 14px', borderRadius: '10px', fontSize: '0.88rem', lineHeight: 1.55, wordBreak: 'keep-all',
-      backgroundColor: live ? '#f0fdf4' : '#fffbeb', border: `1.5px solid ${live ? '#86efac' : '#fcd34d'}`, color: live ? '#166534' : '#92400e',
-    }}>
+    <div className={`alert ${live ? 'is-ok' : 'is-warn'}`}>
       {live
         ? <>✔ 나이스 학원서비스에서 방금 가져온 교습비입니다{basis && ` (${basis})`}.</>
         : <>⚠ 나이스가 응답하지 않아 교육지원청 명단{basis && `(${basis} 동기화)`}의 교습비로 표시합니다. 최근에 교습비를 바꿨다면 잠시 후 다시 불러오세요.</>}
@@ -392,30 +404,30 @@ function RegNoAttach({ academy, onDone }) {
   }
 
   return (
-    <form onSubmit={submit} style={{ marginBottom: '12px', padding: '12px 14px', borderRadius: '10px', backgroundColor: '#f8fafc', border: '1.5px dashed #cbd5e1' }}>
-      <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '8px', wordBreak: 'keep-all' }}>
+    <form onSubmit={submit} className="card card-muted" style={{ marginBottom: '12px' }}>
+      <div className="card-desc" style={{ marginBottom: '8px' }}>
         게시표에 등록(신고)번호를 넣으려면 번호를 입력하세요. (넣지 않으면 번호 없이 출력됩니다)
       </div>
       <div style={{ display: 'flex', gap: '8px' }}>
         <input
           type="text"
+          className="field"
           value={value}
           onChange={e => { setValue(e.target.value); setError(''); }}
           placeholder="예) 하남159"
           aria-label="등록(신고)번호"
           autoComplete="off"
-          style={{ flex: 1, minWidth: 0, padding: '9px 12px', borderRadius: '8px', border: '1.5px solid var(--border-color)', fontSize: '0.95rem' }}
         />
-        <button type="submit" disabled={busy || !value.trim()}
-          style={{ flexShrink: 0, padding: '0 16px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary)', color: '#fff', fontWeight: '700', cursor: busy ? 'wait' : 'pointer', opacity: busy || !value.trim() ? 0.6 : 1 }}>
+        <button type="submit" className="btn btn-primary" disabled={busy || !value.trim()}>
           {busy ? '확인 중…' : '번호 넣기'}
         </button>
       </div>
-      {error && <div style={{ marginTop: '8px', color: '#b91c1c', fontSize: '0.85rem' }}>{error}</div>}
+      {error && <div style={{ marginTop: '8px', color: 'var(--over)', fontSize: '0.9rem' }}>{error}</div>}
     </form>
   );
 }
 
+// 게시표 내보내기 — 내부용·외부용 두 줄, 줄마다 PDF(주 버튼) + JPG·HWPX·TEXT
 function PrintButtons({ academy }) {
   const [downloading, setDownloading] = useState('');
   const [placeText, setPlaceText] = useState(null);
@@ -426,179 +438,58 @@ function PrintButtons({ academy }) {
     finally { setDownloading(''); }
   }
 
-  function BtnPDF({ onClick, label, sub, size = 'normal' }) {
-    const isLarge = size === 'large';
-    return (
-      <button
-        onClick={onClick}
-        style={{
-          padding: isLarge ? '12px 10px' : '10px 8px',
-          backgroundColor: 'var(--primary)',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '10px',
-          fontSize: isLarge ? '1rem' : '0.92rem',
-          fontWeight: '700',
-          cursor: 'pointer',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '2px',
-          boxShadow: '0 2px 6px rgba(99,102,241,0.25)',
-          transition: 'filter 0.15s',
-        }}
-        onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.1)'}
-        onMouseLeave={e => e.currentTarget.style.filter = ''}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <PrintIcon size={isLarge ? 16 : 14} /> {label}
-        </span>
-        {sub && <span style={{ fontSize: '0.72rem', fontWeight: '600', letterSpacing: '-0.01em', color: 'rgba(255,255,255,0.82)' }}>{sub}</span>}
-      </button>
-    );
-  }
-
-  const SAVE_THEMES = {
-    jpg: { bg: '#ecfdf5', busyBg: '#d1fae5', color: '#047857', border: '#6ee7b7' },
-    hwpx: { bg: '#f0f9ff', busyBg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc' },
-    text: { bg: '#fff7ed', busyBg: '#ffedd5', color: '#c2410c', border: '#fdba74' },
-  };
-
-  function BtnSave({ onClick, label, sub, busy, theme = 'hwpx', size = 'normal' }) {
-    const isLarge = size === 'large';
-    const t = SAVE_THEMES[theme];
-    const iconSize = isLarge ? 16 : 14;
-    const icon = theme === 'jpg' ? <ImageIcon busy={busy} size={iconSize} />
-      : theme === 'text' ? <TextIcon size={iconSize} />
-      : <DocxIcon busy={busy} size={iconSize} />;
-    return (
-      <button
-        onClick={onClick}
-        disabled={!!downloading}
-        style={{
-          padding: isLarge ? '12px 10px' : '10px 8px',
-          backgroundColor: busy ? t.busyBg : t.bg,
-          color: t.color,
-          border: `2px solid ${t.border}`,
-          borderRadius: '10px',
-          fontSize: isLarge ? '1rem' : '0.92rem',
-          fontWeight: '700',
-          cursor: downloading ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '2px',
-          opacity: downloading && !busy ? 0.55 : 1,
-          transition: 'filter 0.15s',
-        }}
-        onMouseEnter={e => { if (!downloading) e.currentTarget.style.filter = 'brightness(0.95)'; }}
-        onMouseLeave={e => e.currentTarget.style.filter = ''}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {icon} {busy ? '생성중...' : label}
-        </span>
-        {sub && <span style={{ fontSize: '0.72rem', fontWeight: '600', letterSpacing: '-0.01em', opacity: 0.72 }}>{sub}</span>}
-      </button>
-    );
-  }
-
-  const sectionCard = (color, bgColor, borderColor, iconColor) => ({
-    backgroundColor: bgColor,
-    border: `2px solid ${borderColor}`,
-    borderRadius: '12px',
-    padding: '18px 18px 16px',
-    marginBottom: '12px',
-  });
+  const rows = [
+    {
+      key: 'int', title: '내부용', desc: '교습실 안에 붙이는 게시표',
+      pdf: () => printTuitionForm(academy),
+      jpg: () => downloadTuitionInternalJPG(academy),
+      hwpx: () => downloadTuitionInternalHWPX(academy),
+    },
+    {
+      key: 'ext', title: '외부용', desc: '출입문·외부에 붙이는 게시표',
+      pdf: () => printTuitionFormExternal(academy),
+      jpg: () => downloadTuitionExternalJPG(academy),
+      hwpx: () => downloadTuitionExternalHWPX(academy),
+    },
+  ];
 
   return (
-    <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
-      {/* 학원 정보 */}
-      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1.5px solid var(--border-color)' }}>
-        <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)', marginBottom: '4px' }}>
+    <div className="card">
+      <div className="print-academy">
+        <div className="print-academy-name">
           {academy.name}
-          {getRegNoText(academy) && (
-            <span style={{ marginLeft: '6px', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>{getRegNoText(academy)}</span>
-          )}
+          {getRegNoText(academy) && <span className="print-academy-no">{getRegNoText(academy)}</span>}
         </div>
-        {academy.address &&<div style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>{academy.address}</div>}
-        {academy.courses?.length > 0 && (
-          <div style={{ display: 'inline-block', marginTop: '6px', fontSize: '0.78rem', color: '#6366f1', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', padding: '2px 8px', fontWeight: '600' }}>
-            교습과정 {academy.courses.length}개
-          </div>
-        )}
+        {academy.address && <div className="print-academy-sub">{academy.address}</div>}
+        {academy.courses?.length > 0 && <div className="print-academy-sub">교습과정 {academy.courses.length}개</div>}
       </div>
 
-      {/* 내부용 */}
-      <div style={sectionCard('#6366f1', '#f5f3ff', '#c4b5fd', '#7c3aed')}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-          <div style={{ width: '4px', height: '22px', backgroundColor: '#7c3aed', borderRadius: '2px', flexShrink: 0 }} />
-          <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#4c1d95', letterSpacing: '-0.01em' }}>
-            교습비등 게시표
+      {rows.map(r => (
+        <div key={r.key} className="print-row">
+          <div className="print-row-head">
+            <span className="print-row-title">교습비등 게시표 · {r.title}</span>
+            <span className="print-row-desc">{r.desc}</span>
           </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#7c3aed', backgroundColor: '#ede9fe', border: '1.5px solid #c4b5fd', borderRadius: '20px', padding: '2px 10px' }}>
-            내부용
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <BtnPDF onClick={() => printTuitionForm(academy)} label="PDF 출력" sub="인쇄용" size="large" />
-          <BtnSave theme="jpg" onClick={() => withLoading('int-jpg', () => downloadTuitionInternalJPG(academy))} label="JPG 저장" sub="블로그용" busy={downloading === 'int-jpg'} size="large" />
-          <BtnSave theme="hwpx" onClick={() => withLoading('int-hwpx', () => downloadTuitionInternalHWPX(academy))} label="HWPX 저장" sub="편집용" busy={downloading === 'int-hwpx'} size="large" />
-          <BtnSave theme="text" onClick={() => setPlaceText(buildTuitionPlaceText(academy))} label="TEXT 복사" sub="네이버 플레이스용" size="large" />
-        </div>
-      </div>
-
-      {/* 외부용 */}
-      <div style={{ ...sectionCard('#0ea5e9', '#f0f9ff', '#7dd3fc', '#0369a1'), marginBottom: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-          <div style={{ width: '4px', height: '22px', backgroundColor: '#0369a1', borderRadius: '2px', flexShrink: 0 }} />
-          <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0c4a6e', letterSpacing: '-0.01em' }}>
-            교습비등 게시표
-          </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#0369a1', backgroundColor: '#e0f2fe', border: '1.5px solid #7dd3fc', borderRadius: '20px', padding: '2px 10px' }}>
-            외부용
+          <div className="print-btns">
+            <button type="button" className="btn btn-primary print-btn" onClick={r.pdf}>
+              PDF 출력<small>인쇄용</small>
+            </button>
+            <button type="button" className="btn btn-outline print-btn" disabled={!!downloading} onClick={() => withLoading(`${r.key}-jpg`, r.jpg)}>
+              {downloading === `${r.key}-jpg` ? '만드는 중…' : 'JPG 저장'}<small>블로그용</small>
+            </button>
+            <button type="button" className="btn btn-outline print-btn" disabled={!!downloading} onClick={() => withLoading(`${r.key}-hwpx`, r.hwpx)}>
+              {downloading === `${r.key}-hwpx` ? '만드는 중…' : 'HWPX 저장'}<small>편집용</small>
+            </button>
+            <button type="button" className="btn btn-outline print-btn" onClick={() => setPlaceText(buildTuitionPlaceText(academy))}>
+              TEXT 복사<small>네이버 플레이스용</small>
+            </button>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <BtnPDF onClick={() => printTuitionFormExternal(academy)} label="PDF 출력" sub="인쇄용" size="large" />
-          <BtnSave theme="jpg" onClick={() => withLoading('ext-jpg', () => downloadTuitionExternalJPG(academy))} label="JPG 저장" sub="블로그용" busy={downloading === 'ext-jpg'} size="large" />
-          <BtnSave theme="hwpx" onClick={() => withLoading('ext-hwpx', () => downloadTuitionExternalHWPX(academy))} label="HWPX 저장" sub="편집용" busy={downloading === 'ext-hwpx'} size="large" />
-          <BtnSave theme="text" onClick={() => setPlaceText(buildTuitionPlaceText(academy))} label="TEXT 복사" sub="네이버 플레이스용" size="large" />
-        </div>
-      </div>
+      ))}
 
       {placeText !== null && (
         <TuitionTextModal text={placeText} academyName={academy.name} onClose={() => setPlaceText(null)} />
       )}
     </div>
-  );
-}
-
-function PrintIcon({ size = 13 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 6 2 18 2 18 9"></polyline>
-      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-      <rect x="6" y="14" width="12" height="8"></rect>
-    </svg>
-  );
-}
-function ImageIcon({ busy, size = 13 }) {
-  return busy
-    ? <span style={{ fontSize: '0.9rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
-    : <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>;
-}
-function DocxIcon({ busy, size = 13 }) {
-  return busy
-    ? <span style={{ fontSize: '0.9rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
-    : <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>;
-}
-function TextIcon({ size = 13 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="9" width="12" height="12" rx="2"/>
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-    </svg>
   );
 }

@@ -1,43 +1,17 @@
 import React from 'react';
 import { useRegion } from '../RegionContext';
 
-export default function StandardPriceTable({ onBack }) {
+// 지역 기준단가 — 화면 제목은 App의 머리(page-head)에서
+export default function StandardPriceTable() {
   const { region, officeName, rows, effectiveDate, tutoringHourlyRate } = useRegion();
   const rated = rows.filter(r => r.rate > 0);
   const average = rated.length ? (rated.reduce((sum, r) => sum + r.rate, 0) / rated.length).toFixed(2) : '';
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px', backgroundColor: '#fff', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-        <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#111827', margin: 0 }}>
-          {region ? `${officeName} 학원·교습소 교습비 세부내역` : '학원·교습소 교습비 세부내역'}
-        </h2>
-        <button 
-          onClick={onBack}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#1d4ed8',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            fontSize: '0.95rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-          홈페이지로 돌아가기
-        </button>
-      </div>
-      
+    <div>
       {!region ? (
         <div style={{ padding: '14px', marginBottom: '40px', backgroundColor: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', color: '#92400e' }}>
-          첫 화면 맨 위에서 지역(교육지원청)을 먼저 선택하세요.
+          화면 맨 위에서 지역(교육지원청)을 먼저 선택하세요.
         </div>
       ) : !rows.length ? (
         <div style={{ padding: '14px', marginBottom: '40px', backgroundColor: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', color: '#92400e' }}>
@@ -50,7 +24,7 @@ export default function StandardPriceTable({ onBack }) {
         <span>(단위: 원)</span>
       </div>
 
-      <div style={{ overflowX: 'auto', marginBottom: '40px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <div style={{ overflowX: 'auto', marginBottom: '40px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
           <thead>
             <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
@@ -92,7 +66,7 @@ export default function StandardPriceTable({ onBack }) {
         </svg>
         설명
       </h3>
-      <div style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <div style={{ overflowX: 'auto', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: '#fff' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left', minWidth: '600px' }}>
           <thead>
             <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
