@@ -509,11 +509,30 @@ function verifyByName_(name, answer) {
   return { ok: true, regNo: check.item.no, category: check.item.type, kind: check.item.kind };
 }
 
-/** 등록(신고)번호가 있는 같은 이름의 학원들 — 캐시(N|)에서, 없으면 검색목록 시트 전체에서 */
+/** 등록(신고)번호가 있는 같은 이름의 학원들 — 캐시(N|)에서, 없으면 시트에서 다시 만들어 캐시에 넣는다 */
 function numberedByName_(key) {
-  var text = getBig_(CacheService.getScriptCache(), 'N|');
-  if (text !== null) return (JSON.parse(text)[key] || []).map(rowToItem_);
-  return readIndex_().filter(function (x) { return x.no && nameKey_(x.name) === key; });
+  var cache = CacheService.getScriptCache();
+  var text = getBig_(cache, 'N|');
+  var numbered;
+  if (text !== null) {
+    numbered = JSON.parse(text);
+  } else {
+    numbered = numberedOf_(readIndexRowsLite_());
+    try { putBig_(cache, 'N|', JSON.stringify(numbered)); } catch (err) { Logger.log('캐시 넣기 실패 (번호 명단): ' + err.message); }
+  }
+  return (numbered[key] || []).map(rowToItem_);
+}
+
+/** 검색목록 행 → { 이름: [번호가 있는 행, …] } (과목 칸은 보관본이 있으면 '1'만) */
+function numberedOf_(rows) {
+  var numbered = {};
+  rows.forEach(function (r) {
+    if (!r[3]) return;
+    var row = r.slice(0, INDEX_HEADERS.length);
+    row[11] = row[11] ? '1' : '';
+    (numbered[nameKey_(r[4])] = numbered[nameKey_(r[4])] || []).push(row);
+  });
+  return numbered;
 }
 
 function checkAnswer_(failId, items, answer) {
@@ -710,6 +729,16 @@ function readIndexRows_() {
   return sheet.getRange(2, 1, sheet.getLastRow() - 1, INDEX_HEADERS.length).getDisplayValues();
 }
 
+/** 과목(L) 칸만 빼고 읽는다 — 과목 칸이 수만 자라 시트 전체를 읽으면 수 초~시간 초과 */
+function readIndexRowsLite_() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_INDEX);
+  if (!sheet || sheet.getLastRow() < 2) throw new Error('검색목록이 비어 있습니다. 편집기에서 setup을 실행하세요.');
+  var n = sheet.getLastRow() - 1;
+  var left = sheet.getRange(2, 1, n, 11).getDisplayValues();
+  var asnum = sheet.getRange(2, 13, n, 1).getDisplayValues();
+  return left.map(function (r, i) { return r.concat(['', asnum[i][0]]); });
+}
+
 function readIndex_() {
   return readIndexRows_().map(rowToItem_);
 }
@@ -733,12 +762,11 @@ function ensureWarmTrigger_() {
 function fillCache_(rows, lists, synced) {
   var cache = CacheService.getScriptCache();
   var detail = {};
-  var numbered = {}; // 엑셀 올리기 번호 확인용 — 번호가 있는 곳(명단 시트)만, 이름별로
   rows.forEach(function (r) {
+    if (!r[1]) return;
     var row = r.slice(0, INDEX_HEADERS.length);
     row[11] = row[11] ? '1' : '';
-    if (r[3]) (numbered[nameKey_(r[4])] = numbered[nameKey_(r[4])] || []).push(row);
-    if (r[1]) (detail[r[1]] = detail[r[1]] || {})[r[0]] = row;
+    (detail[r[1]] = detail[r[1]] || {})[r[0]] = row;
   });
   Object.keys(lists).forEach(function (office) {
     try {
@@ -749,7 +777,7 @@ function fillCache_(rows, lists, synced) {
     }
   });
   try {
-    putBig_(cache, 'N|', JSON.stringify(numbered));
+    putBig_(cache, 'N|', JSON.stringify(numberedOf_(rows)));
   } catch (err) {
     Logger.log('캐시 넣기 실패 (번호 명단): ' + err.message);
   }
