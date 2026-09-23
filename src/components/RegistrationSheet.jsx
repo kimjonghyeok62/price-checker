@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import './RegistrationSheet.css';
 import { DropdownSelect } from './tuitionInputs';
 import { guessRateId, rowLabel } from '../utils/regionRates';
@@ -84,6 +84,7 @@ function judge(sub, isTutoring, standardRate) {
 
 export default function RegistrationSheet({ mode = 'academy', info, onInfoChange, regType, regTypeOptions = [], onRegTypeChange, subjects, onSubjectsChange, discount = '', onDiscountChange, extraFees = [], onExtraFeesChange, onPrint, lookup }) {
   const isTutoring = mode === 'tutoring';
+  const uid = useId(); // 화면에 서식이 둘 있어도 id·radio 이름이 겹치지 않게
   const setInfo = (key, value) => onInfoChange({ ...info, [key]: value });
   const { region, officeName, rows: rateRows, tutoringHourlyRate, ratesReady } = useRegion();
 
@@ -152,10 +153,6 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
 
   return (
     <div className="reg-sheet-wrap">
-      <div className="reg-sheet-guide">
-        <span className="reg-sheet-guide-swatch" /> <b>노란 칸</b>에 적어 넣으세요. {isTutoring ? <><b>시간당단가</b>는 자동으로 계산됩니다. 다 적으면 맨 아래 <b>신고서 출력</b>을 누르세요.</> : <>다 적으면 맨 아래 <b>등록신청서 출력</b>을 누르세요.</>}
-      </div>
-
       {!region ? (
         <div className="reg-region-notice">📍 화면 맨 위에서 <b>지역(교육지원청)</b>을 먼저 선택하세요. 선택한 지역의 기준으로 적합 여부를 판정합니다.</div>
       ) : !regionReady && (
@@ -230,7 +227,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
             const enabled = regTypeOptions.includes(t);
             return (
               <label key={t} className={`reg-check${regType === t ? ' is-checked' : ''}${enabled ? '' : ' is-disabled'}`}>
-                <input type="radio" name="reg-sheet-regtype" checked={regType === t} disabled={!enabled} onChange={() => onRegTypeChange?.(t)} />
+                <input type="radio" name={`${uid}-regtype`} checked={regType === t} disabled={!enabled} onChange={() => onRegTypeChange?.(t)} />
                 <span className="reg-check-box">{regType === t ? '✓' : ''}</span>
                 {t}
               </label>
@@ -353,9 +350,9 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
         {/* 기타 할인사항 — 신청서처럼 제목 옆에 바로 적음 (학원·교습소, 개인과외 공통) */}
         {onDiscountChange && (
           <div className="reg-discount">
-            <label className="reg-discount-label" htmlFor="reg-discount-input">기타 할인사항</label>
+            <label className="reg-discount-label" htmlFor={`${uid}-discount`}>기타 할인사항</label>
             <textarea
-              id="reg-discount-input"
+              id={`${uid}-discount`}
               className="reg-input reg-textarea"
               rows={2}
               value={discount}
@@ -387,7 +384,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                     <td className="col-extra-subject" data-label={`${idx + 1}. 교습과목(반)`}>
                       <input
                         className="reg-input"
-                        list="reg-extra-subject-list"
+                        list={`${uid}-extra-subjects`}
                         title={row.subjectName}
                         value={row.subjectName}
                         onChange={e => updateExtra(row.id, { subjectName: e.target.value })}
@@ -419,7 +416,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
               })}
             </tbody>
           </table>
-          <datalist id="reg-extra-subject-list">
+          <datalist id={`${uid}-extra-subjects`}>
             {subjectNames.map(n => <option key={n} value={n} />)}
           </datalist>
 

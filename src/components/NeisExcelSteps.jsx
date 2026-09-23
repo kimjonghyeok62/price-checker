@@ -6,7 +6,7 @@ import { isAndroidDesktopMode } from '../utils/pwa';
 const NEIS_HAKWON_URL = 'https://hakwon.neis.go.kr';
 
 const stepCardStyle = {
-  backgroundColor: '#eef2ff', border: '2px solid #c7d2fe', borderRadius: '14px', padding: '18px',
+  backgroundColor: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)',
 };
 
 // PC 크롬/엣지: 다운로드 폴더가 바로 열리는 파일 선택창 (지원하지 않으면 null)
@@ -30,7 +30,7 @@ export const hasDraggedFiles = (e) => Array.from(e.dataTransfer?.types || []).in
 export function StepBadge({ n }) {
   return (
     <span style={{
-      width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: '#fff',
+      width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--navy)', color: '#fff',
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: '800', flexShrink: 0,
     }}>{n}</span>
   );
@@ -40,7 +40,7 @@ function StepTitle({ n, children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
       <StepBadge n={n} />
-      <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#312e81' }}>{children}</span>
+      <span style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-main)' }}>{children}</span>
     </div>
   );
 }
@@ -57,7 +57,7 @@ export function NeisHakwonCard({ style }) {
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           padding: '16px 18px', borderRadius: '10px', backgroundColor: 'var(--primary)', color: '#fff',
-          fontSize: '1.15rem', fontWeight: '800', textDecoration: 'none', boxShadow: '0 3px 10px rgba(79,70,229,0.3)',
+          fontSize: '1.0625rem', fontWeight: '700', textDecoration: 'none',
         }}
       >
         나이스 학원 열기
@@ -98,13 +98,13 @@ export function ExcelUploadCard({ loading, dragOver, fileInputRef, onFile, style
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           padding: '14px 18px', borderRadius: '10px', cursor: 'pointer',
-          border: `2px dashed ${dragOver ? 'var(--primary)' : '#a5b4fc'}`,
-          backgroundColor: dragOver ? '#e0e7ff' : '#fff',
+          border: `2px dashed ${dragOver ? 'var(--primary)' : '#94a3b8'}`,
+          backgroundColor: dragOver ? 'var(--primary-soft)' : '#f8fafc',
           color: 'var(--primary)', fontSize: '1rem', fontWeight: '700',
           transition: 'border-color 0.15s, background-color 0.15s',
         }}
         onMouseEnter={e => { if (!dragOver) e.currentTarget.style.borderColor = 'var(--primary)'; }}
-        onMouseLeave={e => { if (!dragOver) e.currentTarget.style.borderColor = '#a5b4fc'; }}
+        onMouseLeave={e => { if (!dragOver) e.currentTarget.style.borderColor = '#94a3b8'; }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>

@@ -42,12 +42,10 @@ function answerOf(item, info) {
   return '';
 }
 
-export default function TuitionReviewTab({ mode = 'academy' }) {
+// subTab: '신규' | '변경' (학원·교습소) — 왼쪽 메뉴에서 정함
+export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }) {
   const isTutoring = mode === 'tutoring';
   const { region, rows: rateRows, officeName } = useRegion();
-
-  // ── 신규/변경 서브탭 ──
-  const [subTab, setSubTab] = useState('신규');
 
   // ── 신규 탭 등록신청서(학원·교습소) / 개인과외 신고 내용 ──
   const [newInfo, setNewInfo] = useState(EMPTY_INFO);
@@ -246,7 +244,7 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     }
     if (lookup.status === 'error') return { tone: 'error', content: lookup.message };
     if (picked) return { tone: 'info', content: <>② <b>{askOf(picked).label}</b> 적고 <b>[나이스에서 교습비 불러오기]</b>를 누르세요.</> };
-    if (!region) return { tone: 'warn', content: <>화면 맨 위에서 <b>지역(교육지원청)</b>을 먼저 고르면 학원명으로 나이스 교습비를 불러올 수 있습니다. 칸에 직접 적어도 됩니다.</> };
+    if (!region) return null; // 서식 위 지역 안내가 이미 있음
     if (academyListError) return { tone: 'error', content: <>{academyListError} <button type="button" className="reg-lookup-link" onClick={reloadAcademyList}>다시 시도</button></> };
     if (!academyList) return { tone: 'busy', content: '학원 목록을 불러오는 중입니다…' };
     if (!academyList.items.length) return { tone: 'warn', content: <>이 지역은 아직 학원 검색 목록이 없습니다. 칸에 직접 적거나, 아래 <b>'나이스 엑셀 파일로 불러오기'</b>를 이용하세요.</> };
@@ -288,69 +286,8 @@ export default function TuitionReviewTab({ mode = 'academy' }) {
     },
   };
 
-  const subTabStyle = (active) => ({
-    flex: 1,
-    padding: '11px 4px',
-    border: 'none',
-    borderRadius: '9px',
-    cursor: 'pointer',
-    backgroundColor: active ? 'var(--primary)' : 'transparent',
-    color: active ? '#fff' : 'var(--text-muted)',
-    fontWeight: active ? '800' : '600',
-    fontSize: '1.02rem',
-    boxShadow: active ? '0 2px 8px rgba(79, 70, 229, 0.3)' : 'none',
-    transition: 'all 0.15s',
-    fontFamily: 'inherit',
-  });
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-      {/* 탭 전용 안내 배너 */}
-      {!isTutoring ? (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '9px 14px',
-          backgroundColor: '#eff6ff',
-          border: '1px solid #bfdbfe',
-          borderRadius: '8px',
-          fontSize: '0.95rem',
-          color: '#1d4ed8',
-          lineHeight: 1.4,
-        }}>
-          <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>ℹ️</span>
-          <span>
-            이 탭은 <strong>학원·교습소</strong> 전용입니다.&nbsp;
-            개인과외는 상단 <strong>'개인과외'</strong> 탭을 이용해 주세요.
-          </span>
-        </div>
-      ) : (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '9px 14px',
-          backgroundColor: '#fffbeb',
-          border: '1px solid #fde68a',
-          borderRadius: '8px',
-          fontSize: '0.95rem',
-          color: '#92400e',
-          lineHeight: 1.4,
-        }}>
-          <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>ℹ️</span>
-          <span>
-            이 탭은 <strong>개인과외</strong> 전용입니다.&nbsp;
-            학원·교습소는 상단 <strong>'학원·교습소'</strong> 탭을 이용해 주세요.
-          </span>
-        </div>
-      )}
-
-      {/* 신규 / 변경 서브탭 (학원·교습소만) */}
-      {!isTutoring && (
-        <div style={{ display: 'flex', gap: '6px', padding: '5px', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '4px' }}>
-          {['신규', '변경'].map(t => (
-            <button key={t} style={subTabStyle(subTab === t)} onClick={() => setSubTab(t)}>{t}</button>
-          ))}
-        </div>
-      )}
 
       {/* ── 과외 모드: 신규 탭과 같은 표 서식 ── */}
       {isTutoring && (
