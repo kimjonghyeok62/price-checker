@@ -152,12 +152,15 @@ export async function loadRegionRates() {
   return { regions: BUILTIN_REGIONS, source: 'builtin' };
 }
 
+// 처음 여는 PC(고른 적 없음)는 광주하남으로 시작
+const DEFAULT_REGION = '광주하남';
+
 export function readSelectedRegion() {
   try {
     const v = localStorage.getItem(SELECTED_KEY) || '';
-    return REGION_NAMES.includes(v) ? v : '';
+    return REGION_NAMES.includes(v) ? v : DEFAULT_REGION;
   } catch {
-    return '';
+    return DEFAULT_REGION;
   }
 }
 

@@ -329,17 +329,23 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
               <PrintButtons academy={lookupResult.academy} />
             </div>
           )}
-          <div className="divider-text">또는 나이스에서 엑셀을 받아 올리기</div>
         </>
       )}
-      <NeisHakwonCard />
-      <ExcelUploadCard loading={excelLoading} dragOver={dragOver} fileInputRef={fileInputRef} onFile={loadFile} />
-
-      {showAndroidTip && (
-        <div style={{ marginTop: '-6px', marginBottom: '20px', fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span>📱 앱을 설치하면 받은 엑셀을 '공유 → 교습비 계산·게시표'로 바로 열 수 있어요</span>
-          {installable && <button type="button" className="btn btn-outline btn-sm" onClick={promptInstall}>앱 설치</button>}
-        </div>
+      {isAcademyLookupReady() ? (
+        <details className="reg-fallback" style={{ marginTop: 0, marginBottom: '20px' }}>
+          <summary>학원 목록에 없나요? 나이스 엑셀 파일로 불러오기</summary>
+          <div className="reg-fallback-body">
+            <NeisHakwonCard />
+            <ExcelUploadCard loading={excelLoading} dragOver={dragOver} fileInputRef={fileInputRef} onFile={loadFile} style={{ marginBottom: showAndroidTip ? '12px' : 0 }} />
+            {showAndroidTip && <AndroidInstallTip installable={installable} style={{ marginBottom: 0 }} />}
+          </div>
+        </details>
+      ) : (
+        <>
+          <NeisHakwonCard />
+          <ExcelUploadCard loading={excelLoading} dragOver={dragOver} fileInputRef={fileInputRef} onFile={loadFile} />
+          {showAndroidTip && <AndroidInstallTip installable={installable} style={{ marginTop: '-6px' }} />}
+        </>
       )}
 
       {excelError && <div className="alert is-error">{excelError}</div>}
@@ -361,6 +367,15 @@ function ExcelUploadTab({ excelLoading, excelError, excelAcademies, excelSelecte
           <PrintButtons academy={excelSelected} />
         </div>
       )}
+    </div>
+  );
+}
+
+function AndroidInstallTip({ installable, style }) {
+  return (
+    <div style={{ marginBottom: '20px', fontSize: '0.9rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', ...style }}>
+      <span>📱 앱을 설치하면 받은 엑셀을 '공유 → 교습비 계산·게시표'로 바로 열 수 있어요</span>
+      {installable && <button type="button" className="btn btn-outline btn-sm" onClick={promptInstall}>앱 설치</button>}
     </div>
   );
 }
