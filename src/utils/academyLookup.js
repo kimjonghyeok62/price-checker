@@ -9,13 +9,21 @@ export const isAcademyLookupReady = () => !!ACADEMY_API_URL;
 
 // ─── 서버 호출 ────────────────────────────────────────────────
 // Apps Script 웹앱은 한동안 안 쓰다 처음 부르면 수십 초 걸릴 때가 있다 — 한 번 늦으면 한 번 더 부른다(두 번째는 대개 빠르다)
+// 404·5xx는 대개 구글 쪽 일시 오류(재배포 직후, 응답 주소 만료 등)라 한 번 더 부르면 된다
 const SLOW_MESSAGE = '서버 응답이 늦습니다. 잠시 후 다시 시도하세요.';
+const TEMP_ERROR_MESSAGE = '일시적인 서버 오류입니다. 잠시 후 다시 눌러 주세요.';
+
+const isTempStatus = (status) => status === 404 || status === 429 || status >= 500;
 
 async function callApi(url, timeoutMs, options) {
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await fetchWithTimeout(url, timeoutMs, options);
-      if (!res.ok) throw new Error(`서버 오류 (HTTP ${res.status})`);
+      if (!res.ok) {
+        if (!isTempStatus(res.status)) throw new Error(`서버 오류 (HTTP ${res.status})`);
+        if (attempt >= 1) throw new Error(TEMP_ERROR_MESSAGE);
+        continue;
+      }
       return await res.json();
     } catch (err) {
       const slow = err.name === 'AbortError' || err.name === 'TypeError'; // 시간 초과·연결 끊김
