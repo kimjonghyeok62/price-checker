@@ -120,6 +120,30 @@ export function extraFeeChanges(row) {
     return ch;
 }
 
+const numOf = (v) => parseInt(String(v ?? '').replace(/[^0-9]/g, ''), 10) || 0;
+const strOf = (v) => String(v ?? '').trim();
+
+/** 과목 줄에 적은 내용이 있는지 — 교습과정·정원만 따라 들어간 빈 줄은 없음으로 봄 */
+export const sheetSubHasContent = (sub) => !!sub && !!(strOf(sub.subjectName) || numOf(sub.fee) > 0 || sub.dm || sub.wc);
+
+/** 기타경비 줄에 적은 내용이 있는지 */
+export const extraFeeHasContent = (row) => !!row && !!(strOf(row.subjectName) || OTHER_FEE_ITEMS.some(it => numOf(row[it.key]) > 0));
+
+/**
+ * 출력·엑셀에 넣을 줄 고르기 (rowNo = 화면의 연번)
+ * - 신규등록·전체변경: 적은 줄 전부
+ * - 일부변경: 고친 줄·새로 적은 줄만, 기타경비를 고치거나 새로 적으면 그 교습과목(반) 줄도 함께
+ */
+export function outputSelection(regType, subjects, extraFees = []) {
+    const subs = subjects.map((s, i) => ({ ...s, rowNo: i + 1 })).filter(sheetSubHasContent);
+    const extras = extraFees.filter(extraFeeHasContent);
+    if (regType !== '일부변경') return { subjects: subs, extraFees: extras };
+    const pickedExtras = extras.filter(r => { const ch = extraFeeChanges(r); return ch.isNew || ch.any; });
+    const extraNames = new Set(pickedExtras.map(r => strOf(r.subjectName)));
+    const pickedSubs = subs.filter(s => { const ch = sheetChanges(s); return ch.isNew || ch.any || extraNames.has(strOf(s.subjectName)); });
+    return { subjects: pickedSubs, extraFees: pickedExtras };
+}
+
 export function getWeeklyTotalMinutes(weeklyStr) {
     if (!weeklyStr) return null;
     const sessionsMatch = weeklyStr.match(/주(\d+)회/);

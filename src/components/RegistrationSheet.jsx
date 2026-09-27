@@ -1,9 +1,9 @@
-import React, { useEffect, useId } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import './RegistrationSheet.css';
 import { DropdownSelect } from './tuitionInputs';
 import { guessRateId, rowLabel } from '../utils/regionRates';
 import { useRegion } from '../RegionContext';
-import { OTHER_FEE_ITEMS, sheetTotalMinutes, sheetChanges, extraFeeChanges } from '../utils/tuitionFormCommon';
+import { OTHER_FEE_ITEMS, sheetTotalMinutes, sheetChanges, extraFeeChanges, outputSelection } from '../utils/tuitionFormCommon';
 import AcademyNameField from './AcademyNameField';
 
 // 학원(교습소) 교습비등 등록신청서 — 제출 서식과 같은 모양으로 바로 적어 넣는 입력 화면
@@ -84,12 +84,12 @@ function judge(sub, isTutoring, standardRate) {
 
 const won = (v) => `${(parseInt(v, 10) || 0).toLocaleString()}원`;
 
-/** 고친 칸: 위에 고치기 전 값을 작게(취소선) 얹음 — 안 고친 칸은 그대로 */
+/** 고친 칸: 위에 고치기 전 값을 작게(취소선) 얹음 — 안 고친 칸은 그대로
+ *  고침 여부와 상관없이 같은 틀로 감싸야 입력 중 칸이 새로 만들어지지 않아 커서가 빠지지 않음 */
 function Changed({ on, was, children }) {
-  if (!on) return children;
   return (
-    <div className="reg-cell is-changed">
-      <div className="reg-was" title={`고치기 전: ${was}`}><span className="reg-was-tag">전</span><s>{was}</s></div>
+    <div className={`reg-cell${on ? ' is-changed' : ''}`}>
+      {on && <div className="reg-was" title={`고치기 전: ${was}`}><span className="reg-was-tag">전</span><s>{was}</s></div>}
       {children}
     </div>
   );
@@ -134,6 +134,31 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
   const standardRateOf = (sub) => (isTutoring ? tutoringHourlyRate : rateRows.find(r => r.id === sub.rateId)?.rate || 0);
   const tracking = subjects.some(s => s.orig); // 변경신청에서 나이스 교습비를 불러온 서식
   const regionReady = isTutoring ? tutoringHourlyRate > 0 : ratesReady;
+
+  // 출력·다운로드 전 확인 — 전화번호·정원을 비우면 받지 않고, 빈 칸을 빨갛게 보여 줌
+  const [triedOutput, setTriedOutput] = useState(false);
+  const selection = outputSelection(isTutoring ? '' : regType, subjects, extraFees);
+  const phoneMissing = !String(info.phone || '').trim();
+  const capacityMissingIds = new Set(isTutoring ? [] : selection.subjects.filter(s => !(parseInt(s.capacity, 10) > 0)).map(s => s.id));
+  const missingText = [phoneMissing && '전화번호', capacityMissingIds.size > 0 && `정원(${selection.subjects.filter(s => capacityMissingIds.has(s.id)).map(s => `${s.rowNo}번`).join('·')} 줄)`].filter(Boolean).join(', ');
+  const isPartial = !isTutoring && regType === '일부변경';
+
+  function runOutput(action, label) {
+    if (!selection.subjects.length) {
+      alert(isPartial ? '일부변경: 고친 줄이 없습니다.\n바꿀 칸을 고친 뒤 다시 눌러 주세요.' : '적힌 교습과목이 없습니다.');
+      return;
+    }
+    if (missingText) {
+      setTriedOutput(true);
+      alert(`${missingText}을(를) 입력해 주세요.\n빨갛게 표시된 칸을 모두 채워야 ${label}할 수 있습니다.`);
+      setTimeout(() => document.querySelector('.reg-sheet .is-missing')?.focus(), 0); // 빨간 칸이 그려진 뒤 첫 칸으로
+      return;
+    }
+    const picked = `교습과목 ${selection.subjects.length}줄 (${selection.subjects.map(s => `${s.rowNo}번`).join('·')})${selection.extraFees.length ? ` · 기타경비 ${selection.extraFees.length}줄` : ''}`;
+    if (isPartial && !window.confirm(`일부변경 : 변경한 곳만 ${label}됩니다.\n\n${picked}\n\n계속할까요?`)) return;
+    action(selection);
+  }
+  const missCls = (miss) => (triedOutput && miss ? ' is-missing' : '');
 
   function updateSub(id, patch) {
     const first = subjects[0];
@@ -203,7 +228,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
               <th>교습장소</th>
               <td><input className="reg-input" value={info.address} onChange={e => setInfo('address', e.target.value)} placeholder="예) 경기도 하남시 ○○로 00" /></td>
               <th>전화번호</th>
-              <td><input className="reg-input" inputMode="tel" value={info.phone} onChange={e => setInfo('phone', e.target.value)} placeholder="예) 010-0000-0000" /></td>
+              <td><input className={`reg-input${missCls(phoneMissing)}`} inputMode="tel" value={info.phone} onChange={e => setInfo('phone', e.target.value)} placeholder="예) 010-0000-0000" /></td>
             </tr>
           </tbody>
         </table>
@@ -226,7 +251,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
               <th>등록(신고)번호</th>
               <td><input {...askProps('regNumber')} value={info.regNumber} onChange={e => setInfo('regNumber', e.target.value)} placeholder="예) 제 하남675호" /></td>
               <th>전화번호</th>
-              <td><input className="reg-input" inputMode="tel" value={info.phone} onChange={e => setInfo('phone', e.target.value)} placeholder="예) 031-000-0000" /></td>
+              <td><input className={`reg-input${missCls(phoneMissing)}`} inputMode="tel" value={info.phone} onChange={e => setInfo('phone', e.target.value)} placeholder="예) 031-000-0000" /></td>
             </tr>
             <tr>
               <th>위치</th>
@@ -261,6 +286,9 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
             );
           })}
         </div>
+        )}
+        {isPartial && (
+          <div className="reg-partial-notice">ⓘ <b>일부변경</b> : 변경한 곳만 출력되거나 다운로드 됩니다. (고친 줄·새로 적은 줄, 그리고 고친 기타경비의 교습과목)</div>
         )}
 
         {/* 교습비 표 — 한 과목 한 줄 */}
@@ -347,7 +375,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                   <td className="col-capacity" data-label="정원(반별)">
                     <Changed on={ch.capacity} was={`${parseInt(o?.capacity, 10) || 0}명`}>
                     <span className="reg-unit-field">
-                      <input className="reg-input reg-input-num" inputMode="numeric" value={sub.capacity} onChange={e => updateSub(sub.id, { capacity: e.target.value.replace(/[^0-9]/g, '') })} placeholder="0" />
+                      <input className={`reg-input reg-input-num${missCls(capacityMissingIds.has(sub.id))}`} inputMode="numeric" value={sub.capacity} onChange={e => updateSub(sub.id, { capacity: e.target.value.replace(/[^0-9]/g, '') })} placeholder="0" />
                       <span className="reg-unit">명</span>
                     </span>
                     </Changed>
@@ -498,9 +526,14 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
         )}
       </div>
 
+      {missingText && (
+        <div className={`reg-missing-notice${triedOutput ? ' is-alert' : ''}`} role="status">
+          ⚠ 출력·다운로드하려면 <b>{missingText}</b>을(를) 입력해 주세요.
+        </div>
+      )}
       <div className="reg-actions">
       {onPrint && (
-      <button type="button" className="reg-print" onClick={onPrint}>
+      <button type="button" className="reg-print" onClick={() => runOutput(onPrint, '출력')}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 6 2 18 2 18 9" />
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
@@ -510,7 +543,7 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
       </button>
       )}
       {onBulkExcel && (
-      <button type="button" className="reg-print reg-bulk-excel" onClick={onBulkExcel} title="나이스 학원 교습비 일괄등록에 그대로 올리는 엑셀">
+      <button type="button" className="reg-print reg-bulk-excel" onClick={() => runOutput(onBulkExcel, '다운로드')} title="나이스 학원 교습비 일괄등록에 그대로 올리는 엑셀">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <polyline points="7 10 12 15 17 10" />

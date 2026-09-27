@@ -157,7 +157,7 @@ export function checkBulkSubjects(subjects) {
     if (!s.rateId && !s.neisRow) miss.push('교습과정');
     if (!totalTimeOf(s)) miss.push('총교습시간');
     if (!num(s.fee)) miss.push('교습비');
-    if (miss.length) problems.push(`${i + 1}번째 줄: ${miss.join('·')}`);
+    if (miss.length) problems.push(`${s.rowNo ?? i + 1}번째 줄: ${miss.join('·')}`);
   });
   return problems;
 }

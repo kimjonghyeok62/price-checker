@@ -178,7 +178,8 @@
 .reg-subjects tr.is-over td { background: #fff1f2; }
 
 /* 변경신청: 고친 칸은 위에 고치기 전 값을 작게(취소선), 고친 값은 주황 테두리 */
-.reg-cell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.reg-cell.is-changed { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.reg-cell:not(.is-changed) { display: contents; } /* 안 고친 칸은 틀 없이 그대로 */
 .reg-was {
   display: flex;
   align-items: center;
@@ -343,6 +344,25 @@
 
 /* 등록신청서 출력 + 교습비일괄등록 엑셀 — 넓은 화면은 나란히, 좁으면 위아래 */
 .reg-actions { display: flex; gap: 10px; margin-top: 16px; }
+.reg-partial-notice {
+  border: 1px solid var(--reg-line);
+  border-top: none;
+  padding: 8px 14px;
+  font-size: 0.92rem;
+  color: #1e3a8a;
+  background: #eff6ff;
+}
+.reg-missing-notice {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+.reg-missing-notice.is-alert { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+.reg-input.is-missing { border: 2px solid #dc2626 !important; background: #fef2f2; }
 .reg-actions .reg-print { flex: 1 1 0; margin-top: 0; }
 .reg-bulk-excel { background: #15803d; box-shadow: 0 3px 10px rgba(21, 128, 61, 0.3); }
 .reg-bulk-excel:hover { background: #166534; }
