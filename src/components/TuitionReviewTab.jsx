@@ -260,6 +260,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
   }
 
   // 교습비일괄등록 엑셀 받기 — 교습소는 나이스 양식 열이 하나 더 많아 따로 맞춤
+  // subjects: 서식에서 고른 줄(일부변경은 고친 줄만), extraFees: 과목마다 기타경비 값을 넣도록 전부
   function downloadBulk({ info, regType, subjects, extraFees, academy, kind }) {
     const problems = checkBulkSubjects(subjects);
     if (problems.length) {
@@ -321,7 +322,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
           onSubjectsChange={setNewSheetSubjects}
           discount={newDiscount}
           onDiscountChange={setNewDiscount}
-          onPrint={() => printTutoringForm({ ...newInfo, officeName, subjects: newSheetSubjects, discount: newDiscount })}
+          onPrint={sel => printTutoringForm({ ...newInfo, officeName, subjects: sel.subjects, discount: newDiscount })}
         />
       )}
 
@@ -338,8 +339,8 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
           onDiscountChange={setNewDiscount}
           extraFees={newExtraFees}
           onExtraFeesChange={setNewExtraFees}
-          onPrint={() => printRegistrationForm({ ...newInfo, officeName, regType: '신규등록', subjects: newSheetSubjects, discount: newDiscount, extraFees: newExtraFees })}
-          onBulkExcel={() => downloadBulk({ info: newInfo, regType: '신규등록', subjects: newSheetSubjects, extraFees: newExtraFees })}
+          onPrint={sel => printRegistrationForm({ ...newInfo, officeName, regType: '신규등록', subjects: sel.subjects, discount: newDiscount, extraFees: sel.extraFees })}
+          onBulkExcel={sel => downloadBulk({ info: newInfo, regType: '신규등록', subjects: sel.subjects, extraFees: newExtraFees })}
         />
       )}
 
@@ -374,8 +375,8 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
             onDiscountChange={setChangeDiscount}
             extraFees={changeExtraFees}
             onExtraFeesChange={setChangeExtraFees}
-            onPrint={() => printRegistrationForm({ ...changeInfo, officeName, regType: changeRegType, subjects: changeSubjects, discount: changeDiscount, extraFees: changeExtraFees })}
-            onBulkExcel={() => downloadBulk({ info: changeInfo, regType: changeRegType, subjects: changeSubjects, extraFees: changeExtraFees, academy: lookup.status === 'done' ? lookup.academy : null, kind: picked?.kind })}
+            onPrint={sel => printRegistrationForm({ ...changeInfo, officeName, regType: changeRegType, subjects: sel.subjects, discount: changeDiscount, extraFees: sel.extraFees })}
+            onBulkExcel={sel => downloadBulk({ info: changeInfo, regType: changeRegType, subjects: sel.subjects, extraFees: changeExtraFees, academy: lookup.status === 'done' ? lookup.academy : null, kind: picked?.kind })}
             lookup={{
               list: academyList,
               onPick: pickAcademy,
