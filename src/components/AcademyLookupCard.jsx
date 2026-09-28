@@ -4,6 +4,7 @@ import {
   searchAcademyList, lookupAcademy, readMyAcademies, rememberAcademy, forgetAcademy,
 } from '../utils/academyLookup';
 import { useAcademyList } from '../utils/useAcademyList';
+import { logUsage } from '../utils/usageLog';
 
 // 게시표 출력 탭 맨 위 "학원명으로 바로 찾기" — 학원 고르기 → 본인 확인(번호·이름, 자료가 없으면 생략) → 나이스 실시간 교습비
 
@@ -86,6 +87,7 @@ export default function AcademyLookupCard({ onResult }) {
     onResult(null);
     try {
       const res = await lookupAcademy(id, value, region);
+      logUsage('학원조회', { detail: `게시표 · ${res.source === 'neis' ? '나이스' : '보관본'}`, academy: name, region });
       rememberAcademy({ id, name, answer: value, regNo: res.academy.regNo || '', category: res.academy.category || '' });
       setMine(readMyAcademies());
       if (seq === runSeqRef.current) onResult(res);

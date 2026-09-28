@@ -16,6 +16,7 @@ import { REGION_NAMES } from './utils/regionRates';
 import { takeSharedFile, canPromptInstall, onInstallPromptChange, promptInstall, isAndroid, isInstalledApp } from './utils/pwa';
 import { NeisHakwonCard, ExcelUploadCard, AcademyPickList, hasDraggedFiles } from './components/NeisExcelSteps';
 import TuitionTextModal from './components/TuitionTextModal';
+import { logUsage, logVisit } from './utils/usageLog';
 
 // 왼쪽 메뉴 — 넓은 화면은 세로 메뉴, 좁은 화면은 머리띠 아래 가로 메뉴줄
 const NAV = [
@@ -89,6 +90,8 @@ export default function App() {
   const [showRegionAdmin, setShowRegionAdmin] = useState(false);
   const { region, setRegion, effectiveDate, officeName } = useRegion();
 
+  useEffect(() => { logVisit(); }, []);
+
   function setPage(id) {
     setPageState(id);
     try { localStorage.setItem(PAGE_KEY, id); } catch { /* 저장 못 해도 동작 */ }
@@ -137,6 +140,7 @@ export default function App() {
       } else {
         setExcelAcademies(result);
         if (result.length === 1) setExcelSelected(result[0]);
+        logUsage('나이스엑셀올리기', { detail: `게시표 · ${result.length}곳`, academy: result.length === 1 ? result[0].name : '' });
       }
     } catch (err) {
       setExcelError('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
@@ -285,7 +289,7 @@ function RefundPage() {
         반환기준 게시표 <span className="tag">[별지 제5호서식]</span>
       </div>
       <p className="card-desc">경기도 학원의 설립·운영 및 과외교습에 관한 조례 시행규칙 서식입니다. 교습비등 게시표와 함께 게시하세요.</p>
-      <a className="btn btn-primary btn-block" href="/refund-standard.pdf" target="_blank" rel="noopener noreferrer">
+      <a className="btn btn-primary btn-block" href="/refund-standard.pdf" target="_blank" rel="noopener noreferrer" onClick={() => logUsage('반환기준게시표')}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
         </svg>
@@ -453,6 +457,8 @@ function PrintButtons({ academy }) {
     finally { setDownloading(''); }
   }
 
+  const logPoster = (title, what) => logUsage('게시표', { detail: `${title} ${what}`, academy: academy.name });
+
   const rows = [
     {
       key: 'int', title: '내부용', desc: '교습실 안에 붙이는 게시표',
@@ -486,16 +492,16 @@ function PrintButtons({ academy }) {
             <span className="print-row-desc">{r.desc}</span>
           </div>
           <div className="print-btns">
-            <button type="button" className="btn btn-primary print-btn" onClick={r.pdf}>
+            <button type="button" className="btn btn-primary print-btn" onClick={() => { r.pdf(); logPoster(r.title, 'PDF'); }}>
               PDF 출력<small>인쇄용</small>
             </button>
-            <button type="button" className="btn btn-outline print-btn" disabled={!!downloading} onClick={() => withLoading(`${r.key}-jpg`, r.jpg)}>
+            <button type="button" className="btn btn-outline print-btn" disabled={!!downloading} onClick={() => { withLoading(`${r.key}-jpg`, r.jpg); logPoster(r.title, 'JPG'); }}>
               {downloading === `${r.key}-jpg` ? '만드는 중…' : 'JPG 저장'}<small>블로그용</small>
             </button>
-            <button type="button" className="btn btn-outline print-btn" disabled={!!downloading} onClick={() => withLoading(`${r.key}-hwpx`, r.hwpx)}>
+            <button type="button" className="btn btn-outline print-btn" disabled={!!downloading} onClick={() => { withLoading(`${r.key}-hwpx`, r.hwpx); logPoster(r.title, 'HWPX'); }}>
               {downloading === `${r.key}-hwpx` ? '만드는 중…' : 'HWPX 저장'}<small>편집용</small>
             </button>
-            <button type="button" className="btn btn-outline print-btn" onClick={() => setPlaceText(buildTuitionPlaceText(academy))}>
+            <button type="button" className="btn btn-outline print-btn" onClick={() => { setPlaceText(buildTuitionPlaceText(academy)); logPoster(r.title, 'TEXT'); }}>
               TEXT 복사<small>네이버 플레이스용</small>
             </button>
           </div>

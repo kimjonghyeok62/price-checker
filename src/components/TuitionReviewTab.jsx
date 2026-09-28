@@ -9,6 +9,7 @@ import { guessRateId } from '../utils/regionRates';
 import { OTHER_FEE_ITEMS, sheetOrig } from '../utils/tuitionFormCommon';
 import { useRegion } from '../RegionContext';
 import { downloadTuitionBulkExcel, checkBulkSubjects } from '../utils/generateTuitionBulkExcel';
+import { logUsage } from '../utils/usageLog';
 
 const EMPTY_INFO = { academyName: '', operator: '', regNumber: '', phone: '', address: '' };
 const IDLE = { status: 'idle' };
@@ -165,6 +166,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
     setLookup({ status: 'busy' });
     try {
       const res = await lookupAcademy(item.id, answer, region);
+      logUsage('학원조회', { detail: `변경신청 · ${res.source === 'neis' ? '나이스' : '보관본'}`, academy: item.name, region });
       rememberAcademy({ id: item.id, name: item.name, answer, regNo: res.academy.regNo || '', category: res.academy.category || '' });
       setMine(readMyAcademies());
       if (seq !== runSeqRef.current) return;
@@ -272,6 +274,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
       ? academy.neisBulk.isTeaching
       : kind === '교습소' || academy?.category === '교습소' || /교습소\s*$/.test(name);
     downloadTuitionBulkExcel({ isTeaching, academyName: name, kind: academy?.category, regType, subjects, extraFees, rateRows });
+    logUsage('일괄등록엑셀', { detail: regType, academy: name });
   }
 
   async function loadChangeFile(file) {
@@ -286,6 +289,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
       } else {
         setChangeAcademies(result);
         if (result.length === 1) selectExcelAcademy(result[0]);
+        logUsage('나이스엑셀올리기', { detail: `변경신청 · ${result.length}곳`, academy: result.length === 1 ? result[0].name : '' });
       }
     } catch (err) {
       setChangeError('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
@@ -322,7 +326,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
           onSubjectsChange={setNewSheetSubjects}
           discount={newDiscount}
           onDiscountChange={setNewDiscount}
-          onPrint={sel => printTutoringForm({ ...newInfo, officeName, subjects: sel.subjects, discount: newDiscount })}
+          onPrint={sel => { printTutoringForm({ ...newInfo, officeName, subjects: sel.subjects, discount: newDiscount }); logUsage('신청서출력', { detail: '개인과외' }); }}
         />
       )}
 
@@ -339,7 +343,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
           onDiscountChange={setNewDiscount}
           extraFees={newExtraFees}
           onExtraFeesChange={setNewExtraFees}
-          onPrint={sel => printRegistrationForm({ ...newInfo, officeName, regType: '신규등록', subjects: sel.subjects, discount: newDiscount, extraFees: sel.extraFees })}
+          onPrint={sel => { printRegistrationForm({ ...newInfo, officeName, regType: '신규등록', subjects: sel.subjects, discount: newDiscount, extraFees: sel.extraFees }); logUsage('신청서출력', { detail: '신규등록', academy: newInfo.academyName }); }}
           onBulkExcel={sel => downloadBulk({ info: newInfo, regType: '신규등록', subjects: sel.subjects, extraFees: newExtraFees })}
         />
       )}
@@ -375,7 +379,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
             onDiscountChange={setChangeDiscount}
             extraFees={changeExtraFees}
             onExtraFeesChange={setChangeExtraFees}
-            onPrint={sel => printRegistrationForm({ ...changeInfo, officeName, regType: changeRegType, subjects: sel.subjects, discount: changeDiscount, extraFees: sel.extraFees })}
+            onPrint={sel => { printRegistrationForm({ ...changeInfo, officeName, regType: changeRegType, subjects: sel.subjects, discount: changeDiscount, extraFees: sel.extraFees }); logUsage('신청서출력', { detail: changeRegType, academy: changeInfo.academyName }); }}
             onBulkExcel={sel => downloadBulk({ info: changeInfo, regType: changeRegType, subjects: sel.subjects, extraFees: changeExtraFees, academy: lookup.status === 'done' ? lookup.academy : null, kind: picked?.kind })}
             lookup={{
               list: academyList,

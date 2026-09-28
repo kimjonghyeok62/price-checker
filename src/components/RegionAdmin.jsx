@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useRegion } from '../RegionContext';
+import { logUsage } from '../utils/usageLog';
 import {
   REGION_NAMES, RATES_API_URL, newRowId, officeNameOf, rowLabel, saveRegionRates, templateRows, verifyRegionPassword,
 } from '../utils/regionRates';
@@ -100,6 +101,7 @@ export default function RegionAdmin({ onBack }) {
         editor: editor.trim(),
         rows: cleanRows,
       });
+      logUsage('기준단가수정', { detail: `${cleanRows.length}줄`, region });
       await reload();
       setMessage(`${region} 기준단가 ${cleanRows.length}줄을 저장했습니다. 앱 사용자에게 바로 적용됩니다.`);
     } catch (err) {

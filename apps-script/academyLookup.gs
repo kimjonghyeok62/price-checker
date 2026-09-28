@@ -23,6 +23,10 @@
  *  ① 나이스 인증키 넣기 — open.neis.go.kr 회원가입 › 인증키 신청(무료)으로 받은 키. 없으면 명단 시트(하남)만 검색된다.
  *  ② 경기도 학원 설립자 명단 올리기 — data.go.kr "경기도교육청_경기도 학원 정보" 엑셀(분기마다 갱신)을 받아 옆 창에서 고른다.
  *  ③ 지금 동기화 — 04시를 기다리지 않고 검색목록을 새로 만든다.
+ *
+ * [사용 통계] 앱에서 접속·학원조회·신청서 출력·엑셀·게시표를 쓸 때마다 "사용기록" 탭에 한 줄씩 쌓인다 (탭은 저절로 생긴다).
+ *  ④ 사용 통계 새로 고침 — "사용통계" 탭을 새로 만들고, 그 뒤로는 매일 05시에 저절로 새로 고친다.
+ *  기기번호는 앱이 기기마다 만든 무작위 값(사람을 알아볼 수 없음) — 같은 기기를 한 번으로 세는 데만 쓴다.
  */
 
 var SOURCE_SHEET_ID = '158ZNBb88raJ1kzBL3eFcgPZS9CGs5in0YtPtiPWfdic';
@@ -101,6 +105,8 @@ function onOpen() {
     .addItem('① 나이스 인증키 넣기', 'promptNeisKey')
     .addItem('② 경기도 학원 설립자 명단 올리기', 'openFounderUpload')
     .addItem('③ 지금 동기화', 'syncNowFromMenu')
+    .addSeparator()
+    .addItem('④ 사용 통계 새로 고침', 'refreshUsageStatsFromMenu')
     .addToUi();
 }
 
@@ -449,6 +455,7 @@ function doPost(e) {
     var answer = String(req.answer != null ? req.answer : (req.regNo || ''));
     if (req.action === 'lookup') return json_(lookup_(String(req.id || ''), answer, String(req.region || '')));
     if (req.action === 'verify') return json_(verifyByName_(String(req.name || ''), answer));
+    if (req.action === 'log') return json_(logUsage_(req));
     return json_({ ok: false, error: '알 수 없는 요청입니다.' });
   } catch (err) {
     return json_({ ok: false, error: '처리 중 오류가 발생했습니다: ' + err.message });
@@ -878,4 +885,171 @@ function json_(obj) {
 }
 function textJson_(text) {
   return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ─── 사용 기록·통계 ──────────────────────────────────────────
+// 앱이 { action: 'log', event, detail, academy, region, device }를 보내면 "사용기록"에 한 줄 쌓고,
+// "사용통계"는 매일 05시(또는 메뉴 ④)에 사용기록을 모아 새로 만든다
+
+var SHEET_USAGE_LOG = '사용기록';
+var SHEET_USAGE_STATS = '사용통계';
+var USAGE_HEADERS = ['일시', '기능', '세부', '지역', '학원명', '기기'];
+var USAGE_EVENTS = {
+  '접속': '접속', '학원조회': '학원 조회', '신청서출력': '신청서 출력', '일괄등록엑셀': '일괄등록 엑셀',
+  '게시표': '게시표 출력·저장', '나이스엑셀올리기': '나이스 엑셀 올리기', '반환기준게시표': '반환기준 게시표', '기준단가수정': '기준단가 수정'
+};
+var USAGE_STATS_HOUR = 5;
+var USAGE_TOP_ACADEMIES = 30;
+var USAGE_HEAD_COLOR = '#1f3a68';
+
+function logUsage_(req) {
+  var event = String(req.event || '');
+  if (!USAGE_EVENTS[event]) return { ok: false, error: '알 수 없는 기록입니다.' };
+  var region = String(req.region || '');
+  var device = String(req.device || '');
+  getUsageLogSheet_().appendRow([
+    new Date(), event, usageText_(req.detail), OFFICE_SIGUN[region] ? region : '', usageText_(req.academy),
+    /^[0-9a-z]{1,16}$/.test(device) ? device : ''
+  ]);
+  return { ok: true };
+}
+
+/** 60자까지, 수식으로 읽히지 않게 */
+function usageText_(v) {
+  var s = String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, 60);
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+
+function getUsageLogSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_USAGE_LOG);
+  if (sheet) return sheet;
+  var lock = LockService.getDocumentLock();
+  lock.waitLock(10000);
+  try {
+    sheet = ss.getSheetByName(SHEET_USAGE_LOG);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_USAGE_LOG);
+      sheet.getRange(1, 1, 1, USAGE_HEADERS.length).setValues([USAGE_HEADERS]).setFontWeight('bold');
+      sheet.setFrozenRows(1);
+      sheet.getRange('A:A').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+    }
+    return sheet;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function refreshUsageStatsFromMenu() {
+  var n = refreshUsageStats();
+  SpreadsheetApp.getUi().alert('사용통계를 새로 만들었습니다. (사용기록 ' + n + '줄) 앞으로 매일 ' + USAGE_STATS_HOUR + '시에 저절로 새로 고칩니다.');
+}
+
+/** 사용기록 → 사용통계 탭 (요약·월별·지역별·기능 세부·많이 이용한 학원) — 매일 05시 트리거 */
+function refreshUsageStats() {
+  ensureUsageTrigger_();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var log = ss.getSheetByName(SHEET_USAGE_LOG);
+  var rows = log && log.getLastRow() > 1 ? log.getRange(2, 1, log.getLastRow() - 1, USAGE_HEADERS.length).getValues() : [];
+  var tz = ss.getSpreadsheetTimeZone() || 'Asia/Seoul';
+  var day = function (d) { return Utilities.formatDate(d, tz, 'yyyy-MM-dd'); };
+  var events = Object.keys(USAGE_EVENTS);
+  var work = events.filter(function (ev) { return ev !== '접속'; }); // 합계는 접속을 뺀 실제 사용
+
+  var newBucket = function () { return { devices: {}, counts: {} }; };
+  var add = function (b, ev, dev) { b.counts[ev] = (b.counts[ev] || 0) + 1; if (dev) b.devices[dev] = true; };
+  var sum = function (b, list) { return list.reduce(function (s, ev) { return s + (b.counts[ev] || 0); }, 0); };
+  var size = function (o) { return Object.keys(o).length; };
+
+  var all = newBucket(), months = {}, regions = {}, details = {}, academies = {};
+  var first = null, last = null;
+  rows.forEach(function (r) {
+    var at = r[0] instanceof Date ? r[0] : new Date(r[0]);
+    var ev = String(r[1]);
+    if (isNaN(at.getTime()) || !USAGE_EVENTS[ev]) return;
+    var detail = String(r[2]), region = String(r[3]) || '(모름)', academy = String(r[4]), dev = String(r[5]);
+    if (!first || at < first) first = at;
+    if (!last || at > last) last = at;
+    var month = Utilities.formatDate(at, tz, 'yyyy-MM');
+    add(all, ev, dev);
+    add(months[month] = months[month] || newBucket(), ev, dev);
+    add(regions[region] = regions[region] || newBucket(), ev, dev);
+    var dk = ev + '|' + detail;
+    details[dk] = (details[dk] || 0) + 1;
+    if (academy) {
+      var a = academies[academy] = academies[academy] || { name: academy, region: region, n: 0, last: at };
+      a.n++;
+      if (at >= a.last) { a.last = at; if (region !== '(모름)') a.region = region; }
+    }
+  });
+
+  var blocks = [];
+  blocks.push({
+    title: '요약 (누적)', header: ['항목', '값'],
+    rows: [
+      ['기록 기간', first ? day(first) + ' ~ ' + day(last) : '아직 기록 없음'],
+      ['이용 기기 수', size(all.devices)],
+      ['이용 지역(교육지원청) 수', size(regions) - (regions['(모름)'] ? 1 : 0)],
+      ['접속 (기기별 하루 1회)', all.counts['접속'] || 0],
+      ['학원 조회', all.counts['학원조회'] || 0],
+      ['이용된 학원·교습소 수', size(academies)],
+      ['신청서 출력 (등록·변경·개인과외)', all.counts['신청서출력'] || 0],
+      ['일괄등록 엑셀 다운로드', all.counts['일괄등록엑셀'] || 0],
+      ['게시표 출력·저장', all.counts['게시표'] || 0],
+      ['전체 사용 횟수 (접속 제외)', sum(all, work)]
+    ]
+  });
+  blocks.push({
+    title: '월별', header: ['월', '이용 기기'].concat(events.map(function (ev) { return USAGE_EVENTS[ev]; }), ['합계 (접속 제외)']),
+    rows: Object.keys(months).sort().map(function (m) {
+      var b = months[m];
+      return [m, size(b.devices)].concat(events.map(function (ev) { return b.counts[ev] || 0; }), [sum(b, work)]);
+    })
+  });
+  var regionEvents = ['학원조회', '신청서출력', '일괄등록엑셀', '게시표'];
+  blocks.push({
+    title: '지역별 (누적)', header: ['지역', '이용 기기'].concat(regionEvents.map(function (ev) { return USAGE_EVENTS[ev]; }), ['합계 (접속 제외)']),
+    rows: Object.keys(regions).map(function (g) {
+      var b = regions[g];
+      return [g, size(b.devices)].concat(regionEvents.map(function (ev) { return b.counts[ev] || 0; }), [sum(b, work)]);
+    }).sort(function (x, y) { return y[y.length - 1] - x[x.length - 1]; })
+  });
+  var labels = events.map(function (ev) { return USAGE_EVENTS[ev]; });
+  blocks.push({
+    title: '기능 세부 (누적)', header: ['기능', '세부', '횟수'],
+    rows: Object.keys(details).map(function (k) {
+      var p = k.split('|');
+      return [USAGE_EVENTS[p[0]], usageText_(p.slice(1).join('|')) || '-', details[k]];
+    }).sort(function (x, y) { return labels.indexOf(x[0]) - labels.indexOf(y[0]) || y[2] - x[2]; })
+  });
+  blocks.push({
+    title: '많이 이용한 학원·교습소 (상위 ' + USAGE_TOP_ACADEMIES + '곳)', header: ['순위', '학원명', '지역', '이용 횟수', '마지막 이용'],
+    rows: Object.keys(academies).map(function (k) { return academies[k]; })
+      .sort(function (x, y) { return y.n - x.n || y.last - x.last; })
+      .slice(0, USAGE_TOP_ACADEMIES)
+      .map(function (a, i) { return [i + 1, usageText_(a.name), a.region, a.n, day(a.last)]; })
+  });
+
+  var sheet = ss.getSheetByName(SHEET_USAGE_STATS) || ss.insertSheet(SHEET_USAGE_STATS, 0);
+  sheet.clear();
+  sheet.getRange(1, 1).setValue('교습비 앱 사용 통계').setFontSize(14).setFontWeight('bold');
+  sheet.getRange(2, 1).setValue('새로 고친 때 ' + Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH:mm') +
+    ' · 이용 기기는 같은 PC·휴대폰을 한 번으로 센 수입니다 (민원실 공용 PC는 여러 사람이 써도 1대)').setFontColor('#666666');
+  var at = 4;
+  blocks.forEach(function (b) {
+    sheet.getRange(at, 1).setValue(b.title).setFontSize(12).setFontWeight('bold');
+    sheet.getRange(at + 1, 1, 1, b.header.length).setValues([b.header])
+      .setFontWeight('bold').setBackground(USAGE_HEAD_COLOR).setFontColor('#ffffff');
+    var body = b.rows.length ? b.rows : [['기록 없음'].concat(b.header.slice(1).map(function () { return ''; }))];
+    sheet.getRange(at + 2, 1, body.length, b.header.length).setValues(body);
+    at += body.length + 3;
+  });
+  sheet.setColumnWidth(1, 230);
+  sheet.setColumnWidths(2, 10, 110);
+  return rows.length;
+}
+
+function ensureUsageTrigger_() {
+  var has = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'refreshUsageStats'; });
+  if (!has) ScriptApp.newTrigger('refreshUsageStats').timeBased().atHour(USAGE_STATS_HOUR).nearMinute(0).everyDays(1).inTimezone('Asia/Seoul').create();
 }
