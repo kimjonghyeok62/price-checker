@@ -373,12 +373,10 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
                   </td>
                   {!isTutoring && (
                   <td className="col-capacity" data-label="정원(반별)">
-                    <Changed on={ch.capacity} was={`${parseInt(o?.capacity, 10) || 0}명`}>
                     <span className="reg-unit-field">
                       <input className={`reg-input reg-input-num${missCls(capacityMissingIds.has(sub.id))}`} inputMode="numeric" value={sub.capacity} onChange={e => updateSub(sub.id, { capacity: e.target.value.replace(/[^0-9]/g, '') })} placeholder="0" />
                       <span className="reg-unit">명</span>
                     </span>
-                    </Changed>
                   </td>
                   )}
                   <td className="col-fee" data-label="교습비(B)">

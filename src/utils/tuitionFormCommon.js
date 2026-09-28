@@ -80,6 +80,7 @@ export function sheetTotalMinutes(sub) {
  * 변경신청: 나이스에서 불러온 줄(sub.orig = 불러올 때 값)과 지금 값을 칸별로 비교
  * - orig가 없는 줄은 새로 더한 줄(isNew)
  * - 총교습시간은 분·회·주가 아니라 합계(분)가 달라졌을 때만 변경
+ * - 정원은 고쳐도 변경으로 보지 않음 (정원만 고친 줄은 출력·엑셀에서 빠짐)
  */
 export function sheetChanges(sub) {
     const o = sub?.orig;
@@ -92,10 +93,9 @@ export function sheetChanges(sub) {
         subject: str(sub.subjectName) !== str(o.subjectName),
         period: str(sub.period) !== str(o.period),
         time: sheetTotalMinutes(sub) !== o.total,
-        capacity: n(sub.capacity) !== n(o.capacity),
         fee: n(sub.fee) !== n(o.fee),
     };
-    ch.any = ch.process || ch.subject || ch.period || ch.time || ch.capacity || ch.fee;
+    ch.any = ch.process || ch.subject || ch.period || ch.time || ch.fee;
     return ch;
 }
 
