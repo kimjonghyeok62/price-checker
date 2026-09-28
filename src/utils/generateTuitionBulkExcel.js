@@ -36,7 +36,6 @@ const CHANGE_KEYS = {
   subject: ['subject'],
   period: ['months', 'days'],
   time: ['totalTime'],
-  capacity: ['capacity'],
   fee: ['fee'],
 };
 const CHANGED_STYLE = { fill: { patternType: 'solid', fgColor: { rgb: 'FFFF00' } }, font: { bold: true } };
