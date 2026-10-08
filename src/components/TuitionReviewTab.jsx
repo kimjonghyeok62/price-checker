@@ -209,11 +209,9 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
     setChangeInfo(next);
   }
 
+  // ★ 최근 학원: 목록에서 고른 것과 같다 — 본인 확인은 매번 다시 (공용 PC 보안)
   function openMine(m) {
-    const item = academyList?.items.find(x => x.id === m.id) || { id: m.id, name: m.name, kind: '', check: m.answer ? 'N' : '' };
-    setPicked(item);
-    setChangeInfo(prev => ({ ...prev, academyName: m.name }));
-    runLookup(item, m.answer);
+    pickAcademy(academyList?.items.find(x => x.id === m.id) || { id: m.id, name: m.name, kind: '', check: 'NP' });
   }
 
   function removeMine(m) {

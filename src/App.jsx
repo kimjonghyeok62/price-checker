@@ -23,9 +23,9 @@ const NAV = [
   {
     group: '신청서 작성',
     items: [
-      { id: 'change', label: '교습비 변경신청', icon: 'edit' },
-      { id: 'new', label: '신규 등록신청', icon: 'plus' },
-      { id: 'tutoring', label: '개인과외 교습비 신고', icon: 'user' },
+      { id: 'change', label: '교습비 변경신청 지원', icon: 'edit' },
+      { id: 'new', label: '신규 등록신청 지원', icon: 'plus' },
+      { id: 'tutoring', label: '개인과외 교습비 신고 지원', icon: 'user' },
     ],
   },
   {
@@ -42,21 +42,25 @@ const NAV = [
 ];
 
 // 각 화면 머리 — 제목, 한 줄 설명, (있으면) 작성 순서 한 줄
+// submit: 신청서 화면 — 여기 적기만 하면 신청되는 줄 알지 않게 '방문 제출' 안내를 크게 띄운다 (작성 순서 마지막 칸도 강조)
 const PAGE_HEAD = {
   change: {
     title: '교습비 변경신청서',
     desc: '나이스에 등록된 지금 교습비를 불러와서, 바꿀 칸만 고친 뒤 출력합니다.',
-    steps: ['학원(교습소)명 고르기', '운영자 성명 또는 등록번호 적고 불러오기', '바꿀 칸 고치고 출력'],
+    steps: ['학원(교습소)명 고르기', '운영자 성명 또는 등록번호 적고 불러오기', '바꿀 칸 고치고 출력', '교육지원청에 방문 제출'],
+    submit: '교습비 변경신청이',
   },
   new: {
     title: '교습비 등록신청서 (신규)',
     desc: '학원·교습소를 새로 등록할 때 교습비등을 적는 서식입니다.',
-    steps: ['노란 칸 적기', '분당단가 적정 여부 확인', '등록신청서 출력'],
+    steps: ['노란 칸 적기', '분당단가 적정 여부 확인', '등록신청서 출력', '교육지원청에 방문 제출'],
+    submit: '신규 등록신청이',
   },
   tutoring: {
     title: '개인과외 교습비 신고',
     desc: '개인과외교습자의 교습비 신고 내용을 적는 서식입니다.',
-    steps: ['노란 칸 적기', '시간당단가 확인', '신고서 출력'],
+    steps: ['노란 칸 적기', '시간당단가 확인', '신고서 출력', '교육지원청에 방문 제출'],
+    submit: '개인과외 교습비 신고가',
   },
   poster: {
     title: '교습비 게시표 출력',
@@ -88,7 +92,7 @@ function readPage() {
 export default function App() {
   const [page, setPageState] = useState(readPage);
   const [showRegionAdmin, setShowRegionAdmin] = useState(false);
-  const { region, setRegion, effectiveDate, officeName } = useRegion();
+  const { region, setRegion, effectiveDate, officeName, submitPlace } = useRegion();
 
   useEffect(() => { logVisit(); }, []);
 
@@ -224,8 +228,19 @@ export default function App() {
             <p className="page-desc">{head.desc}</p>
             {head.steps && (
               <ol className="page-steps">
-                {head.steps.map((s, i) => <li key={s}><span className="page-step-no">{i + 1}</span>{s}</li>)}
+                {head.steps.map((s, i) => (
+                  <li key={s} className={head.submit && i === head.steps.length - 1 ? 'is-submit' : undefined}><span className="page-step-no">{i + 1}</span>{s.replace('교육지원청', submitPlace)}</li>
+                ))}
               </ol>
+            )}
+            {head.submit && (
+              <div className="page-submit-notice" role="note">
+                <span className="page-submit-icon" aria-hidden="true">!</span>
+                <div>
+                  <b>이 화면에 적기만 해서는 {head.submit} 되지 않습니다.</b>
+                  <div>이 사이트는 신청서 작성을 돕기만 합니다. 출력한 신청서를 반드시 <b>{submitPlace}</b>에 방문하여 제출해야 접수됩니다.</div>
+                </div>
+              </div>
             )}
           </div>
 

@@ -105,12 +105,11 @@ export default function AcademyLookupCard({ onResult }) {
     run(picked.id, prompt ? answer.trim() : '', picked.name);
   }
 
+  // ★ 최근 학원: 목록에서 고른 것과 같다 — 본인 확인은 매번 다시 (공용 PC 보안)
   function openMine(m) {
-    const item = list?.items.find(x => x.id === m.id) || null;
-    setPicked(item || { id: m.id, name: m.name, kind: '', sigun: '', dong: '', check: m.answer ? 'N' : '' });
-    setQuery(m.name);
-    setAnswer(m.answer);
-    run(m.id, m.answer, m.name);
+    const item = list?.items.find(x => x.id === m.id) || { id: m.id, name: m.name, kind: '', sigun: '', dong: '', check: 'NP' };
+    pick(item);
+    if (!answerPrompt(item)) run(item.id, '', item.name);
   }
 
   function removeMine(m) {
