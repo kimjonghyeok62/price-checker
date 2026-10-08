@@ -178,23 +178,25 @@ const MINE_KEY = 'academyLookup:mine:v1';
 const MINE_MAX = 5;
 
 /**
- * [{ id?, name, answer, regNo, category? }]
- *  - answer: 조회할 때 넣은 본인 확인 값(번호·이름, 확인이 없던 곳은 '')
+ * [{ id?, name, regNo, category? }]
+ *  - 본인 확인 값(번호·이름)은 남기지 않는다 — 공용 PC에서 다음 사람이 ★만 눌러 남의 학원을 불러오지 못하게
  *  - regNo: 게시표에 찍는 등록(신고)번호 — 명단에 번호가 없는 곳은 ''
  */
 export function readMyAcademies() {
   try {
     const list = JSON.parse(localStorage.getItem(MINE_KEY) || '[]');
-    return Array.isArray(list)
-      ? list.filter(x => x && x.name).map(x => ({ ...x, answer: x.answer ?? x.regNo ?? '', regNo: x.regNo || '' }))
-      : [];
+    if (!Array.isArray(list)) return [];
+    const clean = list.filter(x => x && x.name).map(({ answer, ...x }) => ({ ...x, regNo: x.regNo || '' })); // eslint-disable-line no-unused-vars
+    // 예전에 저장된 확인 값은 지운다
+    if (list.some(x => x && 'answer' in x)) localStorage.setItem(MINE_KEY, JSON.stringify(clean));
+    return clean;
   } catch {
     return [];
   }
 }
 
 /** 같은 이름은 최신 것으로 바꿔 맨 앞에 */
-export function rememberAcademy(entry) {
+export function rememberAcademy({ answer, ...entry }) { // eslint-disable-line no-unused-vars
   try {
     const rest = readMyAcademies().filter(x => nameKey(x.name) !== nameKey(entry.name));
     localStorage.setItem(MINE_KEY, JSON.stringify([entry, ...rest].slice(0, MINE_MAX)));
