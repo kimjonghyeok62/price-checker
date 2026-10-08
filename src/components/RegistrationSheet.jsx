@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import './RegistrationSheet.css';
 import { DropdownSelect } from './tuitionInputs';
 import { guessRateId, rowLabel } from '../utils/regionRates';
@@ -155,7 +155,22 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
       return;
     }
     const picked = `교습과목 ${selection.subjects.length}줄 (${selection.subjects.map(s => `${s.rowNo}번`).join('·')})${selection.extraFees.length ? ` · 기타경비 ${selection.extraFees.length}줄` : ''}`;
-    if (isPartial && !window.confirm(`일부변경 : 변경한 곳만 ${label}됩니다.\n\n${picked}\n\n계속할까요?`)) return;
+    setConfirmOut({ action, label, partial: isPartial ? picked : '' });
+  }
+
+  // 출력·다운로드 직전 — 이것만으로 신청되는 줄 알지 않게 '교육지원청 방문 제출'을 한 번 더 확인받음
+  const [confirmOut, setConfirmOut] = useState(null);
+  const confirmBtnRef = useRef(null);
+  useEffect(() => {
+    if (!confirmOut) return;
+    confirmBtnRef.current?.focus();
+    const onKey = e => { if (e.key === 'Escape') setConfirmOut(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirmOut]);
+  function doOutput() {
+    const { action } = confirmOut;
+    setConfirmOut(null);
     action(selection);
   }
   const missCls = (miss) => (triedOutput && miss ? ' is-missing' : '');
@@ -529,6 +544,9 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
           ⚠ 출력·다운로드하려면 <b>{missingText}</b>을(를) 입력해 주세요.
         </div>
       )}
+      <div className="reg-submit-reminder">
+        ⚠ 출력·다운로드만으로는 {isTutoring ? '신고' : '신청'}되지 않습니다. 출력한 서식을 <b>{officeName || '관할 교육지원청'}에 방문하여 제출</b>해 주세요.
+      </div>
       <div className="reg-actions">
       {onPrint && (
       <button type="button" className="reg-print" onClick={() => runOutput(onPrint, '출력')}>
@@ -551,6 +569,26 @@ export default function RegistrationSheet({ mode = 'academy', info, onInfoChange
       </button>
       )}
       </div>
+
+      {confirmOut && (
+        <div className="reg-confirm-backdrop" onClick={() => setConfirmOut(null)}>
+          <div className="reg-confirm" role="alertdialog" aria-modal="true" aria-labelledby={`${uid}-confirm-title`} onClick={e => e.stopPropagation()}>
+            <div className="reg-confirm-icon" aria-hidden="true">!</div>
+            <h2 id={`${uid}-confirm-title`} className="reg-confirm-title">반드시 교육지원청에 방문 제출해 주세요</h2>
+            <p className="reg-confirm-body">
+              이 사이트는 서식 작성만 돕습니다. {confirmOut.label}만으로는 <b>{isTutoring ? '신고가' : '신청이'} 접수되지 않습니다.</b><br />
+              출력한 서식을 <b>{officeName || '관할 교육지원청'}</b>에 직접 방문하여 제출해야 {isTutoring ? '신고가' : '신청이'} 완료됩니다.
+            </p>
+            {confirmOut.partial && (
+              <p className="reg-confirm-partial">일부변경 : 변경한 곳만 {confirmOut.label}됩니다 — {confirmOut.partial}</p>
+            )}
+            <div className="reg-confirm-btns">
+              <button type="button" className="reg-confirm-cancel" onClick={() => setConfirmOut(null)}>취소</button>
+              <button type="button" ref={confirmBtnRef} className="reg-confirm-ok" onClick={doOutput}>확인했습니다 · {confirmOut.label}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

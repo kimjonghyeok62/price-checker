@@ -211,6 +211,40 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.01em; }
   font-weight: 800;
   flex-shrink: 0;
 }
+/* 마지막 단계 '교육지원청에 방문 제출' — 빠뜨리지 않게 빨갛게 */
+.page-steps li.is-submit { color: #b91c1c; font-weight: 800; }
+.page-steps li.is-submit .page-step-no { background: #dc2626; }
+
+/* 신청서 화면: 여기 적기만 해서는 신청되지 않는다는 안내 */
+.page-submit-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 2px solid #f87171;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #7f1d1d;
+  font-size: 1rem;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+.page-submit-notice b { color: #b91c1c; }
+.page-submit-notice > div > b:first-child { display: block; font-size: 1.08rem; margin-bottom: 2px; }
+.page-submit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  font-weight: 900;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
 
 .app-footer {
   margin-top: 32px;
