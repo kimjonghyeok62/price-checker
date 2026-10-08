@@ -10,6 +10,7 @@
  * @param {string} data.phone         전화번호
  * @param {'신규등록'|'일부변경'|'전체변경'} data.regType
  * @param {string} data.officeName    선택한 교육지원청명 (예: 경기도광주하남교육지원청)
+ * @param {string} data.approver      결재란 마지막 칸 (예: 하남교육지원센터장) — 비우면 평생교육건강과장
  * @param {Array}  data.subjects      과목 배열
  */
 
@@ -262,6 +263,7 @@ export function printRegistrationForm(data) {
         phone = '',
         regType = '신규등록',
         officeName = '',
+        approver = '',
         subjects = [],
         discount = '',
         extraFees = [],
@@ -468,7 +470,7 @@ ${FORM_STYLE}</style>
         <td rowspan="2" class="ap-label" style="width: 50px;">결<br>재</td>
         <td class="ap-label" style="width: 80px;">담당</td>
         <td class="ap-label" style="width: 80px;">담당주무</td>
-        <td class="ap-label" style="width: 120px; white-space: nowrap;">하남교육지원센터장</td>
+        <td class="ap-label" style="width: 120px; white-space: nowrap;">${escHtml(approver || '평생교육건강과장')}</td>
       </tr>
       <tr>
         <td style="height: 12mm;"></td>

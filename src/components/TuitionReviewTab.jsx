@@ -47,7 +47,7 @@ function answerOf(item, info) {
 // subTab: '신규' | '변경' (학원·교습소) — 왼쪽 메뉴에서 정함
 export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }) {
   const isTutoring = mode === 'tutoring';
-  const { region, rows: rateRows, officeName } = useRegion();
+  const { region, rows: rateRows, officeName, submitOfficeFor } = useRegion();
 
   // ── 신규 탭 등록신청서(학원·교습소) / 개인과외 신고 내용 ──
   const [newInfo, setNewInfo] = useState(EMPTY_INFO);
@@ -341,7 +341,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
           onDiscountChange={setNewDiscount}
           extraFees={newExtraFees}
           onExtraFeesChange={setNewExtraFees}
-          onPrint={sel => { printRegistrationForm({ ...newInfo, officeName, regType: '신규등록', subjects: sel.subjects, discount: newDiscount, extraFees: sel.extraFees }); logUsage('신청서출력', { detail: '신규등록', academy: newInfo.academyName }); }}
+          onPrint={sel => { printRegistrationForm({ ...newInfo, officeName, approver: submitOfficeFor(newInfo.address).approver, regType: '신규등록', subjects: sel.subjects, discount: newDiscount, extraFees: sel.extraFees }); logUsage('신청서출력', { detail: '신규등록', academy: newInfo.academyName }); }}
           onBulkExcel={sel => downloadBulk({ info: newInfo, regType: '신규등록', subjects: sel.subjects, extraFees: newExtraFees })}
         />
       )}
@@ -377,7 +377,7 @@ export default function TuitionReviewTab({ mode = 'academy', subTab = '신규' }
             onDiscountChange={setChangeDiscount}
             extraFees={changeExtraFees}
             onExtraFeesChange={setChangeExtraFees}
-            onPrint={sel => { printRegistrationForm({ ...changeInfo, officeName, regType: changeRegType, subjects: sel.subjects, discount: changeDiscount, extraFees: sel.extraFees }); logUsage('신청서출력', { detail: changeRegType, academy: changeInfo.academyName }); }}
+            onPrint={sel => { printRegistrationForm({ ...changeInfo, officeName, approver: submitOfficeFor(changeInfo.address).approver, regType: changeRegType, subjects: sel.subjects, discount: changeDiscount, extraFees: sel.extraFees }); logUsage('신청서출력', { detail: changeRegType, academy: changeInfo.academyName }); }}
             onBulkExcel={sel => downloadBulk({ info: changeInfo, regType: changeRegType, subjects: sel.subjects, extraFees: changeExtraFees, academy: lookup.status === 'done' ? lookup.academy : null, kind: picked?.kind })}
             lookup={{
               list: academyList,

@@ -229,7 +229,7 @@ export default function App() {
             {head.steps && (
               <ol className="page-steps">
                 {head.steps.map((s, i) => (
-                  <li key={s} className={head.submit && i === head.steps.length - 1 ? 'is-submit' : undefined}><span className="page-step-no">{i + 1}</span>{s.replace('교육지원청', submitPlace)}</li>
+                  <li key={s} className={head.submit && i === head.steps.length - 1 ? 'is-submit' : undefined}><span className="page-step-no">{i + 1}</span>{s.replace('교육지원청', submitPlace.includes(' 또는 ') ? '관할 교육지원청' : submitPlace)}</li>
                 ))}
               </ol>
             )}

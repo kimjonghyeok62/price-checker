@@ -12,9 +12,29 @@ export const REGION_NAMES = [
 
 export const officeNameOf = (region) => `경기도${region}교육지원청`;
 
-// 신청서를 방문 제출하는 곳 — 교육지원청 본청이 아닌 곳에서 받는 지역만 적는다
-const SUBMIT_PLACES = { 광주하남: '하남교육지원센터' };
-export const submitPlaceOf = (region, officeName) => SUBMIT_PLACES[region] || officeName || '관할 교육지원청';
+// 신청서를 방문 제출하는 곳 — 시(市)마다 받는 곳이 다른 지역만 적는다
+//  approver: 등록신청서 결재란 마지막 칸 (없으면 서식 기본값)
+const SUBMIT_OFFICES = {
+  광주하남: [
+    { city: '하남', place: '하남교육지원센터', approver: '하남교육지원센터장' },
+    { city: '광주', place: '경기도광주하남교육지원청', approver: '' },
+  ],
+};
+
+/**
+ * 주소(위치)로 제출처를 고른다 — { place, approver, unknown }
+ *  - 나뉜 지역인데 주소로 시를 알 수 없으면 place에 둘 다 적고 unknown: true
+ */
+export function submitOfficeOf(region, officeName, address = '') {
+  const offices = SUBMIT_OFFICES[region];
+  if (!offices) return { place: officeName || '관할 교육지원청', approver: '', unknown: false };
+  const text = String(address || '');
+  // 주소에서 먼저 나오는 시 이름 (예: "하남시 광주로"는 하남) — "○○시"를 먼저 찾고, 없으면 이름만
+  const at = o => { const i = text.indexOf(`${o.city}시`); return i >= 0 ? i : text.indexOf(o.city); };
+  const hit = offices.map(o => [o, at(o)]).filter(([, i]) => i >= 0).sort((a, b) => a[1] - b[1])[0]?.[0];
+  if (hit) return { place: hit.place, approver: hit.approver, unknown: false };
+  return { place: offices.map(o => `${o.place}(${o.city}시)`).join(' 또는 '), approver: '', unknown: true };
+}
 
 // 광주하남 기준 (2024-12-26 교습비등 조정위원회) — 다른 지역 주무관이 "과정 목록 불러오기"로 틀만 가져다 쓴다
 const GWANGJU_HANAM_ROWS = [
