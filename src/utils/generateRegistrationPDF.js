@@ -468,7 +468,7 @@ ${FORM_STYLE}</style>
         <td rowspan="2" class="ap-label" style="width: 50px;">결<br>재</td>
         <td class="ap-label" style="width: 80px;">담당</td>
         <td class="ap-label" style="width: 80px;">담당주무</td>
-        <td class="ap-label" style="width: 120px;">평생교육건강과장</td>
+        <td class="ap-label" style="width: 120px; white-space: nowrap;">하남교육지원센터장</td>
       </tr>
       <tr>
         <td style="height: 12mm;"></td>

@@ -12,6 +12,10 @@ export const REGION_NAMES = [
 
 export const officeNameOf = (region) => `경기도${region}교육지원청`;
 
+// 신청서를 방문 제출하는 곳 — 교육지원청 본청이 아닌 곳에서 받는 지역만 적는다
+const SUBMIT_PLACES = { 광주하남: '하남교육지원센터' };
+export const submitPlaceOf = (region, officeName) => SUBMIT_PLACES[region] || officeName || '관할 교육지원청';
+
 // 광주하남 기준 (2024-12-26 교습비등 조정위원회) — 다른 지역 주무관이 "과정 목록 불러오기"로 틀만 가져다 쓴다
 const GWANGJU_HANAM_ROWS = [
   { id: 'gh01', field: '입시·보습', process: '보습', subject: '초등', rate: 210, keywords: '' },

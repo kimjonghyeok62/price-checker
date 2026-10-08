@@ -92,7 +92,7 @@ function readPage() {
 export default function App() {
   const [page, setPageState] = useState(readPage);
   const [showRegionAdmin, setShowRegionAdmin] = useState(false);
-  const { region, setRegion, effectiveDate, officeName } = useRegion();
+  const { region, setRegion, effectiveDate, officeName, submitPlace } = useRegion();
 
   useEffect(() => { logVisit(); }, []);
 
@@ -229,7 +229,7 @@ export default function App() {
             {head.steps && (
               <ol className="page-steps">
                 {head.steps.map((s, i) => (
-                  <li key={s} className={head.submit && i === head.steps.length - 1 ? 'is-submit' : undefined}><span className="page-step-no">{i + 1}</span>{s}</li>
+                  <li key={s} className={head.submit && i === head.steps.length - 1 ? 'is-submit' : undefined}><span className="page-step-no">{i + 1}</span>{s.replace('교육지원청', submitPlace)}</li>
                 ))}
               </ol>
             )}
@@ -238,7 +238,7 @@ export default function App() {
                 <span className="page-submit-icon" aria-hidden="true">!</span>
                 <div>
                   <b>이 화면에 적기만 해서는 {head.submit} 되지 않습니다.</b>
-                  <div>이 사이트는 신청서 작성을 돕기만 합니다. 출력한 신청서를 반드시 <b>{officeName || '관할 교육지원청'}</b>에 방문하여 제출해야 접수됩니다.</div>
+                  <div>이 사이트는 신청서 작성을 돕기만 합니다. 출력한 신청서를 반드시 <b>{submitPlace}</b>에 방문하여 제출해야 접수됩니다.</div>
                 </div>
               </div>
             )}

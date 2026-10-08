@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
-  BUILTIN_REGIONS, isRegionReady, loadRegionRates, readCachedRegions, readSelectedRegion, writeSelectedRegion,
+  BUILTIN_REGIONS, isRegionReady, loadRegionRates, readCachedRegions, readSelectedRegion, submitPlaceOf, writeSelectedRegion,
 } from './utils/regionRates';
 
 // 선택한 지역(교육지원청)과 그 지역 기준단가를 앱 전체에 나눠 준다
@@ -39,6 +39,7 @@ export function RegionProvider({ children }) {
       info,
       rows: info?.rows || [],
       officeName: info?.officeName || '',
+      submitPlace: submitPlaceOf(region, info?.officeName), // 신청서를 방문 제출하는 곳
       tutoringHourlyRate: info?.tutoringHourly || 0,
       effectiveDate: info?.effectiveDate || '',
       ratesReady: isRegionReady(info),
