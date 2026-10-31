@@ -73,6 +73,9 @@ var OPEN_PARALLEL = 10;
 
 var MAX_FAILS = 5;
 var BLOCK_SECONDS = 600;
+// 숫자만 넣어도 번호로 인정하므로, 시간을 들여 맞히지 못하게 긴 구간에서도 센다 (캐시 최대 보관 6시간)
+var MAX_FAILS_LONG = 30;
+var BLOCK_LONG_SECONDS = 21600;
 var LOOKUP_CACHE_SECONDS = 600;
 var SYNC_HOUR = 4;
 
@@ -547,14 +550,18 @@ function checkAnswer_(failId, items, answer) {
   var failKey = 'fail_' + failId;
   var fails = Number(cache.get(failKey)) || 0;
   if (fails >= MAX_FAILS) return { ok: false, error: '여러 번 틀려 10분 동안 입력할 수 없습니다.' };
+  var longKey = 'failLong_' + failId;
+  var longFails = Number(cache.get(longKey)) || 0;
+  if (longFails >= MAX_FAILS_LONG) return { ok: false, error: '여러 번 틀려 몇 시간 동안 입력할 수 없습니다.' };
 
   var input = String(answer || '').trim();
   var hit = input && items.filter(function (x) {
     return sameNo_(normNo_(x.no), normNo_(input)) || sameName_(x.founder, input);
   })[0];
-  if (hit) { cache.remove(failKey); return { ok: true, item: hit }; }
+  if (hit) { cache.removeAll([failKey, longKey]); return { ok: true, item: hit }; }
 
   cache.put(failKey, String(fails + 1), BLOCK_SECONDS);
+  cache.put(longKey, String(longFails + 1), BLOCK_LONG_SECONDS);
   return { ok: false, error: '입력한 번호(이름)가 명단과 맞지 않습니다. (' + (MAX_FAILS - fails - 1) + '번 남음)' };
 }
 
@@ -899,12 +906,19 @@ var USAGE_EVENTS = {
   '게시표': '게시표 출력·저장', '나이스엑셀올리기': '나이스 엑셀 올리기', '반환기준게시표': '반환기준 게시표', '기준단가수정': '기준단가 수정'
 };
 var USAGE_STATS_HOUR = 5;
+// 로그인 없이 부를 수 있는 자리라 시트가 넘치지 않게 시간당 줄 수를 묶는다
+var MAX_USAGE_LOGS_PER_HOUR = 2000;
 var USAGE_TOP_ACADEMIES = 30;
 var USAGE_HEAD_COLOR = '#1f3a68';
 
 function logUsage_(req) {
   var event = String(req.event || '');
   if (!USAGE_EVENTS[event]) return { ok: false, error: '알 수 없는 기록입니다.' };
+  var cache = CacheService.getScriptCache();
+  var countKey = 'usageLogs_' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMddHH');
+  var count = Number(cache.get(countKey)) || 0;
+  if (count >= MAX_USAGE_LOGS_PER_HOUR) return { ok: false, error: '기록이 너무 많습니다.' };
+  cache.put(countKey, String(count + 1), 3700);
   var region = String(req.region || '');
   var device = String(req.device || '');
   getUsageLogSheet_().appendRow([
